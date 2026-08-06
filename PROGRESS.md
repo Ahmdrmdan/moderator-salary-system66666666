@@ -70,10 +70,12 @@ The `ID` column imported from the official order workbook is an identifier issue
 
 - Review downstream Dashboard/Reports presentation and the remaining phase-two module impact before formally closing the broader Shipping Integration milestone. The phone-only import/update path itself is production-verified.
 
-## Orders module closure review (in progress)
+## Orders module closure (completed and production-verified)
 
 - Corrected a verified UI reachability defect: the existing transactional edit/delete handlers were never rendered in an order row. They are now visible only to `orders.write` users for open months, retaining the existing confirmation, Rules, audit, and report-recalculation protections.
-- Production review found the external SheetJS dependency absent in one active browser session, which made Orders Excel export unavailable without a runtime exception. The existing CDN now has a version-pinned fallback CDN; no import/export behavior changed.
+- Production review found that external Excel-library assets could be unavailable in a client session without a runtime exception. The root cause is removed: the verified SheetJS 0.18.5 mini runtime is bundled into the existing `js/utils.js` application asset and its URL is versioned; Orders import/export no longer depends on a CDN or a separately blockable library file.
+- Final production UAT on `https://ahmed123-95a0e.web.app` generated the general Orders report with 248 rows, started three real `orders-report*.xlsx` downloads, and verified the newest workbook opens as `Order Report` with 248 rows and the expected eleven fields. Its first exported row matches the report (`81579`, Hind, 6 packages, 650 EGP) and no browser-console errors were captured.
+- The supplied official workbook was then uploaded through the deployed Orders Import flow: 237 valid rows, 0 ignored rows, and the expected single missing-moderator warning. Its approval path correctly returned the existing-import message, proving duplicate protection without a duplicate Firestore write. No browser-console errors were captured during upload, analysis, validation, or duplicate approval.
 
 ## Version 4 completion
 

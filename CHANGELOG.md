@@ -14,7 +14,8 @@
 
 - Restored access to the existing guarded per-order edit and delete workflows in the Orders table. These actions remain hidden for read-only users and unavailable for locked months; no CRUD data model or permission boundary changed.
 - Versioned the Orders runtime URL with this closure fix so active production browser sessions cannot retain the prior table renderer.
-- Added a fallback SheetJS CDN for the existing import/export dependency after production Orders testing found a session in which the primary external asset did not load.
+- Removed the runtime Excel CDN dependency by bundling the verified SheetJS 0.18.5 mini runtime into the existing `utils.js` application asset, with a versioned URL. This prevents browser content blockers or third-party CDN availability from interrupting Orders import/export.
+- Final Firebase UAT verified a real Orders Excel download (`orders-report.xlsx`), opened the resulting workbook, and confirmed its 248 exported rows and fields match the generated production report. The supplied official workbook also parsed as 237 valid rows with one expected warning, and its repeat approval was refused as an existing import with no write.
 
 ## 7.0.11-import-production-uat
 
