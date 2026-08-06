@@ -11,7 +11,7 @@ const vm = require('vm');
 const utilsSource = fs.readFileSync('js/utils.js', 'utf8');
 const ordersSource = fs.readFileSync('js/orders.js', 'utf8').replace(
   'return { init, open, refresh: load, getAll: () => state.orders.slice() };',
-  'return { init, open, refresh: load, getAll: () => state.orders.slice(), __test: { state, shipping, matchShippingRows } };'
+  'return { init, open, refresh: load, getAll: () => state.orders.slice(), __test: { state, shipping, matchShippingRows, orderRow } };'
 );
 
 const nodes = new Map();
@@ -25,7 +25,7 @@ const sandbox = {
   localStorage: { getItem: () => null, setItem: () => {} },
   document: { getElementById: node, querySelectorAll: () => [] },
   Toast: { show: () => {} }, Loading: { show: () => {}, hide: () => {} }, Confirm: { show: () => {} },
-  Permissions: { require: () => {} }, Months: { assertEditable: () => {}, all: () => [] },
+  Permissions: { require: () => {}, can: () => true }, Months: { assertEditable: () => {}, all: () => [], isLocked: () => false },
   AuditService: { ACTION: { ORDERS_UPDATED: 'orders_updated' }, OPERATION: { UPDATE: 'update' }, appendToBatch: () => {} },
   firebase: { firestore: { FieldValue: { serverTimestamp: () => ({}), increment: value => value } } },
   auth: { currentUser: null }, db: {}, COLLECTIONS: { MONTHLY_REPORTS: 'monthly_reports' },
@@ -87,6 +87,15 @@ function match(orders, rows) {
   const result = match([order('one', '01050250777')], [row('01050250777', 'WB-1'), row('01050250777', 'WB-2')]);
   assert.strictEqual(result.matches.length, 0);
   assert.strictEqual(result.conflicts.length, 2);
+}
+
+{
+  test.state.busy = false;
+  assert.match(test.orderRow(order('one', '01050250777')), /data-order-action="edit"/);
+  assert.match(test.orderRow(order('one', '01050250777')), /data-order-action="delete"/);
+  test.state.busy = true;
+  assert.doesNotMatch(test.orderRow(order('one', '01050250777')), /data-order-action="edit"/);
+  test.state.busy = false;
 }
 
 console.log('Shipping matching contract tests passed');

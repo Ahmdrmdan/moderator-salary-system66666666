@@ -70,6 +70,10 @@ The `ID` column imported from the official order workbook is an identifier issue
 
 - Review downstream Dashboard/Reports presentation and the remaining phase-two module impact before formally closing the broader Shipping Integration milestone. The phone-only import/update path itself is production-verified.
 
+## Orders module closure review (in progress)
+
+- Corrected a verified UI reachability defect: the existing transactional edit/delete handlers were never rendered in an order row. They are now visible only to `orders.write` users for open months, retaining the existing confirmation, Rules, audit, and report-recalculation protections.
+
 ## Version 4 completion
 
 - Added a Configuration Center tab shell while preserving the existing settings form and backward-compatible saves.

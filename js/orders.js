@@ -225,6 +225,7 @@ const OrdersManagement = (() => {
   }
 
   function orderRow(order) {
+    const canManage = Permissions.can('orders.write') && !Months.isLocked(order.monthId) && !state.busy;
     return `<tr data-order-id="${Utils.escapeHtml(order.id)}">
       <td>${Utils.escapeHtml(order.orderDate || '—')}</td>
       <td class="orders-id">${Utils.escapeHtml(order.externalOrderNumber || order.id)}</td>
@@ -240,6 +241,7 @@ const OrdersManagement = (() => {
       <td>${Utils.escapeHtml(order.shipmentStatus)}</td>
       <td class="actions-cell">
         <button class="btn btn-sm" data-order-action="details" data-order-id="${Utils.escapeHtml(order.id)}" title="عرض التفاصيل">عرض</button>
+        ${canManage ? `<button class="btn btn-sm" data-order-action="edit" data-order-id="${Utils.escapeHtml(order.id)}">تعديل</button><button class="btn btn-sm btn-danger-outline" data-order-action="delete" data-order-id="${Utils.escapeHtml(order.id)}">حذف</button>` : ''}
       </td>
     </tr>`;
   }
