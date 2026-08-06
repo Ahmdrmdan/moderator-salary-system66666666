@@ -56,6 +56,7 @@ The `ID` column imported from the official order workbook is an identifier issue
 - Matched updates persist tracking number, governorate, normalized status, provider/update timestamps, source fingerprint, and sync ID without moving or creating order documents. Flat historical shipping fields remain written and read.
 - Updates are compare-and-write transactions, append to the immutable audit trail, respect locked/archived months, and create a bounded `shippingSyncs` summary under each affected month.
 - The new capability `shipping.import` separates carrier-file writes from ordinary order editing in both client permission checks and Firestore Rules.
+- Production UAT exposed a stale-browser asset mix (the older cached `utils.js` lacked the new phone normalizer). Script URLs for the shipping runtime are now versioned so the deployed Orders page always loads the matching utility, Firebase schema, and permission modules.
 
 ### Tests completed so far
 

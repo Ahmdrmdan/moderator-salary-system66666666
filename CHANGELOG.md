@@ -2,6 +2,7 @@
 
 ## Unreleased — Shipping Integration implementation
 
+- Versioned the shipping runtime script URLs so a browser with prior Import-stage assets cannot combine the new Orders screen with a stale utility, schema, or permissions bundle.
 - Replaced the legacy name-and-phone FIFO shipping matcher with the approved normalized-phone-only matching policy for open orders.
 - Added validation, in-file duplicate detection, unmatched/conflict/stale/unchanged outcomes, tracking-number collision protection, and a manual-review conflict table; no shipping import can create an order.
 - Added backward-compatible shipping fields (`shipping`, `lastShippingUpdate`, `lastShippingSyncedAt`) while retaining legacy flat fields, atomic order/audit writes, and per-month `shippingSyncs` import summaries.
