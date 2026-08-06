@@ -3640,7 +3640,14 @@ const App = (() => {
           }
 
           const savedMapping = Utils.loadLastImportColumnMapping();
-          const usedSavedMapping = savedMapping && Utils.importHeadersMatch(analysis.headers, savedMapping.headers);
+          // A saved manual map is a recovery aid for ambiguous/legacy files;
+          // it must never override an exact schema match from an official
+          // workbook. That stale override was able to point price at a
+          // nonexistent column after a prior manual import.
+          const hasExactRequiredMapping = ['name', 'packages', 'price'].every(field =>
+            Number.isInteger(analysis.mapping[field]) && analysis.confidence[field] >= 0.99
+          );
+          const usedSavedMapping = !hasExactRequiredMapping && savedMapping && Utils.importHeadersMatch(analysis.headers, savedMapping.headers);
           if (usedSavedMapping) {
             // Older saved mappings contain only the former three required
             // fields. Retain the new auto-detected official-file fields.
