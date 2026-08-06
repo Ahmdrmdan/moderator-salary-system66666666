@@ -1,11 +1,12 @@
 # Changelog
 
-## Unreleased — Departments stabilization (awaiting review)
+## Unreleased — Departments stabilization (closed)
 
 - Fixed the existing Departments serialization gap: `commission`, `useBonusOverride`, `bonusType`, and `salesBonusRules` now round-trip through validation, Firestore writes, and normalization. Older department documents safely retain hourly/package/default values without migration.
 - Kept fixed-salary departments bonus-free, made Commission use the existing sales-tier calculation path, and preserved the selected department salary type in newly calculated report rows. Existing monthly reports are not read, recalculated, or changed by this fix.
 - Bound Department management controls to `departments.write` in the UI and added the same internal guard before every Department write; Firestore Rules remain the authoritative server-side protection.
 - Versioned the Departments and App runtime URLs so deployed browsers cannot combine this change with cached scripts.
+- Closed the Departments Module after production UAT approval. Removed the zero-employee temporary UAT document `UAT Commission 20260807 Updated` (`departments/gbqHozmvyTRaODDzJpkT`) from Firestore; no production department, employee, order, or historical report data was changed.
 
 ## Unreleased — Shipping Integration implementation
 

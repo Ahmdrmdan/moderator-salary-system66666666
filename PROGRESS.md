@@ -1,6 +1,6 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
-## Departments Stabilization (awaiting user review)
+## Departments Stabilization (completed and approved)
 
 ### Root cause and minimal fix
 
@@ -15,6 +15,13 @@
 - Firebase Hosting UAT on `https://ahmed123-95a0e.web.app` created and then updated the temporary `UAT Commission 20260807 Updated` department. Reopening it confirmed `commission`, `useBonusOverride: true`, `bonusType: sales`, and tier values `100 / 999 / 25` persisted through Firestore.
 - The same temporary department was archived and restored successfully, with no browser-console errors. Existing report state was not recalculated or changed during UAT.
 - The in-app browser could not reach the lower User Management navigation control in this viewport. The deployed Department UI and internal permission behavior are covered by the read-only permission contract; Firestore Rules remain unchanged and continue requiring `departments.write` for create/update.
+
+### Formal closure — 2026-08-07
+
+- Departments Module was formally approved and closed.
+- Removed the temporary zero-employee UAT department `UAT Commission 20260807 Updated` from production by exact Firestore document path `departments/gbqHozmvyTRaODDzJpkT`; it had no employees and no historical report usage.
+- Reloaded the deployed Departments view after removal: the UAT record was absent and the browser console recorded zero errors.
+- The closure affects neither historical department/report data nor the established archive/restore behavior for production departments.
 
 ## Milestone 1 — Import Improvements (completed and production-verified)
 
