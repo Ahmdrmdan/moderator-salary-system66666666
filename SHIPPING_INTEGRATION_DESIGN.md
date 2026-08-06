@@ -8,7 +8,7 @@ The shipping stage must make an order traceable from the official order-import f
 
 The design is governed by these principles:
 
-- The source workbook `ID` is an external-source identifier. It is retained for correlation but is not automatically the internal lifecycle identity.
+- The source workbook `ID` is external reference data only. It is excluded from shipping matching and update selection.
 - A shipping update is applied only to one unambiguous order and only when it is newer than the order's known shipping state.
 - Every import is previewed, idempotent, auditable, and compatible with existing order-batch documents.
 - Missing, ambiguous, invalid, and stale updates are visible outcomes, never silent fallbacks.
@@ -20,14 +20,14 @@ flowchart TD
     A["Official order workbook"] --> B["Import Orders"]
     B --> C["Extract & normalize rows"]
     C --> D["Validate, detect duplicates & review"]
-    D --> E["Persist order batch with internal orderId + external source ID"]
+    D --> E["Persist order batch with normalized phone + external reference data"]
     E --> F["Shipping export / hand-off"]
     F --> G["Shipping company"]
     G --> H["Shipping update file"]
     H --> I["Extract, normalize & validate shipping rows"]
     I --> J["Match to one order"]
     J -->|"matched and newer"| K["Update order shipping state"]
-    J -->|"unmatched / ambiguous / stale / invalid"| L["Conflict report; no order write"]
+    J -->|"unmatched / conflict / stale / invalid"| L["Conflict report; no order write"]
     K --> M["Dashboard & operational reports"]
     K --> N["Salary and settlement inputs"]
     K --> O["Immutable audit + sync summary"]
@@ -38,14 +38,14 @@ flowchart TD
 ### Workflow detail
 
 1. **Import Orders:** the existing official workbook is parsed and reviewed before confirmation.
-2. **Extraction and validation:** each accepted row is normalized and stored with order metadata. Future rows must always carry the stable generated `orderId`; existing source `ID` remains stored as external data.
-3. **Shipping export / hand-off:** after approval of the provider contract, the system exports only the provider-required columns plus a correlation reference. The preferred reference is the generated internal `orderId`; the external ID is included as a secondary reference where useful.
+2. **Extraction and validation:** each accepted row is normalized and stored with order metadata. The imported source `ID` remains external reference data only; it is not used by shipping matching.
+3. **Shipping export / hand-off:** after approval of the provider contract, the system exports the provider-required columns and a normalized customer phone. The phone is the approved automatic correlation key for shipping updates; the external ID may be included only as a non-matching reference where useful.
 4. **Shipping company:** creates or updates its shipment and returns its own tracking number and status updates.
-5. **Shipping update import:** the user selects an update file and source. It is normalized, deduplicated, validated, and matched before any order is modified.
+5. **Shipping update import:** the user selects an update file and source. It is normalized, deduplicated, validated, and matched by normalized phone before any order is modified.
 6. **Order update:** only unambiguous, newer matched rows write the optional shipping data. The imported source row remains traceable through its fingerprint and sync record.
 7. **Reports, Dashboard, Salary:** operational views read the shipping state. Any financial eligibility rule must be explicitly approved; shipping integration itself must not silently alter salary or settlement values.
 
-## 3. Matching strategy comparison and recommendation
+## 3. Matching strategy comparison and final architecture decision
 
 ### Candidate strategies
 
@@ -54,19 +54,24 @@ flowchart TD
 | **External Order ID only** | Simple, already present in the import file, easy to explain. | It originates outside this system; may be missing, reused, edited, or refer to a different lifecycle. | High when source IDs are not globally stable. | Works as a fallback for current data but must not become the internal primary key. |
 | **Customer name + phone** | Commonly present in operational files; useful for human review. | Names vary; phone values may be blank, shared, reformatted, or reused. | High for automatic writes. | Can be normalized and displayed as evidence; no migration required. |
 | **Composite business key** (`externalId + normalized phone + order date/month`, optionally amount) | Improves confidence for legacy rows where no internal correlation was exchanged. | Source changes or missing components cause false negatives; a poorly chosen composite can still collide. | Medium as a fallback, high if treated as a primary key. | Read-only derivation from existing order fields; no destructive change. |
-| **Tracking number only** | Strong after a shipment is created; provider-native and usually unique. | Not available before shipment creation and may be corrected by the provider. | Low when it resolves to exactly one order. | Optional new field; legacy records simply have no tracking match. |
-| **Generated internal `orderId` exchanged with provider** | Stable system ownership, deterministic, suitable for a full lifecycle and audits. | Requires provider/export support and does not repair historic exports that lack it. | Low for future shipments. | New orders already have it; legacy rows require a durable generated ID on first safe touch, not a destructive migration. |
+| **Tracking number only** | Strong shipment reference after the carrier creates it; provider-native and usually unique. | It is unavailable before the first carrier update and may be corrected by the provider. | Low as a reference, but unsuitable as the initial automatic match. | Optional new field; legacy records simply have no tracking reference. |
+| **Generated internal `orderId` exchanged with provider** | Stable system ownership and useful for future integrations/audits. | Requires provider support and does not repair historic exports that lack it. | Low in systems that adopt it, but it is not the approved strategy for this provider integration. | May remain stored; no migration is required for shipping matching. |
 
-### Recommended policy: layered, deterministic matching
+### Final approved policy: phone-only deterministic matching
 
-Use a deterministic matching service, in this order:
+The approved implementation matches an incoming shipping row to an **open** order by normalized customer phone only. It must:
 
-1. **Internal `orderId`** when it was exported to and returned by the provider.
-2. **Normalized tracking number** when it identifies exactly one order.
-3. **Scoped composite fallback**: external ID plus month/source context; phone/date may only raise or lower confidence, never override a collision.
-4. **Human review only** for name/phone-only evidence or every ambiguous result.
+1. Convert Arabic and English numerals to one representation.
+2. Remove spaces, hyphens, and other presentation punctuation.
+3. Remove the Egyptian `+20` country prefix (and normalize its common equivalent forms) before comparison.
+4. Search open orders only using the normalized phone value.
+5. Update only when exactly one open order matches; two or more matches are a `conflict`, and zero matches are `unmatched`.
 
-The service produces one of `matched`, `unchanged`, `unmatched`, `ambiguous`, `invalid`, or `stale`. Only `matched` changes data. This is the safest design because it provides a durable solution for new orders, protects legacy data, and never converts uncertain customer details into an automatic financial/operational update.
+Neither the official workbook's external Order ID nor an internal `orderId` participates in shipping matching or update selection. Customer name, date, amount, and address can appear as reviewer evidence but must not change the automatic decision.
+
+The tracking number is captured on the matched order at its first valid shipping update and becomes that order's primary shipment reference thereafter. It is retained for display, carrier reconciliation, and audit; it does not replace the approved phone-only automatic matching policy unless a future architecture decision explicitly changes it.
+
+The matching service produces `matched`, `unchanged`, `unmatched`, `conflict`, `invalid`, or `stale`. Only `matched` changes an order.
 
 ## 4. Firestore design
 
@@ -109,13 +114,13 @@ Create an auditable summary collection, not a duplicate order store:
 monthly_reports/{monthId}/shippingSyncs/{syncId}
 ```
 
-Each summary stores: provider/source, file name and file fingerprint, actor, started/completed times, matched/updated/unchanged/unmatched/ambiguous/invalid/stale counts, and a compact row-level issue reference or bounded error list. It must not replicate full order arrays.
+Each summary stores: provider/source, file name and file fingerprint, actor, started/completed times, matched/updated/unchanged/unmatched/conflict/invalid/stale counts, and a compact row-level issue reference or bounded error list. It must not replicate full order arrays.
 
 ### Migration and backward compatibility
 
 - **No destructive migration.** There is no batch rewrite and no removal/renaming of legacy fields.
 - The UI will dual-read any pre-existing flat shipping values and the new `shipping` object. New writes use the nested object and preserve flat legacy values.
-- Legacy items with no generated `orderId` receive a durable ID only through a reviewed, idempotent compatibility path. It must be tested separately and never use the external source ID as a substitute.
+- No `orderId` migration is required for shipping matching. The imported external source ID and any existing internal identifier remain reference data only.
 
 ### Indexes
 
@@ -135,7 +140,7 @@ No new Firestore index is required for the initial design because matching reads
 | Status | Meaning | Allowed next states |
 | --- | --- | --- |
 | `Pending` | Order is eligible for shipping but no confirmed provider shipment exists. | `Created`, `Cancelled`, `Unknown` |
-| `Created` | Provider shipment/tracking number was created. | `Picked Up`, `Cancelled`, `Unknown` |
+| `Created` | Provider shipment/tracking number was created and saved on the uniquely phone-matched order. | `Picked Up`, `Cancelled`, `Unknown` |
 | `Picked Up` | Carrier received the parcel. | `In Transit`, `Returned`, `Cancelled`, `Unknown` |
 | `In Transit` | Parcel is moving through the carrier network. | `Delivered`, `Returned`, `Cancelled`, `Unknown` |
 | `Delivered` | Delivery succeeded; terminal operational state. | No automatic transition; correction requires a reviewed newer provider event. |
@@ -165,22 +170,22 @@ No new Firestore index is required for the initial design because matching reads
 
 | Situation | Required behavior | Order write |
 | --- | --- | --- |
-| No matching order | Mark row `unmatched`, retain it in the sync report, offer no guessed match. | None |
-| More than one possible order | Mark row `ambiguous`, list safe matching evidence for reviewer selection. | None until explicit resolution is approved in the UI. |
+| No open order with the normalized phone | Mark row `unmatched`, retain it in the sync report, offer no guessed match. | None |
+| More than one open order with the normalized phone | Mark row `conflict`, list safe matching evidence for manual review. | None until an explicit manual resolution is approved in the UI. |
 | Missing required shipping data | Mark row `invalid`; accept other valid rows in the file. A missing optional field never clears a stored value. | None for invalid row |
 | Same file imported twice | Detect file fingerprint and row hashes; return `unchanged`/duplicate outcome and do not create duplicate updates or summaries that imply changes. | None |
 | An old update arrives after a new one | Compare normalized provider timestamp to `sourceUpdatedAt`; mark as `stale`. | None |
 | Same timestamp with different values | Mark as `conflict` for review; do not use import order as a tie-breaker. | None |
 | Provider gives an unrecognized status | Preserve raw status in issue details, map canonical state to `Unknown`, and do not regress a recognized state. | Only when safely creating a first shipping state; otherwise none |
-| Tracking number collides | Mark `ambiguous` and require review. | None |
+| Tracking number collides | Mark `conflict` and require review; phone-only selection is never overridden by a tracking collision. | None |
 
 ## 8. Pre-implementation test plan
 
 ### Normal cases
 
-- Internal-order-ID match from an export returned by the provider.
-- Unique tracking-number match.
-- Unique scoped external-ID/composite fallback match for legacy data.
+- Unique open-order match by a normalized Egyptian phone number.
+- Arabic/English digits, `+20`, spaces, and hyphens all normalize to the same phone identity.
+- Tracking number is stored on the uniquely phone-matched order on the first valid update and then updated as shipment reference data.
 - Each valid canonical lifecycle transition and governorate/tracking update.
 - Dashboard, Orders, and report display with no shipping data, partial shipping data, and complete shipping data.
 
@@ -194,7 +199,7 @@ No new Firestore index is required for the initial design because matching reads
 
 ### Conflict and missing-data cases
 
-- No matching order, multiple candidates, tracking collision, source-ID reuse, and customer name/phone collision.
+- No matching phone, multiple open orders with the same phone, tracking collision, source-ID reuse, and customer name collision.
 - Missing tracking number, missing source timestamp, invalid date, blank/invalid status, blank governorate, malformed provider row, and reordered columns.
 - Out-of-order updates, equal-time contradictory updates, terminal-state regression, and unknown provider status.
 
@@ -213,8 +218,8 @@ No new Firestore index is required for the initial design because matching reads
 
 ## 9. Implementation gate and sequence after approval
 
-1. Confirm the provider's real schema, status vocabulary, timestamps, and whether it can round-trip the internal `orderId`.
-2. Approve the field names, canonical lifecycle, matching policy, permissions, and financial non-side-effect rule in this document.
+1. Confirm the provider's real schema, status vocabulary, timestamps, and phone-number column.
+2. Apply the approved phone-only matching policy, field names, canonical lifecycle, permissions, and financial non-side-effect rule in this document.
 3. Implement and unit-test the shared parser, normalizer, status mapper, fingerprinting, and matching service.
 4. Add Firestore-compatible writes, Rules, audit/sync summaries, and emulator tests.
 5. Add preview/review UI and read-only Dashboard/Orders/Reports integration.

@@ -41,6 +41,12 @@ The `ID` column imported from the official order workbook is an identifier issue
 - Expanded `SHIPPING_INTEGRATION_DESIGN.md` before Phase 2 implementation: full order-to-shipment workflow, comparison of matching approaches, the recommended layered matching service, backward-compatible Firestore impact, canonical status lifecycle, downstream module boundaries, conflict handling, and test/rollback coverage.
 - The document retains the explicit approval gate. No Phase 2 source, rule, schema, migration, or production-data change was made.
 
+### Final shipping matching decision
+
+- Replaced the proposed layered matching policy with the approved phone-only strategy: normalize Arabic/English digits, remove `+20`, spaces, and hyphens, then match exactly one open order by phone.
+- The official import `ID` is reference-only and is excluded from every shipping matching/update decision. Tracking number is stored on the uniquely matched order as the primary shipment reference after carrier hand-off.
+- Multiple open orders sharing a normalized phone are recorded as `conflict` for manual review; they are never updated automatically.
+
 ## Version 4 completion
 
 - Added a Configuration Center tab shell while preserving the existing settings form and backward-compatible saves.
