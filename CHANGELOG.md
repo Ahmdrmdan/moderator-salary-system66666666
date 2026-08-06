@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Departments stabilization (awaiting review)
+
+- Fixed the existing Departments serialization gap: `commission`, `useBonusOverride`, `bonusType`, and `salesBonusRules` now round-trip through validation, Firestore writes, and normalization. Older department documents safely retain hourly/package/default values without migration.
+- Kept fixed-salary departments bonus-free, made Commission use the existing sales-tier calculation path, and preserved the selected department salary type in newly calculated report rows. Existing monthly reports are not read, recalculated, or changed by this fix.
+- Bound Department management controls to `departments.write` in the UI and added the same internal guard before every Department write; Firestore Rules remain the authoritative server-side protection.
+- Versioned the Departments and App runtime URLs so deployed browsers cannot combine this change with cached scripts.
+
 ## Unreleased — Shipping Integration implementation
 
 - Versioned the shipping runtime script URLs so a browser with prior Import-stage assets cannot combine the new Orders screen with a stale utility, schema, or permissions bundle.

@@ -68,6 +68,15 @@ const Departments = (() => {
   /** Fallback colour for departments saved without one. */
   const DEFAULT_COLOR = '#3d5afe';
 
+  function normalizeSalesBonusRules(value) {
+    if (!Array.isArray(value)) return [];
+    return value.filter(row => row && typeof row === 'object').map(row => ({
+      from: Utils.toFiniteNumber(row.from) || 0,
+      to: Utils.toFiniteNumber(row.to) || 0,
+      bonus: Utils.toFiniteNumber(row.bonus) || 0
+    }));
+  }
+
   /**
    * Seed data for a brand-new deployment. `id` is the deterministic
    * document id; `order` only drives default display ordering.
@@ -121,12 +130,23 @@ const Departments = (() => {
    */
   function normalize(id, data) {
     const d = data || {};
+    const salaryType = Object.values(SALARY_TYPE).includes(d.salaryType)
+      ? d.salaryType : SALARY_TYPE.HOURLY;
+    const bonusRules = (d.bonusRules && typeof d.bonusRules === 'object') ? { ...d.bonusRules } : null;
+    const salesBonusRules = normalizeSalesBonusRules(d.salesBonusRules);
+    // Legacy departments did not have an explicit toggle. A stored table is
+    // therefore the safe backward-compatible signal that it is intentional.
+    const useBonusOverride = salaryType !== SALARY_TYPE.FIXED &&
+      (d.useBonusOverride === true || !!bonusRules || salesBonusRules.length > 0);
     return {
       id,
       name: d.name || '(بدون اسم)',
       normalizedName: d.normalizedName || Utils.normalizeName(d.name || ''),
-      bonusRules: (d.bonusRules && typeof d.bonusRules === 'object') ? { ...d.bonusRules } : null,
-      salaryType: d.salaryType === SALARY_TYPE.FIXED ? SALARY_TYPE.FIXED : SALARY_TYPE.HOURLY,
+      bonusRules,
+      salaryType,
+      useBonusOverride,
+      bonusType: salaryType === SALARY_TYPE.COMMISSION || d.bonusType === 'sales' ? 'sales' : 'packages',
+      salesBonusRules,
       color: (typeof d.color === 'string' && d.color.trim()) ? d.color.trim() : DEFAULT_COLOR,
       status: d.status === STATUS.ARCHIVED ? STATUS.ARCHIVED : STATUS.ACTIVE,
       order: Utils.toFiniteNumber(d.order) || 0,
@@ -332,7 +352,7 @@ const Departments = (() => {
    * Validates a department form payload.
    * Returns { ok: true, value } or { ok: false, message }.
    */
-  function validate({ id, name, color, bonusRules, salaryType }) {
+  function validate({ id, name, color, bonusRules, salaryType, useBonusOverride, bonusType, salesBonusRules }) {
     const cleanName = Utils.cleanDisplayName(name);
     if (!cleanName) return { ok: false, message: 'اسم القسم مطلوب' };
 
@@ -340,8 +360,12 @@ const Departments = (() => {
     const dup = state.all.find(d => d.normalizedName === normalizedName && d.id !== id);
     if (dup) return { ok: false, message: 'يوجد قسم بنفس الاسم بالفعل' };
 
-    const cleanSalaryType = salaryType === SALARY_TYPE.FIXED ? SALARY_TYPE.FIXED : SALARY_TYPE.HOURLY;
+    const cleanSalaryType = Object.values(SALARY_TYPE).includes(salaryType)
+      ? salaryType : SALARY_TYPE.HOURLY;
     const isFixedType = cleanSalaryType === SALARY_TYPE.FIXED;
+    const cleanUseBonusOverride = !isFixedType && useBonusOverride === true;
+    const cleanBonusType = cleanSalaryType === SALARY_TYPE.COMMISSION || bonusType === 'sales'
+      ? 'sales' : 'packages';
 
     const cleanColor = (typeof color === 'string' && /^#[0-9a-fA-F]{6}$/.test(color.trim()))
       ? color.trim() : DEFAULT_COLOR;
@@ -355,9 +379,12 @@ const Departments = (() => {
         color: cleanColor,
         // A "راتب ثابت" department has no bonus at all, so its rules are
         // always stored as null regardless of what the form sent.
-        bonusRules: isFixedType
-          ? null
-          : ((bonusRules && typeof bonusRules === 'object') ? bonusRules : null)
+        bonusRules: isFixedType || !cleanUseBonusOverride || cleanBonusType === 'sales'
+          ? null : ((bonusRules && typeof bonusRules === 'object') ? { ...bonusRules } : null),
+        useBonusOverride: cleanUseBonusOverride,
+        bonusType: cleanBonusType,
+        salesBonusRules: cleanUseBonusOverride && cleanBonusType === 'sales'
+          ? normalizeSalesBonusRules(salesBonusRules) : []
       }
     };
   }
@@ -372,6 +399,7 @@ const Departments = (() => {
    * ============================================================ */
 
   async function create(payload) {
+    Permissions.require('departments.write');
     const check = validate(payload);
     if (!check.ok) throw new Error(check.message);
 
@@ -399,6 +427,7 @@ const Departments = (() => {
    * their own name snapshot, so only live views follow the new name.
    */
   async function update(id, payload) {
+    Permissions.require('departments.write');
     if (!id) throw new Error('معرّف القسم مفقود');
     const check = validate({ ...payload, id });
     if (!check.ok) throw new Error(check.message);
@@ -418,6 +447,7 @@ const Departments = (() => {
    * every live view, so it is worth a recovery point.
    */
   async function archive(id) {
+    Permissions.require('departments.write');
     if (!id) throw new Error('معرّف القسم مفقود');
 
     const dept = byId(id);
@@ -438,6 +468,7 @@ const Departments = (() => {
   }
 
   async function restore(id) {
+    Permissions.require('departments.write');
     if (!id) throw new Error('معرّف القسم مفقود');
     return DataLayer.update('departments', id, {
       status: STATUS.ACTIVE,

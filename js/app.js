@@ -401,6 +401,10 @@ const App = (() => {
     document.getElementById('departmentSalaryTypeInput').addEventListener('change', (e) => {
       document.getElementById('departmentHourlyFieldsWrap')
         .classList.toggle('hidden', e.target.value === Departments.SALARY_TYPE.FIXED);
+      if (e.target.value === Departments.SALARY_TYPE.COMMISSION) {
+        document.getElementById('departmentBonusType').value = 'sales';
+        renderDepartmentSalesRules();
+      }
     });
 
     // Employees view
@@ -2055,6 +2059,7 @@ const App = (() => {
     const rows = state.showArchivedDepartments
       ? Departments.all()
       : Departments.active();
+    const managementDisabled = Permissions.can('departments.write') ? '' : 'disabled';
 
     if (rows.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${
@@ -2069,12 +2074,15 @@ const App = (() => {
       const isArchived = d.status === Departments.STATUS.ARCHIVED;
       const count = employeeCountByDepartment(d.id);
       const isFixedDept = d.salaryType === Departments.SALARY_TYPE.FIXED;
-      const salaryTypeLabel = isFixedDept
+      let salaryTypeLabel = isFixedDept
         ? '<span class="badge badge-info">راتب ثابت (بدون بونص)</span>'
         : '<span class="badge badge-active">بونص</span>';
+      if (d.salaryType === Departments.SALARY_TYPE.COMMISSION) {
+        salaryTypeLabel = '<span class="badge badge-info">عمولة على المبيعات</span>';
+      }
       const overrides = isFixedDept
         ? '<span class="text-muted-inline">لا يوجد بونص</span>'
-        : (d.bonusRules
+        : (d.useBonusOverride
             ? '<span class="badge badge-info">مخصص</span>'
             : '<span class="text-muted-inline">افتراضي</span>');
 
@@ -2093,10 +2101,10 @@ const App = (() => {
           ? '<span class="badge badge-archived">مؤرشف</span>'
           : '<span class="badge badge-active">نشط</span>'}</td>
         <td class="actions-cell">
-          <button class="btn-icon" data-action="edit" data-id="${d.id}" title="تعديل">✏️</button>
+          <button class="btn-icon" data-action="edit" data-id="${d.id}" title="تعديل" ${managementDisabled}>✏️</button>
           ${isArchived
-            ? `<button class="btn-icon" data-action="restore" data-id="${d.id}" title="استعادة">♻️</button>`
-            : `<button class="btn-icon btn-danger" data-action="archive" data-id="${d.id}" title="أرشفة">📦</button>`}
+            ? `<button class="btn-icon" data-action="restore" data-id="${d.id}" title="استعادة" ${managementDisabled}>♻️</button>`
+            : `<button class="btn-icon btn-danger" data-action="archive" data-id="${d.id}" title="أرشفة" ${managementDisabled}>📦</button>`}
         </td>
       </tr>`;
     }).join('');
@@ -2115,11 +2123,16 @@ const App = (() => {
   function renderSettingsBonusDepartments() {
     const wrap = document.getElementById('settingsBonusDepartments');
     if (!wrap) return;
-    wrap.innerHTML = Departments.active().map(d => `<div class="settings-department-row"><div><strong>${Utils.escapeHtml(d.name)}</strong><span class="badge ${d.bonusRules ? 'badge-active' : 'badge-archived'}">${d.bonusRules ? 'جدول خاص' : 'الجدول الافتراضي'}</span></div><button type="button" class="btn btn-sm" data-settings-dept-bonus="${Utils.escapeHtml(d.id)}">إدارة</button></div>`).join('') || '<div class="empty-cell">لا توجد أقسام نشطة.</div>';
+    const managementDisabled = Permissions.can('departments.write') ? '' : 'disabled';
+    wrap.innerHTML = Departments.active().map(d => `<div class="settings-department-row"><div><strong>${Utils.escapeHtml(d.name)}</strong><span class="badge ${d.useBonusOverride ? 'badge-active' : 'badge-archived'}">${d.useBonusOverride ? 'جدول خاص' : 'الجدول الافتراضي'}</span></div><button type="button" class="btn btn-sm" data-settings-dept-bonus="${Utils.escapeHtml(d.id)}" ${managementDisabled}>إدارة</button></div>`).join('') || '<div class="empty-cell">لا توجد أقسام نشطة.</div>';
     wrap.querySelectorAll('[data-settings-dept-bonus]').forEach(btn => btn.addEventListener('click', () => openDepartmentModal(btn.dataset.settingsDeptBonus)));
   }
 
   function openDepartmentModal(id = null) {
+    if (!Permissions.can('departments.write')) {
+      Toast.show('ليس لديك صلاحية إدارة الأقسام.', 'error');
+      return;
+    }
     const modal = document.getElementById('departmentModal');
     const form = document.getElementById('departmentForm');
     form.reset();
@@ -4321,12 +4334,18 @@ const App = (() => {
         // to resolve or snapshot here.
         if (Departments.isFixed(deptId)) return;
 
-        const rules = bonusRulesForEmployee(emp);
         const dept = Departments.byId(deptId) || {};
+        const salaryType = Departments.salaryTypeOf(deptId);
+        const bonusType = salaryType === Departments.SALARY_TYPE.COMMISSION ? 'sales' : (dept.bonusType || 'packages');
+        const useDepartmentSalesRules = dept.useBonusOverride === true &&
+          Array.isArray(dept.salesBonusRules) && dept.salesBonusRules.length > 0;
+        const rules = bonusRulesForEmployee(emp);
         rulesByEmployee.set(emp.id, {
-          bonusType: dept.salaryType === Departments.SALARY_TYPE.COMMISSION ? 'sales' : (dept.bonusType || 'packages'),
+          bonusType,
           bonusRules: rules,
-          salesBonusRules: Array.isArray(dept.salesBonusRules) ? dept.salesBonusRules : []
+          salesBonusRules: bonusType === 'sales'
+            ? (useDepartmentSalesRules ? dept.salesBonusRules : (state.settings.salesBonusRules || []))
+            : []
         });
 
         // Stamp the department's bonus rules onto the month permanently.
@@ -4416,7 +4435,7 @@ const App = (() => {
           // stores the department's name AS IT IS RIGHT NOW. Renaming the
           // department tomorrow leaves this report showing the old name.
           departmentName: Departments.nameOf(departmentId),
-          salaryType: isFixedDept ? Departments.SALARY_TYPE.FIXED : Departments.SALARY_TYPE.HOURLY,
+          salaryType: Departments.salaryTypeOf(departmentId),
           // Reference-only snapshot of the employee's own "hours/day" field.
           // Never used in any salary math.
           dailyWorkHours: emp.dailyWorkHours,

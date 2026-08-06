@@ -1,5 +1,21 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
+## Departments Stabilization (awaiting user review)
+
+### Root cause and minimal fix
+
+- The Department form already exposed Commission and custom sales-tier controls, but the Departments module discarded those fields and normalized `commission` as `hourly`. The repair preserves these existing fields with safe defaults for pre-existing documents; no migration was run.
+- Fixed departments still clear all bonus configuration. Commission departments now route through the existing sales-tier bonus calculator, using their saved tiers when present and the existing company sales tiers otherwise. New report rows retain `commission`; no historical report document is modified or recalculated.
+- Department Add/Edit/Archive/Restore controls now honor `departments.write`, and the same capability is required inside the Department write methods before the existing DataLayer and Firestore Rules checks.
+
+### Verification completed
+
+- `node tests/departments-contract.test.js` passed: legacy defaults, legacy custom tables, Commission create/update payloads, fixed-department invariants, archive/restore, internal write denial, read-only permission behavior, and the future-report calculation contract.
+- Regression checks passed: `node tests/import-contract.test.js`, `node tests/shipping-contract.test.js`, and syntax checks for `js/departments.js`, `js/app.js`, and `js/permissions.js`.
+- Firebase Hosting UAT on `https://ahmed123-95a0e.web.app` created and then updated the temporary `UAT Commission 20260807 Updated` department. Reopening it confirmed `commission`, `useBonusOverride: true`, `bonusType: sales`, and tier values `100 / 999 / 25` persisted through Firestore.
+- The same temporary department was archived and restored successfully, with no browser-console errors. Existing report state was not recalculated or changed during UAT.
+- The in-app browser could not reach the lower User Management navigation control in this viewport. The deployed Department UI and internal permission behavior are covered by the read-only permission contract; Firestore Rules remain unchanged and continue requiring `departments.write` for create/update.
+
 ## Milestone 1 — Import Improvements (completed and production-verified)
 
 ### What changed

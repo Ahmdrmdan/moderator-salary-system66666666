@@ -25,14 +25,16 @@ function loadUtils(rows = []) {
     Array,
     Object,
     RegExp,
-    localStorage: { getItem: () => null, setItem: () => {} },
-    XLSX: {
-      read: () => ({ SheetNames: ['Orders'], Sheets: { Orders: {} } }),
-      utils: { sheet_to_json: () => rows }
-    }
+    localStorage: { getItem: () => null, setItem: () => {} }
   };
   vm.createContext(sandbox);
   vm.runInContext(`${utilsSource}\nthis.__Utils = Utils;`, sandbox, { filename: 'utils.js' });
+  // utils.js now bundles SheetJS for browser resilience. Keep this parser
+  // contract at its public SheetJS seam by replacing that runtime after load.
+  sandbox.XLSX = {
+    read: () => ({ SheetNames: ['Orders'], Sheets: { Orders: {} } }),
+    utils: { sheet_to_json: () => rows }
+  };
   return sandbox.__Utils;
 }
 
@@ -118,6 +120,15 @@ console.log('Import contract tests passed');
   assert.strictEqual(Utils.normalizeShippingPhone('0020١٠٥٠٢٥٠٧٧٧'), '1050250777');
   assert.strictEqual(Utils.normalizeShippingPhone('٠١٠٥٠٢٥٠٧٧٧'), '1050250777');
   assert.strictEqual(Utils.normalizeShippingPhone(''), '');
+}
+
+{
+  const Utils = loadUtils();
+  assert.strictEqual(
+    Utils.calculateBonus({ saleValue: 500, config: { bonusType: 'sales', salesBonusRules: [{ from: 100, to: 999, bonus: 25 }] } }),
+    25,
+    'sales-tier bonus remains available to future commission reports'
+  );
 }
 
 console.log('Shipping phone normalization contract tests passed');
