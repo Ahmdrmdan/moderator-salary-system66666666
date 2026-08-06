@@ -24,6 +24,18 @@
 - Firebase deploy completed for project `ahmed123-95a0e`; the production bundles contain the new import code.
 - Production Authentication, Firestore-backed dashboard load, and browser console smoke test passed with no console errors.
 
+### Formal production UAT closure — 2026-08-07
+
+- Ran the supplied official workbook through the deployed Import Center on Firebase project `ahmed123-95a0e` as the production Super Admin.
+- Import Summary: 237 valid orders, 0 skipped orders, and 1 visible warning. The warning is the expected missing moderator on source `ID 81764`; it was imported as `غير محدد` and was not assigned to a real employee.
+- Firestore verification: `monthly_reports/2026-07/orderBatches` contains exactly one production import batch with `count: 237`, `warningCount: 1`, and `errorCount: 0`.
+- Re-imported the identical workbook through validation and approval. The deployed application returned `تم استيراد هذا الملف مسبقًا`; the Firestore batch count remained one, so no duplicate data or batch was written.
+- No runtime or browser console errors were recorded during this UAT. The browser retained only the pre-existing Chart.js-unavailable warnings, which are outside the import flow and do not represent an error.
+
+### Architecture note for the shipping milestone
+
+The `ID` column imported from the official order workbook is an identifier issued by the source system. It is retained as external-source data and must not be assumed to be this system's primary identifier for the full order lifecycle. Shipping matching will be reviewed as part of the approved shipping-integration design before implementation; no schema migration or matching-policy change is included in Milestone 1.
+
 ## Version 4 completion
 
 - Added a Configuration Center tab shell while preserving the existing settings form and backward-compatible saves.

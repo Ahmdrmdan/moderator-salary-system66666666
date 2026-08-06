@@ -1,5 +1,12 @@
 # Changelog
 
+## 7.0.11-import-production-uat
+
+- Closed the Import Improvements milestone after a production UAT of the supplied official workbook against Firebase project `ahmed123-95a0e`.
+- Confirmed that the workbook imports 237 orders with zero rejected rows and one visible missing-moderator warning, and that the persisted Firestore batch records the same counts.
+- Confirmed idempotency in production: submitting the identical workbook again is refused with the existing-file message and creates no additional order batch.
+- Added the shipping-integration design proposal and recorded the architecture constraint that the imported external Order ID is a source identifier, not automatically the internal order lifecycle identity.
+
 ## 7.0.11-import-contract
 
 - Made the primary Excel importer and Data Sources recognize the ten-column official operating workbook, including its established `Reciver` spelling, `Order_Amt`, `Order_Content`, `ID`, and `اسم المودريتور` headers.
