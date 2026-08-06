@@ -610,11 +610,9 @@ const App = (() => {
    * Employees listener. The collection is physically still `moderators`
    * (see COLLECTIONS) so every existing document id keeps working.
    *
-   * The first snapshot also triggers the one-time department migration:
-   * any employee without a departmentId is assigned to Moderators. The
-   * migration writes back into this same collection, which re-fires this
-   * listener - `Migration` latches internally so that second pass is a
-   * cheap no-op rather than an infinite loop.
+   * Legacy documents are normalized in memory with safe defaults. Reading an
+   * old employee never writes back to Firestore, so opening Employees cannot
+   * alter production master data or historical reports.
    */
   function listenEmployees() {
     state.unsubEmployees = db.collection(COLLECTIONS.EMPLOYEES)
@@ -629,14 +627,13 @@ const App = (() => {
         renderTransactionSelectors();
         renderInactiveTable();
 
-        if (Permissions.can('employees.write')) await runEmployeeMigration();
       }, (err) => Toast.show('خطأ في تحميل الموظفين: ' + err.message, 'error'));
   }
 
   /**
    * Coerces an employee document into a complete shape. Documents written
-   * before the departments feature have no departmentId/status/hireDate -
-   * they read as null here and the migration fills them in permanently.
+   * before the departments feature have no departmentId/status/hireDate.
+   * They receive safe in-memory defaults only; no migration is required.
    */
   function normalizeEmployee(id, data) {
     const d = data || {};
@@ -644,7 +641,7 @@ const App = (() => {
       id,
       name: d.name || '',
       normalizedName: d.normalizedName || Utils.normalizeName(d.name || ''),
-      departmentId: d.departmentId || null,
+      departmentId: d.departmentId || Departments.MODERATORS_ID,
       status: d.status === 'inactive' ? 'inactive' : 'active',
       hireDate: d.hireDate || null,
       notes: d.notes || '',
@@ -661,24 +658,10 @@ const App = (() => {
     };
   }
 
-  async function runEmployeeMigration() {
-    try {
-      const result = await Migration.migrateEmployeesToDepartments(
-        state.employees, Departments.MODERATORS_ID
-      );
-      if (result.migrated > 0) {
-        Toast.show(`تم نقل ${result.migrated} موظف تلقائيًا إلى قسم "Moderators"`, 'success');
-      }
-    } catch (err) {
-      console.error('Employee migration failed:', err);
-      Toast.show('تعذر ترحيل الموظفين للأقسام: ' + err.message, 'error');
-    }
-  }
-
   /**
    * The department an employee belongs to for CALCULATION purposes.
    * Falls back to Moderators so an employee can never be silently dropped
-   * from a report while the migration is still in flight.
+   * from a future report when reading a legacy document.
    */
   function employeeDepartmentId(emp) {
     return (emp && emp.departmentId) || Departments.MODERATORS_ID;
@@ -2314,6 +2297,20 @@ const App = (() => {
     </span>`;
   }
 
+  /**
+   * Keeps a direct or stale UI event from becoming an uncaught permission
+   * exception. Firestore Rules and DataLayer remain the write authorities.
+   */
+  function requireEmployeePermission(permission) {
+    try {
+      Permissions.require(permission);
+      return true;
+    } catch (err) {
+      Toast.show(err.message, 'error');
+      return false;
+    }
+  }
+
   function renderEmployeesTable() {
     const tbody = document.getElementById('moderatorsTableBody');
     if (!tbody) return;
@@ -2321,6 +2318,8 @@ const App = (() => {
     const term = Utils.normalizeName(state.employeeSearchTerm);
     const deptFilterEl = document.getElementById('employeeDeptFilter');
     const deptFilter = deptFilterEl ? deptFilterEl.value : 'all';
+    const canWrite = Permissions.can('employees.write');
+    const canDelete = Permissions.can('employees.delete');
 
     const rows = state.employees.filter(m => {
       if (term && !(m.normalizedName || '').includes(term)) return false;
@@ -2339,8 +2338,14 @@ const App = (() => {
 
     tbody.innerHTML = rows.map(m => {
       const deptId = employeeDepartmentId(m);
-      const fixedSalaryCell = `<input type="number" class="fixed-salary-inline-input" min="0" step="0.01"
-             data-id="${m.id}" value="${m.fixedSalaryAmount || ''}" placeholder="0">`;
+      const fixedSalaryCell = canWrite
+        ? `<input type="number" class="fixed-salary-inline-input" min="0" step="0.01"
+             data-id="${m.id}" value="${m.fixedSalaryAmount || ''}" placeholder="0">`
+        : Utils.formatCurrency(m.fixedSalaryAmount || 0);
+      const actions = [
+        canWrite ? `<button class="btn-icon" data-action="edit" data-id="${m.id}" title="تعديل">✏️</button>` : '',
+        canDelete ? `<button class="btn-icon btn-danger" data-action="delete" data-id="${m.id}" title="حذف">🗑️</button>` : ''
+      ].join('') || '—';
 
       return `
       <tr>
@@ -2354,10 +2359,7 @@ const App = (() => {
         <td>${m.hireDate ? Utils.escapeHtml(m.hireDate) : '—'}</td>
         <td class="cell-notes" title="${Utils.escapeHtml(m.notes || '')}">${
           m.notes ? Utils.escapeHtml(m.notes) : '—'}</td>
-        <td class="actions-cell">
-          <button class="btn-icon" data-action="edit" data-id="${m.id}" title="تعديل">✏️</button>
-          <button class="btn-icon btn-danger" data-action="delete" data-id="${m.id}" title="حذف">🗑️</button>
-        </td>
+        <td class="actions-cell">${actions}</td>
       </tr>`;
     }).join('');
 
@@ -2382,6 +2384,10 @@ const App = (() => {
     const id = input.dataset.id;
     const emp = state.employees.find(m => m.id === id);
     if (!emp) return;
+    if (!requireEmployeePermission('employees.write')) {
+      input.value = emp.fixedSalaryAmount || '';
+      return;
+    }
 
     const n = Utils.toFiniteNumber(input.value);
     if (n === null || n < 0) {
@@ -2423,6 +2429,7 @@ const App = (() => {
   }
 
   function openEmployeeModal(id = null) {
+    if (!requireEmployeePermission('employees.write')) return;
     const modal = document.getElementById('moderatorModal');
     const form = document.getElementById('moderatorForm');
     form.reset();
@@ -2473,8 +2480,8 @@ const App = (() => {
   }
 
   async function onSaveEmployee(e) {
-    Permissions.require(document.getElementById('moderatorIdInput').value ? 'employees.write' : 'employees.write');
     e.preventDefault();
+    if (!requireEmployeePermission('employees.write')) return;
     const id = document.getElementById('moderatorIdInput').value;
     const rawName = document.getElementById('moderatorNameInput').value;
     const name = Utils.cleanDisplayName(rawName);
@@ -2560,6 +2567,7 @@ const App = (() => {
    * report row, advance and settlement still pointing at them.
    */
   function onDeleteEmployee(id) {
+    if (!requireEmployeePermission('employees.delete')) return;
     const emp = state.employees.find(m => m.id === id);
     if (!emp) return;
     Confirm.show(
@@ -3430,6 +3438,7 @@ const App = (() => {
     const term = Utils.normalizeName(state.inactiveSearchTerm);
     const deptFilterEl = document.getElementById('inactiveDeptFilter');
     const deptFilter = deptFilterEl ? deptFilterEl.value : 'all';
+    const canWrite = Permissions.can('employees.write');
 
     const rows = state.employees.filter(emp => {
       if (emp.status !== 'inactive') return false;
@@ -3474,8 +3483,8 @@ const App = (() => {
             ? `<button class="btn-icon" data-action="view-settlement"
                        data-id="${Utils.escapeHtml(settlement.id)}" title="عرض التسوية">👁️</button>`
             : ''}
-          <button class="btn-icon" data-action="reactivate" data-id="${emp.id}"
-                  title="إعادة التفعيل">♻️</button>
+          ${canWrite ? `<button class="btn-icon" data-action="reactivate" data-id="${emp.id}"
+                  title="إعادة التفعيل">♻️</button>` : ''}
         </td>
       </tr>`;
     }).join('');
@@ -3489,6 +3498,7 @@ const App = (() => {
   }
 
   function onReactivateEmployee(employeeId) {
+    if (!requireEmployeePermission('employees.write')) return;
     const emp = state.employees.find(e => e.id === employeeId);
     if (!emp) return;
 

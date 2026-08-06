@@ -234,7 +234,7 @@
       <div class="panel">
         <div class="panel-header">
           <h2>إدارة الموظفين</h2>
-          <button class="btn btn-accent" id="addModeratorBtn">➕ إضافة موظف</button>
+          <button class="btn btn-accent" id="addModeratorBtn" data-permission="employees.write">➕ إضافة موظف</button>
         </div>
         <div class="toolbar">
           <input type="text" class="search-input" id="moderatorSearch" placeholder="🔍 بحث عن موظف...">
@@ -1442,7 +1442,7 @@ Haba&#9;7&#9;750"></textarea>
 <script src="js/smart-approval.js"></script>
 <script src="js/user-management.js"></script>
 <script src="js/ui-icons.js"></script>
-<script src="js/app.js?v=7.0.12-departments-stabilization"></script>
+<script src="js/app.js?v=7.0.13-employees-stabilization"></script>
 <script src="js/data-sources.js?v=7.0.11-import"></script>
 <script>
   Auth.guardPage((user, profile) => {
