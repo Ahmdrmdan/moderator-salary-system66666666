@@ -1,5 +1,31 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
+## Milestone 1 — Import Improvements (completed locally; production verification pending deploy)
+
+### What changed
+
+- Canonical import mapping now supports the official ten-column workbook and remains compatible with the historical name/packages/price layout.
+- Import parsing keeps all available order metadata, cleans common number formats, detects repeated external IDs within a workbook, and skips only rows that cannot form a valid order.
+- Missing moderator names use the explicit `غير محدد` placeholder with an import warning; this imports the operational order without assigning it to an actual employee.
+- Data Sources now uses the same official-header aliases as the direct Excel importer.
+
+### Files changed
+
+- `js/utils.js`
+- `js/app.js`
+- `js/data-sources.js`
+- `tests/import-contract.test.js`
+
+### Verification completed
+
+- `node tests/import-contract.test.js` passed: official mapping, legacy mapping, Arabic digits/currency, malformed required values, duplicate IDs, and missing-moderator fallback.
+- `node --check` passed for every changed runtime module.
+- The supplied workbook was structurally checked: exact ten headers, 237 rows, no duplicate IDs. Its one missing moderator value (`ID 81764`) is covered by the placeholder-warning path.
+
+### Next before closing the milestone
+
+- Commit the tested implementation, deploy to Firebase Hosting, and re-run production parser/UI smoke checks without writing payroll data.
+
 ## Version 4 completion
 
 - Added a Configuration Center tab shell while preserving the existing settings form and backward-compatible saves.

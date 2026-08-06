@@ -9,6 +9,17 @@ const DataSources = (() => {
   const $ = id => document.getElementById(id);
   const escape = value => Utils.escapeHtml(String(value ?? '—'));
   const aliases = { orderDate:['التاريخ','date','orderdate'], externalOrderNumber:['رقمالطلب','ordernumber','orderid'], customerName:['اسمالعميل','customername','customer'], customerPhone:['رقمالهاتف','phone','mobile'], notes:['ملاحظات','notes'], fullAddress:['العنوان','address'], productName:['اسمالمنتج','productname','product'], packages:['عددالعبوات','العبوات','packages','qty','quantity'], price:['السعر','price','amount'], name:['اسمالموظف','الموظف','employee','employeename','moderator'] };
+  // Keep Data Sources aligned with the primary importer and the official
+  // workbook, including its established "Reciver" spelling.
+  Object.assign(aliases, {
+    externalOrderNumber: [...aliases.externalOrderNumber, 'id'],
+    customerName: [...aliases.customerName, 'recivername', 'receivername', 'recievername'],
+    customerPhone: [...aliases.customerPhone, 'reciverphone', 'receiverphone', 'recieverphone'],
+    notes: [...aliases.notes, 'recivernote', 'receivernote', 'recievernote'],
+    productName: [...aliases.productName, 'ordercontent'],
+    price: [...aliases.price, 'orderamt', 'orderamount'],
+    name: [...aliases.name, '\u0627\u0633\u0645\u0627\u0644\u0645\u0648\u062f\u0631\u064a\u062a\u0648\u0631']
+  });
   const norm = value => Utils.normalizeName(String(value || '')).replace(/[^a-z0-9\u0600-\u06FF]/g, '');
   const departments = () => (typeof Departments !== 'undefined' ? Departments.all() : []).filter(d => d.status !== 'archived');
   const sourceById = id => sources.find(source => source.id === id);

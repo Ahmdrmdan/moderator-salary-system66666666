@@ -1,5 +1,14 @@
 # Changelog
 
+## 7.0.11-import-contract
+
+- Made the primary Excel importer and Data Sources recognize the ten-column official operating workbook, including its established `Reciver` spelling, `Order_Amt`, `Order_Content`, `ID`, and `اسم المودريتور` headers.
+- Preserved all legacy three-column imports while carrying date, external order number, customer, phone, notes, address, and product fields into the existing order-batch schema.
+- Added tolerant Arabic-digit/currency parsing, Excel-date normalization, in-file duplicate `ID` detection, row-level error reporting, and non-blocking import of valid rows.
+- A row with a missing moderator is now recorded as a visible `غير محدد` placeholder and a warning instead of being silently lost or attributed to a real employee.
+- Replaced the incomplete import fingerprint with a backward-compatible v2 identity that includes official-order data and still detects historical batch imports through the legacy fingerprint.
+- Added parser contract tests for the official format, legacy format, Arabic numeric values, invalid rows, duplicate IDs, and missing moderators.
+
 ## 7.0.10-uat-dashboard
 
 - UAT Dashboard: stopped unauthorized employee, transaction, department, and settings reads during application startup for limited roles.

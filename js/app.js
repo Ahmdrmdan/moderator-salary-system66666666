@@ -3642,11 +3642,14 @@ const App = (() => {
           const savedMapping = Utils.loadLastImportColumnMapping();
           const usedSavedMapping = savedMapping && Utils.importHeadersMatch(analysis.headers, savedMapping.headers);
           if (usedSavedMapping) {
-            analysis.mapping = { ...savedMapping.mapping };
-            analysis.confidence = { name: 1, packages: 1, price: 1 };
+            // Older saved mappings contain only the former three required
+            // fields. Retain the new auto-detected official-file fields.
+            analysis.mapping = { ...analysis.mapping, ...savedMapping.mapping };
+            analysis.confidence = { ...analysis.confidence, name: 1, packages: 1, price: 1 };
             const remapped = Utils.applyManualMapping(analysis.rawDataRows, analysis.mapping, analysis.lineNumberOffset);
             analysis.orders = remapped.orders;
             analysis.errors = remapped.errors;
+            analysis.warnings = remapped.warnings || [];
           }
 
           excelImportPreview = {
@@ -3658,6 +3661,7 @@ const App = (() => {
             confidence: { ...analysis.confidence },
             orders: analysis.orders,
             errors: analysis.errors,
+            warnings: analysis.warnings || [],
             usedSavedMapping
           };
           Loading.setProgress(100);
@@ -3698,9 +3702,12 @@ const App = (() => {
   }
   function renderImportWizard() {
     const st = excelImportPreview; if (!st) return;
-    document.getElementById('importWizardPreview').innerHTML = `<div class="close-summary"><strong>معاينة الملف: ${Utils.escapeHtml(st.fileName)}</strong><p>إجمالي الصفوف: ${Utils.formatNumber(st.orders.length + st.errors.length)} · الطلبات الصالحة: ${Utils.formatNumber(st.orders.length)} · الأخطاء: ${Utils.formatNumber(st.errors.length)}</p><ol>${st.orders.slice(0,5).map(o => `<li>${Utils.escapeHtml(o.name)} — ${Utils.formatNumber(o.packages)} عبوة — ${Utils.formatCurrency(o.price)}</li>`).join('')}</ol></div>`;
-    document.getElementById('importWizardValidation').innerHTML = st.errors.length ? `<div class="error-box"><strong>تعذر الاعتماد: ${st.errors.length} خطأ.</strong><ul>${st.errors.slice(0,20).map(formatImportError).map(x=>`<li>${x}</li>`).join('')}</ul></div>` : '<div class="hint-box">نجح التحقق: جميع الصفوف صالحة وجاهزة للاعتماد.</div>';
-    document.getElementById('importWizardToApprove').disabled = st.errors.length > 0;
+    const warnings = st.warnings || [];
+    document.getElementById('importWizardPreview').innerHTML = `<div class="close-summary"><strong>معاينة الملف: ${Utils.escapeHtml(st.fileName)}</strong><p>إجمالي الصفوف: ${Utils.formatNumber(st.orders.length + st.errors.length)} · الطلبات الصالحة: ${Utils.formatNumber(st.orders.length)} · الصفوف المتجاهلة: ${Utils.formatNumber(st.errors.length)} · التحذيرات: ${Utils.formatNumber(warnings.length)}</p><ol>${st.orders.slice(0,5).map(o => `<li>${Utils.escapeHtml(o.name)} — ${Utils.formatNumber(o.packages)} عبوة — ${Utils.formatCurrency(o.price)}</li>`).join('')}</ol></div>`;
+    document.getElementById('importWizardValidation').innerHTML = `${st.errors.length ? `<div class="error-box"><strong>سيتم تجاهل ${st.errors.length} صف غير صالح.</strong><ul>${st.errors.slice(0,20).map(formatImportError).map(x=>`<li>${x}</li>`).join('')}</ul></div>` : '<div class="hint-box">نجح التحقق من الصفوف المطلوبة.</div>'}${warnings.length ? `<div class="hint-box"><strong>${warnings.length} تحذير:</strong><ul>${warnings.slice(0,20).map(formatImportError).map(x=>`<li>${x}</li>`).join('')}</ul></div>` : ''}`;
+    // Invalid rows are reported and skipped. Valid rows must remain
+    // importable instead of one malformed row blocking the whole workbook.
+    document.getElementById('importWizardToApprove').disabled = st.orders.length === 0;
   }
 
   function closeImportPreviewModal() {
@@ -3826,7 +3833,7 @@ const App = (() => {
       newBox.innerHTML = '';
     }
 
-    document.getElementById('confirmImportPreviewBtn').disabled = st.orders.length === 0 || st.errors.length > 0;
+    document.getElementById('confirmImportPreviewBtn').disabled = st.orders.length === 0;
   }
 
   async function onConfirmImportPreview() {
@@ -3836,7 +3843,7 @@ const App = (() => {
     const orders = st.orders;
     const errors = st.errors;
     closeImportPreviewModal();
-    const imported = await processImportedOrders(orders, errors);
+    const imported = await processImportedOrders(orders, errors, { importWarnings: st.warnings || [] });
     if (imported) {
       Utils.saveLastImportColumnMapping(st.headers, st.mapping);
       document.getElementById('importWizardSuccess').textContent = `تم استيراد ${Utils.formatNumber(orders.length)} طلب بنجاح.`;
@@ -3863,27 +3870,45 @@ const App = (() => {
     return `${row}${column}: ${Utils.escapeHtml(error.message)}`;
   }
 
-  async function orderImportId(rows) {
-    const canonicalRows = rows.map(row => JSON.stringify([
+  async function importFingerprint(rows, legacy = false) {
+    const canonicalRows = rows.map(row => JSON.stringify(legacy ? [
+      Utils.normalizeName(row.name || row.moderatorName || ''),
+      Number(row.packages),
+      Number(row.price)
+    ] : [
+      String(row.externalOrderNumber || '').trim(),
+      Utils.normalizeName(row.customerName || ''),
+      String(row.customerPhone || '').replace(/\D/g, ''),
+      String(row.orderDate || '').trim(),
+      Utils.normalizeName(row.productName || ''),
       Utils.normalizeName(row.name || row.moderatorName || ''),
       Number(row.packages),
       Number(row.price)
     ])).sort().join('\n');
     const bytes = new TextEncoder().encode(canonicalRows);
     const digest = await crypto.subtle.digest('SHA-256', bytes);
-    return 'sha256:' + Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+    return (legacy ? 'sha256:' : 'sha256:v2:') + Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  async function importAlreadyExists(batchesRef, importId) {
+  async function orderImportId(rows) {
+    return importFingerprint(rows, false);
+  }
+
+  async function legacyOrderImportId(rows) {
+    return importFingerprint(rows, true);
+  }
+
+  async function importAlreadyExists(batchesRef, importId, rows) {
     const knownImport = await batchesRef.where('importId', '==', importId).limit(1).get();
     if (!knownImport.empty) return true;
 
     // Imports written before importId was introduced are compared by their
     // stored order content so a legacy batch cannot be duplicated once.
+    const legacyImportId = await legacyOrderImportId(rows);
     const legacyBatches = await batchesRef.get();
     for (const batch of legacyBatches.docs) {
       const items = batch.data().items;
-      if (Array.isArray(items) && await orderImportId(items) === importId) return true;
+      if (Array.isArray(items) && await legacyOrderImportId(items) === legacyImportId) return true;
     }
     return false;
   }
@@ -3940,6 +3965,7 @@ const App = (() => {
     }
 
     let sourceDuplicates = Number(options.skippedSimilar || 0);
+    const importWarnings = Array.isArray(options.importWarnings) ? options.importWarnings : [];
 
     Loading.show('جاري معالجة الطلبات...');
     Loading.setProgress(0);
@@ -3986,7 +4012,7 @@ const App = (() => {
       const batchesRef = db.collection(COLLECTIONS.MONTHLY_REPORTS)
         .doc(state.currentMonthId)
         .collection(MONTH_SUBCOLLECTIONS.ORDER_BATCHES);
-      if (!options.sourceId && await importAlreadyExists(batchesRef, importId)) {
+      if (!options.sourceId && await importAlreadyExists(batchesRef, importId, orders)) {
         Toast.show('تم استيراد هذا الملف مسبقًا', 'error');
         return false;
       }
@@ -4085,6 +4111,7 @@ const App = (() => {
           importId,
           fileName: excelImportPreview?.fileName || 'استيراد',
           errorCount: Array.isArray(errors) ? errors.length : 0,
+          warningCount: importWarnings.length,
           importDepartmentId,
           importDepartmentName: Departments.nameOf(importDepartmentId),
           items: chunkItems,
@@ -4135,6 +4162,12 @@ const App = (() => {
           monthLabel: currentMonthLabel(),
           orderCount: finalOrders.length,
           skippedLines: (errors || []).length,
+          warningCount: importWarnings.length,
+          warnings: importWarnings.slice(0, 50).map(warning => ({
+            lineNumber: warning.lineNumber,
+            code: warning.code,
+            message: warning.message
+          })),
           newEmployeeCount: newEmployees.length,
           newEmployeeNames: newEmployees.slice(0, 50).map(e => e.name),
           newEmployeeNamesTruncated: newEmployees.length > 50,
@@ -4150,6 +4183,9 @@ const App = (() => {
       let successMsg = `تم استيراد ${finalOrders.length} طلب بنجاح`;
       if (skippedCount > 0) {
         successMsg += ` — تم تجاهل ${skippedCount} صف به مشاكل (التفاصيل تحت مربع الاستيراد)`;
+      }
+      if (importWarnings.length > 0) {
+        successMsg += ` — تم تسجيل ${importWarnings.length} تحذير للمراجعة`;
       }
       if (newEmployees.length) {
         successMsg += ` — تمت إضافة ${newEmployees.length} موظف جديد تلقائيًا في قسم "${Departments.nameOf(importDepartmentId)}"`;

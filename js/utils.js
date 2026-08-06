@@ -523,6 +523,45 @@ const Utils = (() => {
   };
 
   const IMPORT_MAPPING_CONFIDENCE_THRESHOLD = 0.55;
+  const IMPORT_REQUIRED_FIELDS = ['name', 'packages', 'price'];
+
+  // Exact aliases emitted by the official operating workbook.  The source
+  // uses the historical "Reciver" spelling, so it must remain supported.
+  Object.assign(IMPORT_COLUMN_ALIASES, {
+    name: [...IMPORT_COLUMN_ALIASES.name, '\u0627\u0633\u0645\u0627\u0644\u0645\u0648\u062f\u0631\u064a\u062a\u0648\u0631'],
+    price: [...IMPORT_COLUMN_ALIASES.price, 'orderamt', 'orderamount', 'amount'],
+    externalOrderNumber: [...IMPORT_COLUMN_ALIASES.externalOrderNumber, 'id'],
+    customerName: [...IMPORT_COLUMN_ALIASES.customerName, 'recivername', 'receivername', 'recievername'],
+    customerPhone: [...IMPORT_COLUMN_ALIASES.customerPhone, 'reciverphone', 'receiverphone', 'recieverphone'],
+    notes: [...IMPORT_COLUMN_ALIASES.notes, 'recivernote', 'receivernote', 'recievernote'],
+    productName: [...IMPORT_COLUMN_ALIASES.productName, 'ordercontent']
+  });
+
+  function normalizeArabicDigits(value) {
+    return String(value ?? '')
+      .replace(/[\u0660-\u0669]/g, digit => String('\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669'.indexOf(digit)))
+      .replace(/[\u06F0-\u06F9]/g, digit => String('\u06F0\u06F1\u06F2\u06F3\u06F4\u06F5\u06F6\u06F7\u06F8\u06F9'.indexOf(digit)))
+      .replace(/[\u066C\u060C]/g, ',');
+  }
+
+  function parseImportNumber(value, { integer = false } = {}) {
+    if (typeof value === 'number') return Number.isFinite(value) && (!integer || Number.isInteger(value)) ? value : NaN;
+    const normalized = normalizeArabicDigits(value)
+      .replace(/[^0-9,.-]/g, '')
+      .replace(/,(?=\d{3}(?:,|$))/g, '')
+      .replace(/,/g, '.');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && (!integer || Number.isInteger(parsed)) ? parsed : NaN;
+  }
+
+  function formatImportedDate(value) {
+    if (value === null || value === undefined || value === '') return '';
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+    if (typeof value === 'number' && Number.isFinite(value) && value > 20000 && value < 100000) {
+      return new Date(Date.UTC(1899, 11, 30) + value * 86400000).toISOString().slice(0, 10);
+    }
+    return cleanDisplayName(value);
+  }
 
   /**
    * Normalizes a header cell for comparison against IMPORT_COLUMN_ALIASES:
@@ -607,6 +646,7 @@ const Utils = (() => {
   function buildOrdersFromMappedRows(dataRows, mapping, lineNumberOffset) {
     const orders = [];
     const errors = [];
+    const warnings = [];
 
     (dataRows || []).forEach((row, i) => {
       const lineNumber = lineNumberOffset + i;
@@ -614,15 +654,23 @@ const Utils = (() => {
       const isRowEmpty = !row || row.every(cell => String(cell).trim() === '');
       if (isRowEmpty) return; // skip silently, same as before
 
-      const name = cleanDisplayName(row[mapping.name]);
+      let name = cleanDisplayName(row[mapping.name]);
       const packagesRaw = row[mapping.packages];
       const priceRaw = row[mapping.price];
-      const packagesNum = Number(packagesRaw);
-      const priceNum = Number(priceRaw);
+      const packagesNum = parseImportNumber(packagesRaw, { integer: true });
+      const priceNum = parseImportNumber(priceRaw);
 
       if (!name) {
-        errors.push({ lineNumber, column: 'اسم المشرف', message: 'القيمة مفقودة', raw: JSON.stringify(row) });
-        return;
+        // Preserve a complete operational order without assigning it to a
+        // real employee. The placeholder remains visible in all reports.
+        name = 'غير محدد';
+        warnings.push({
+          lineNumber,
+          column: 'اسم المودريتور',
+          code: 'missing_moderator_assigned_placeholder',
+          message: 'اسم المودريتور مفقود؛ تم إسناد الطلب إلى غير محدد',
+          raw: JSON.stringify(row)
+        });
       }
       if (!Number.isFinite(packagesNum) || packagesNum <= 0 || !Number.isInteger(packagesNum)) {
         errors.push({ lineNumber, column: 'عدد العبوات', message: `قيمة غير صحيحة: "${packagesRaw}"`, raw: JSON.stringify(row) });
@@ -637,7 +685,8 @@ const Utils = (() => {
         ? '' : cleanDisplayName(row[mapping[field]]);
       orders.push({
         name, packages: packagesNum, price: priceNum, lineNumber,
-        orderDate: optional('orderDate'), externalOrderNumber: optional('externalOrderNumber'),
+        orderDate: mapping.orderDate === null || mapping.orderDate === undefined ? '' : formatImportedDate(row[mapping.orderDate]),
+        externalOrderNumber: optional('externalOrderNumber'),
         customerName: optional('customerName'), customerPhone: optional('customerPhone'),
         notes: optional('notes'), fullAddress: optional('fullAddress'), productName: optional('productName'),
         waybillNumber: optional('waybillNumber'), governorate: optional('governorate'),
@@ -645,7 +694,29 @@ const Utils = (() => {
       });
     });
 
-    return { orders, errors };
+    // External order IDs are stable identities in the official workbook.
+    // Keep the first row and surface any repeat in the existing error report;
+    // rows without an ID stay supported for legacy imports.
+    const seenExternalIds = new Map();
+    const uniqueOrders = [];
+    for (const order of orders) {
+      const key = normalizeHeaderText(order.externalOrderNumber);
+      if (!key) { uniqueOrders.push(order); continue; }
+      if (seenExternalIds.has(key)) {
+        errors.push({
+          lineNumber: order.lineNumber,
+          column: 'ID',
+          code: 'duplicate_external_id',
+          message: `Duplicate order ID; first seen on row ${seenExternalIds.get(key)}`,
+          raw: JSON.stringify(order)
+        });
+        continue;
+      }
+      seenExternalIds.set(key, order.lineNumber);
+      uniqueOrders.push(order);
+    }
+
+    return { orders: uniqueOrders, errors, warnings };
   }
 
   /**
@@ -731,15 +802,15 @@ const Utils = (() => {
       lineNumberOffset = 1;
     }
 
-    const needsManualMapping = ['name', 'packages', 'price'].some(
+    const needsManualMapping = IMPORT_REQUIRED_FIELDS.some(
       f => mapping[f] === null || confidence[f] < IMPORT_MAPPING_CONFIDENCE_THRESHOLD
     );
 
-    const { orders, errors } = buildOrdersFromMappedRows(dataRows, mapping, lineNumberOffset);
+    const { orders, errors, warnings } = buildOrdersFromMappedRows(dataRows, mapping, lineNumberOffset);
 
     return {
       headers, hasHeaderRow, rawDataRows: dataRows, lineNumberOffset,
-      mapping, confidence, needsManualMapping, orders, errors
+      mapping, confidence, needsManualMapping, orders, errors, warnings
     };
   }
 
@@ -756,7 +827,7 @@ const Utils = (() => {
    * ============================================================ */
 
   const SAVED_IMPORT_MAPPING_STORAGE_KEY = 'moderatorSalary.lastImportColumnMapping.v1';
-  const IMPORT_MAPPING_FIELDS = ['name', 'packages', 'price'];
+  const IMPORT_MAPPING_FIELDS = Object.keys(IMPORT_COLUMN_ALIASES);
 
   /** Saves the most recently successful Excel mapping together with the
    * exact column labels it belongs to. Storage failures (for example private
@@ -764,10 +835,14 @@ const Utils = (() => {
   function saveLastImportColumnMapping(headers, mapping) {
     const savedHeaders = Array.isArray(headers) ? headers.map(header => String(header)) : [];
     const savedMapping = {};
-    for (const field of IMPORT_MAPPING_FIELDS) {
+    for (const field of IMPORT_REQUIRED_FIELDS) {
       const index = mapping && mapping[field];
       if (!Number.isInteger(index) || index < 0 || index >= savedHeaders.length) return false;
       savedMapping[field] = index;
+    }
+    for (const field of IMPORT_MAPPING_FIELDS.filter(field => !IMPORT_REQUIRED_FIELDS.includes(field))) {
+      const index = mapping && mapping[field];
+      if (Number.isInteger(index) && index >= 0 && index < savedHeaders.length) savedMapping[field] = index;
     }
 
     try {
@@ -788,10 +863,14 @@ const Utils = (() => {
       if (!saved || !Array.isArray(saved.headers) || !saved.mapping) return null;
       const headers = saved.headers.map(header => String(header));
       const mapping = {};
-      for (const field of IMPORT_MAPPING_FIELDS) {
+      for (const field of IMPORT_REQUIRED_FIELDS) {
         const index = saved.mapping[field];
         if (!Number.isInteger(index) || index < 0 || index >= headers.length) return null;
         mapping[field] = index;
+      }
+      for (const field of IMPORT_MAPPING_FIELDS.filter(field => !IMPORT_REQUIRED_FIELDS.includes(field))) {
+        const index = saved.mapping[field];
+        if (Number.isInteger(index) && index >= 0 && index < headers.length) mapping[field] = index;
       }
       return { headers, mapping };
     } catch (_) {
