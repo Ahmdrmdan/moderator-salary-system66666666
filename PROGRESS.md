@@ -73,6 +73,7 @@ The `ID` column imported from the official order workbook is an identifier issue
 ## Orders module closure review (in progress)
 
 - Corrected a verified UI reachability defect: the existing transactional edit/delete handlers were never rendered in an order row. They are now visible only to `orders.write` users for open months, retaining the existing confirmation, Rules, audit, and report-recalculation protections.
+- Production review found the external SheetJS dependency absent in one active browser session, which made Orders Excel export unavailable without a runtime exception. The existing CDN now has a version-pinned fallback CDN; no import/export behavior changed.
 
 ## Version 4 completion
 

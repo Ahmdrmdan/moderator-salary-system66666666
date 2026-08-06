@@ -14,6 +14,7 @@
 
 - Restored access to the existing guarded per-order edit and delete workflows in the Orders table. These actions remain hidden for read-only users and unavailable for locked months; no CRUD data model or permission boundary changed.
 - Versioned the Orders runtime URL with this closure fix so active production browser sessions cannot retain the prior table renderer.
+- Added a fallback SheetJS CDN for the existing import/export dependency after production Orders testing found a session in which the primary external asset did not load.
 
 ## 7.0.11-import-production-uat
 
