@@ -6,6 +6,7 @@
 - Confirmed that the workbook imports 237 orders with zero rejected rows and one visible missing-moderator warning, and that the persisted Firestore batch records the same counts.
 - Confirmed idempotency in production: submitting the identical workbook again is refused with the existing-file message and creates no additional order batch.
 - Added the shipping-integration design proposal and recorded the architecture constraint that the imported external Order ID is a source identifier, not automatically the internal order lifecycle identity.
+- Expanded the shipping proposal with the full order-to-shipment workflow, matching-option comparison and recommendation, Firestore design, status lifecycle, cross-module impact, conflict policy, and pre-implementation test/rollback plan.
 
 ## 7.0.11-import-contract
 

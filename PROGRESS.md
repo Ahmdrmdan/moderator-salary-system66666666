@@ -36,6 +36,11 @@
 
 The `ID` column imported from the official order workbook is an identifier issued by the source system. It is retained as external-source data and must not be assumed to be this system's primary identifier for the full order lifecycle. Shipping matching will be reviewed as part of the approved shipping-integration design before implementation; no schema migration or matching-policy change is included in Milestone 1.
 
+### Shipping design review revision
+
+- Expanded `SHIPPING_INTEGRATION_DESIGN.md` before Phase 2 implementation: full order-to-shipment workflow, comparison of matching approaches, the recommended layered matching service, backward-compatible Firestore impact, canonical status lifecycle, downstream module boundaries, conflict handling, and test/rollback coverage.
+- The document retains the explicit approval gate. No Phase 2 source, rule, schema, migration, or production-data change was made.
+
 ## Version 4 completion
 
 - Added a Configuration Center tab shell while preserving the existing settings form and backward-compatible saves.
