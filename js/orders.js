@@ -743,6 +743,7 @@ const OrdersManagement = (() => {
     document.getElementById('ordersReportOutput').classList.remove('hidden');
   }
   function exportOrderReport() {
+    Permissions.require('reports.export');
     if (!generatedOrderReport.length) return Toast.show('أنشئ تقريرًا أولاً', 'error'); if (typeof XLSX === 'undefined') return Toast.show('تصدير Excel غير متاح', 'error');
     const rows = generatedOrderReport.map(o => ({ 'التاريخ': o.orderDate, 'رقم الطلب': o.externalOrderNumber || o.id, 'العميل': o.customerName, 'الهاتف': o.customerPhone, 'المنتج': o.productName, 'العبوات': o.packages, 'السعر': o.price, 'الموظف': o.moderatorName, 'القسم': o.departmentName, 'المحافظة': o.governorate, 'حالة الشحنة': o.shipmentStatus })); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Order Report'); XLSX.writeFile(wb, 'orders-report.xlsx');
   }
@@ -800,8 +801,8 @@ const OrdersManagement = (() => {
     document.getElementById('shippingRestartBtn').addEventListener('click', () => { Object.assign(shipping, { fileName: '', rows: [], valid: [], invalid: [], matches: [], unchanged: [], unmatched: [], conflicts: [], duplicates: [], stale: [] }); document.getElementById('shippingFileInput').value = ''; shippingStage(1); });
     document.getElementById('ordersGenerateReportBtn').addEventListener('click', generateOrderReport);
     document.getElementById('ordersReportExcelBtn').addEventListener('click', exportOrderReport);
-    document.getElementById('ordersReportPrintBtn').addEventListener('click', () => { if (generatedOrderReport.length) window.print(); else Toast.show('أنشئ تقريرًا أولاً', 'error'); });
-    document.getElementById('ordersReportPdfBtn').addEventListener('click', () => { if (generatedOrderReport.length) { window.print(); Toast.show('اختر “حفظ كـ PDF” من نافذة الطباعة', 'info'); } else Toast.show('أنشئ تقريرًا أولاً', 'error'); });
+    document.getElementById('ordersReportPrintBtn').addEventListener('click', () => { Permissions.require('reports.export'); if (generatedOrderReport.length) window.print(); else Toast.show('أنشئ تقريرًا أولاً', 'error'); });
+    document.getElementById('ordersReportPdfBtn').addEventListener('click', () => { Permissions.require('reports.export'); if (generatedOrderReport.length) { window.print(); Toast.show('اختر “حفظ كـ PDF” من نافذة الطباعة', 'info'); } else Toast.show('أنشئ تقريرًا أولاً', 'error'); });
   }
 
   function init(callbacks) {
