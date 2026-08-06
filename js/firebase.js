@@ -6,10 +6,10 @@
  * <script> tags and requires no bundler/build step — important for a
  * project that must run directly on GitHub Pages).
  *
- * IMPORTANT: Replace the values in `firebaseConfig` below with your own
- * project's credentials. See README.md -> "Firebase Setup" for the
- * step-by-step guide on where to find these values in the Firebase
- * console.
+ * This configuration must match the Firebase project selected in
+ * `.firebaserc`. Keeping the deployed Firestore rules and the client Auth
+ * project aligned is essential: a mismatch makes a successfully
+ * authenticated user look unknown to Firestore and prevents login.
  * -----------------------------------------------------------------------
  */
 
@@ -20,12 +20,12 @@
 //    Firebase Console -> Project Settings -> General -> Your apps -> Web app
 // -----------------------------------------------------------------------
 const firebaseConfig = {
-  apiKey: "AIzaSyBt_5dwDBgyiHAj5OsnAA1fwHXQ2sd3-tk",
-  authDomain: "moderator-salary9.firebaseapp.com",
-  projectId: "moderator-salary9",
-  storageBucket: "moderator-salary9.firebasestorage.app",
-  messagingSenderId: "604946335764",
-  appId: "1:604946335764:web:2b8b640d8af215c59abf01"
+  apiKey: "AIzaSyATJ2LZPKvuBs5QRoKltf8aTRUvIr7gtC0",
+  authDomain: "ahmed123-95a0e.firebaseapp.com",
+  projectId: "ahmed123-95a0e",
+  storageBucket: "ahmed123-95a0e.firebasestorage.app",
+  messagingSenderId: "185531326850",
+  appId: "1:185531326850:web:de360bc1d60bc013be6f9b"
 };
 
 // -----------------------------------------------------------------------
