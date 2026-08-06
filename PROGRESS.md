@@ -1,6 +1,6 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
-## Milestone 1 — Import Improvements (completed locally; production verification pending deploy)
+## Milestone 1 — Import Improvements (completed and production-verified)
 
 ### What changed
 
@@ -21,10 +21,8 @@
 - `node tests/import-contract.test.js` passed: official mapping, legacy mapping, Arabic digits/currency, malformed required values, duplicate IDs, and missing-moderator fallback.
 - `node --check` passed for every changed runtime module.
 - The supplied workbook was structurally checked: exact ten headers, 237 rows, no duplicate IDs. Its one missing moderator value (`ID 81764`) is covered by the placeholder-warning path.
-
-### Next before closing the milestone
-
-- Commit the tested implementation, deploy to Firebase Hosting, and re-run production parser/UI smoke checks without writing payroll data.
+- Firebase deploy completed for project `ahmed123-95a0e`; the production bundles contain the new import code.
+- Production Authentication, Firestore-backed dashboard load, and browser console smoke test passed with no console errors.
 
 ## Version 4 completion
 
