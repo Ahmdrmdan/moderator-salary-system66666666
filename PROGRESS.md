@@ -47,6 +47,25 @@ The `ID` column imported from the official order workbook is an identifier issue
 - The official import `ID` is reference-only and is excluded from every shipping matching/update decision. Tracking number is stored on the uniquely matched order as the primary shipment reference after carrier hand-off.
 - Multiple open orders sharing a normalized phone are recorded as `conflict` for manual review; they are never updated automatically.
 
+## Milestone 2 — Shipping Integration (implementation in progress)
+
+### Implemented so far
+
+- The approved decision is now reflected in the code and design: shipping updates normalize Arabic/English numerals and Egyptian country-prefix variants, then select only one open order by phone. The imported order ID and customer name do not participate in the decision.
+- Shipping-file validation now requires phone, tracking number, and governorate; status and provider update time are optional. Exact duplicate rows are ignored, while multiple non-identical rows for one normalized phone are visible conflicts.
+- Matched updates persist tracking number, governorate, normalized status, provider/update timestamps, source fingerprint, and sync ID without moving or creating order documents. Flat historical shipping fields remain written and read.
+- Updates are compare-and-write transactions, append to the immutable audit trail, respect locked/archived months, and create a bounded `shippingSyncs` summary under each affected month.
+- The new capability `shipping.import` separates carrier-file writes from ordinary order editing in both client permission checks and Firestore Rules.
+
+### Tests completed so far
+
+- JavaScript syntax checks passed for all changed runtime modules.
+- `node tests/import-contract.test.js` passed, including the new phone-normalization contract cases.
+
+### Remaining before milestone closure
+
+- Add/execute matching and transaction regression cases, deploy Rules and Hosting, then perform production Firebase UAT with a controlled non-financial shipping update and verify the order, audit log, sync summary, Dashboard/Reports, and browser console.
+
 ## Version 4 completion
 
 - Added a Configuration Center tab shell while preserving the existing settings form and backward-compatible saves.

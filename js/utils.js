@@ -58,6 +58,24 @@ const Utils = (() => {
     return String(rawName).replace(/[\t\u00A0]+/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
+  /**
+   * Produces the single comparison value used by shipping updates.
+   * Egyptian mobile phones may be entered as `010…`, `+20 10…`,
+   * `0020-10…`, or with Arabic numerals.  The canonical result is the
+   * national-number body without the local/country prefix.  This helper is
+   * deliberately phone-only: callers must not combine it with name or ID.
+   */
+  function normalizeShippingPhone(rawPhone) {
+    if (rawPhone === null || rawPhone === undefined) return '';
+    const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+    let digits = String(rawPhone).replace(/[٠-٩]/g, digit => String(arabicDigits.indexOf(digit)));
+    digits = digits.replace(/\D/g, '');
+    if (digits.startsWith('0020')) digits = digits.slice(4);
+    else if (digits.startsWith('20')) digits = digits.slice(2);
+    if (digits.startsWith('0')) digits = digits.slice(1);
+    return digits;
+  }
+
   /* ============================================================
    * FUZZY MATCHING (Levenshtein distance)
    * ============================================================ */
@@ -1056,6 +1074,7 @@ const Utils = (() => {
   return {
     normalizeName,
     cleanDisplayName,
+    normalizeShippingPhone,
     levenshtein,
     similarityRatio,
     findBestModeratorMatch,

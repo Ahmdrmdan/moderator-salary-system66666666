@@ -111,8 +111,12 @@ const OrdersManagement = (() => {
         orderDate: item.orderDate || '', externalOrderNumber: item.externalOrderNumber || item.orderNumber || '',
         customerName: item.customerName || '', customerPhone: item.customerPhone || '', notes: item.notes || '',
         fullAddress: item.fullAddress || item.address || '', productName: item.productName || item.product || '',
-        waybillNumber: item.waybillNumber || '', governorate: item.governorate || '',
-        shipmentStatus: item.shipmentStatus || 'لم يتم التحديث',
+        waybillNumber: item.waybillNumber || (item.shipping && item.shipping.trackingNumber) || '',
+        governorate: item.governorate || (item.shipping && item.shipping.governorate) || '',
+        shipmentStatus: item.shipmentStatus || (item.shipping && item.shipping.status) || 'لم يتم التحديث',
+        shipping: item.shipping || null,
+        lastShippingUpdate: item.lastShippingUpdate || (item.shipping && (item.shipping.lastShippingUpdate || item.shipping.sourceUpdatedAt)) || null,
+        lastShippingSyncedAt: item.lastShippingSyncedAt || (item.shipping && item.shipping.lastSyncedAt) || null,
         updatedAt: item.updatedAt || batch.updatedAt || null,
         updatedBy: item.updatedBy || batch.updatedBy || null
       };
@@ -524,14 +528,52 @@ const OrdersManagement = (() => {
     }
   }
 
-  const shipping = { rows: [], valid: [], matches: [], unmatched: [] };
+  const shipping = { fileName: '', rows: [], valid: [], invalid: [], matches: [], unchanged: [], unmatched: [], conflicts: [], duplicates: [], stale: [] };
   const shippingAliases = {
-    customerName: ['اسمالعميل', 'العميل', 'customername', 'customer', 'client'],
     customerPhone: ['رقمالهاتف', 'الهاتف', 'الموبايل', 'phone', 'mobile', 'telephone'],
     waybillNumber: ['رقمالبوليصة', 'البوليصة', 'waybill', 'tracking', 'trackingnumber'],
-    governorate: ['المحافظة', 'governorate', 'province']
+    governorate: ['المحافظة', 'governorate', 'province'],
+    shipmentStatus: ['حالةالشحنة', 'حالةالشحن', 'الحالة', 'shippingstatus', 'shipmentstatus', 'status'],
+    lastShippingUpdate: ['اخر تحديث للشحن', 'آخر تحديث للشحن', 'اخر تحديث', 'آخر تحديث', 'shippingupdatedat', 'lastshippingupdate', 'updatedat', 'update time']
   };
-  const shippingKey = (name, phone) => `${Utils.normalizeName(name)}|${String(phone || '').replace(/\D/g, '')}`;
+  const shippingRequiredColumns = ['customerPhone', 'waybillNumber', 'governorate'];
+
+  function parseShippingUpdate(value) {
+    if (!value) return null;
+    if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+    if (typeof value === 'number' && typeof XLSX !== 'undefined' && XLSX.SSF && XLSX.SSF.parse_date_code) {
+      const parts = XLSX.SSF.parse_date_code(value);
+      if (parts) return new Date(parts.y, parts.m - 1, parts.d, parts.H || 0, parts.M || 0, parts.S || 0);
+    }
+    const parsed = new Date(value);
+    return Number.isFinite(parsed.getTime()) ? parsed : null;
+  }
+
+  function isOpenShippingOrder(order) {
+    const status = Utils.normalizeName(order.shipmentStatus || '');
+    return !['تمالتسليم', 'مرتجع', 'ملغي', 'ملغى', 'cancelled', 'returned', 'delivered'].some(closed => status.includes(closed));
+  }
+
+  function normalizedShippingStatus(value) {
+    const key = Utils.normalizeName(value || '').replace(/[^a-z0-9\u0600-\u06FF]/g, '');
+    if (!key) return '';
+    if (key.includes('delivered') || key.includes('تمالتسليم')) return 'تم التسليم';
+    if (key.includes('returned') || key.includes('return') || key.includes('مرتجع')) return 'مرتجع';
+    if (key.includes('cancel') || key.includes('ملغي') || key.includes('ملغى')) return 'ملغي';
+    if (key.includes('pickedup') || key.includes('pickup') || key.includes('تمالاستلام')) return 'تم الاستلام';
+    if (key.includes('transit') || key.includes('shipping') || key.includes('فيالشحن')) return 'في الشحن';
+    if (key.includes('created') || key.includes('انشاء') || key.includes('تمالانشاء')) return 'تم الإنشاء';
+    if (key.includes('pending') || key.includes('انتظار') || key.includes('لم يتم التحديث')) return 'لم يتم التحديث';
+    return 'غير معروف';
+  }
+
+  function isTerminalShippingStatus(status) {
+    return ['تم التسليم', 'مرتجع', 'ملغي'].includes(normalizedShippingStatus(status));
+  }
+
+  function shippingFingerprint(row) {
+    return [row.normalizedPhone, row.waybillNumber, row.governorate, row.shipmentStatus || '', row.lastShippingUpdate ? row.lastShippingUpdate.toISOString() : ''].join('|');
+  }
   function shippingStage(number) {
     document.querySelectorAll('[data-shipping-stage]').forEach(node => node.classList.toggle('active', Number(node.dataset.shippingStage) === number));
     document.querySelectorAll('[data-shipping-step-indicator]').forEach(node => node.classList.toggle('active', Number(node.dataset.shippingStepIndicator) === number));
@@ -547,37 +589,119 @@ const OrdersManagement = (() => {
       const buffer = await file.arrayBuffer(); const workbook = XLSX.read(buffer, { type: 'array' });
       const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '' });
       const headers = rows[0] || []; const index = Object.fromEntries(Object.entries(shippingAliases).map(([key, aliases]) => [key, shippingHeaderIndex(headers, aliases)]));
-      const missing = Object.entries(index).filter(([, value]) => value < 0).map(([key]) => key);
-      shipping.rows = rows.slice(1); shipping.valid = []; shipping.matches = []; shipping.unmatched = [];
+      const missing = shippingRequiredColumns.filter(key => index[key] < 0);
+      shipping.fileName = file.name || ''; shipping.rows = rows.slice(1); shipping.valid = []; shipping.invalid = []; shipping.matches = []; shipping.unchanged = []; shipping.unmatched = []; shipping.conflicts = []; shipping.duplicates = []; shipping.stale = [];
       if (missing.length) { document.getElementById('shippingPreview').innerHTML = `<div class="error-box">الأعمدة المطلوبة مفقودة: ${missing.join('، ')}</div>`; document.getElementById('shippingValidation').innerHTML = '<div class="error-box">لا يمكن المتابعة قبل توفر جميع الأعمدة المطلوبة.</div>'; shippingStage(2); return; }
-      shipping.valid = shipping.rows.map((row, line) => ({ line: line + 2, customerName: String(row[index.customerName] || '').trim(), customerPhone: String(row[index.customerPhone] || '').trim(), waybillNumber: String(row[index.waybillNumber] || '').trim(), governorate: String(row[index.governorate] || '').trim() }));
-      const invalid = shipping.valid.filter(row => !row.customerName || !row.customerPhone || !row.waybillNumber || !row.governorate);
-      shipping.valid = shipping.valid.filter(row => !invalid.includes(row));
-      document.getElementById('shippingPreview').innerHTML = `<div class="hint-box">تمت قراءة ${Utils.formatNumber(shipping.rows.length)} صف. معاينة أول ${Math.min(5, shipping.valid.length)} صفوف.</div><div class="table-wrap"><table><tbody>${shipping.valid.slice(0, 5).map(row => `<tr><td>${Utils.escapeHtml(row.customerName)}</td><td>${Utils.escapeHtml(row.customerPhone)}</td><td>${Utils.escapeHtml(row.waybillNumber)}</td><td>${Utils.escapeHtml(row.governorate)}</td></tr>`).join('')}</tbody></table></div>`;
-      document.getElementById('shippingValidation').innerHTML = invalid.length ? `<div class="error-box">يوجد ${invalid.length} صف غير صالح، وسيتم تجاهله. الحقول الأربعة مطلوبة لكل صف.</div>` : `<div class="hint-box">التحقق ناجح: ${Utils.formatNumber(shipping.valid.length)} صف صالح.</div>`;
+      const seen = new Set();
+      shipping.rows.forEach((row, line) => {
+        const parsed = {
+          line: line + 2,
+          customerPhone: String(row[index.customerPhone] || '').trim(),
+          waybillNumber: String(row[index.waybillNumber] || '').trim(),
+          governorate: String(row[index.governorate] || '').trim(),
+          rawShipmentStatus: index.shipmentStatus < 0 ? '' : String(row[index.shipmentStatus] || '').trim(),
+          lastShippingUpdate: index.lastShippingUpdate < 0 ? null : parseShippingUpdate(row[index.lastShippingUpdate])
+        };
+        parsed.shipmentStatus = normalizedShippingStatus(parsed.rawShipmentStatus);
+        parsed.normalizedPhone = Utils.normalizeShippingPhone(parsed.customerPhone);
+        parsed.fingerprint = shippingFingerprint(parsed);
+        if (!parsed.normalizedPhone || !parsed.waybillNumber || !parsed.governorate) { shipping.invalid.push(parsed); return; }
+        if (seen.has(parsed.fingerprint)) { shipping.duplicates.push(parsed); return; }
+        seen.add(parsed.fingerprint); shipping.valid.push(parsed);
+      });
+      document.getElementById('shippingPreview').innerHTML = `<div class="hint-box">تمت قراءة ${Utils.formatNumber(shipping.rows.length)} صف. معاينة أول ${Math.min(5, shipping.valid.length)} صفوف صالحة.</div><div class="table-wrap"><table><thead><tr><th>الهاتف</th><th>البوليصة</th><th>المحافظة</th><th>الحالة</th></tr></thead><tbody>${shipping.valid.slice(0, 5).map(row => `<tr><td>${Utils.escapeHtml(row.customerPhone)}</td><td>${Utils.escapeHtml(row.waybillNumber)}</td><td>${Utils.escapeHtml(row.governorate)}</td><td>${Utils.escapeHtml(row.shipmentStatus || '—')}</td></tr>`).join('')}</tbody></table></div>`;
+      const notices = [];
+      if (shipping.invalid.length) notices.push(`تم استبعاد ${Utils.formatNumber(shipping.invalid.length)} صف غير صالح (الهاتف والبوليصة والمحافظة مطلوبة).`);
+      if (shipping.duplicates.length) notices.push(`تم تجاهل ${Utils.formatNumber(shipping.duplicates.length)} صف مكرر داخل الملف.`);
+      document.getElementById('shippingValidation').innerHTML = notices.length ? `<div class="error-box">${notices.join(' ')}</div><div class="hint-box">${Utils.formatNumber(shipping.valid.length)} صف صالح للمتابعة.</div>` : `<div class="hint-box">التحقق ناجح: ${Utils.formatNumber(shipping.valid.length)} صف صالح.</div>`;
       shippingStage(2);
     } catch (error) { console.error('Shipping file analysis failed', error); Toast.show('تعذر قراءة ملف الشحن: ' + error.message, 'error'); }
   }
   function matchShippingRows() {
-    // A customer may legitimately have multiple orders. Keep a FIFO queue
-    // for each name/phone key so one shipping row cannot overwrite the last
-    // matching order repeatedly (the previous Map value did exactly that).
-    const byKey = new Map(); state.orders.forEach(order => { const key = shippingKey(order.customerName, order.customerPhone); if (key !== '|') { const queue = byKey.get(key) || []; queue.push(order); byKey.set(key, queue); } });
-    shipping.matches = []; shipping.unmatched = [];
-    shipping.valid.forEach(row => { const queue = byKey.get(shippingKey(row.customerName, row.customerPhone)) || []; const order = queue.shift(); (order ? shipping.matches : shipping.unmatched).push(order ? { order, row, shipmentStatus: order.shipmentStatus || 'لم يتم التحديث' } : row); });
-    document.getElementById('shippingMatching').innerHTML = `<div class="hint-box">تمت مطابقة ${Utils.formatNumber(shipping.matches.length)} طلب، ولم يتم العثور على ${Utils.formatNumber(shipping.unmatched.length)} صف. لن تُنشأ طلبات جديدة.</div>`;
+    const byPhone = new Map();
+    state.orders.filter(isOpenShippingOrder).forEach(order => {
+      const phone = Utils.normalizeShippingPhone(order.customerPhone);
+      if (!phone) return;
+      const candidates = byPhone.get(phone) || [];
+      candidates.push(order); byPhone.set(phone, candidates);
+    });
+    shipping.matches = []; shipping.unchanged = []; shipping.unmatched = []; shipping.conflicts = []; shipping.stale = [];
+    const rowsByPhone = new Map();
+    shipping.valid.forEach(row => { const rows = rowsByPhone.get(row.normalizedPhone) || []; rows.push(row); rowsByPhone.set(row.normalizedPhone, rows); });
+    shipping.valid.forEach(row => {
+      if ((rowsByPhone.get(row.normalizedPhone) || []).length > 1) { shipping.conflicts.push({ row, candidates: [], reason: 'multiple_source_rows' }); return; }
+      const candidates = byPhone.get(row.normalizedPhone) || [];
+      if (!candidates.length) { shipping.unmatched.push(row); return; }
+      if (candidates.length > 1) { shipping.conflicts.push({ row, candidates }); return; }
+      const order = candidates[0];
+      const stored = order.lastShippingUpdate || (order.shipping && (order.shipping.lastShippingUpdate || order.shipping.sourceUpdatedAt));
+      const existingFingerprint = order.shipping && order.shipping.sourceRowHash;
+      if (existingFingerprint === row.fingerprint) { shipping.unchanged.push({ row, order }); return; }
+      if (row.lastShippingUpdate && timestampMillis(stored) > row.lastShippingUpdate.getTime()) { shipping.stale.push({ row, order }); return; }
+      if (!row.lastShippingUpdate && timestampMillis(stored)) { shipping.stale.push({ row, order }); return; }
+      if (row.lastShippingUpdate && timestampMillis(stored) === row.lastShippingUpdate.getTime()) { shipping.conflicts.push({ row, candidates: [order], reason: 'same_timestamp_changed_values' }); return; }
+      if (row.shipmentStatus === 'غير معروف' && normalizedShippingStatus(order.shipmentStatus) !== 'غير معروف') { shipping.conflicts.push({ row, candidates: [order], reason: 'unknown_status_regression' }); return; }
+      if (isTerminalShippingStatus(order.shipmentStatus) && row.shipmentStatus && normalizedShippingStatus(order.shipmentStatus) !== row.shipmentStatus) { shipping.conflicts.push({ row, candidates: [order], reason: 'terminal_status_regression' }); return; }
+      const trackingCollision = state.orders.find(other => other.id !== order.id && other.waybillNumber && other.waybillNumber === row.waybillNumber);
+      if (trackingCollision) { shipping.conflicts.push({ row, candidates: [order, trackingCollision], reason: 'tracking_number_collision' }); return; }
+      shipping.matches.push({ order, row, shipmentStatus: row.shipmentStatus || order.shipmentStatus || 'لم يتم التحديث' });
+    });
+    const conflictRows = shipping.conflicts.slice(0, 20).map(conflict => `<tr><td>${Utils.formatNumber(conflict.row.line)}</td><td>${Utils.escapeHtml(conflict.row.customerPhone)}</td><td>${Utils.escapeHtml(conflict.reason || 'multiple_open_orders')}</td><td>${Utils.escapeHtml((conflict.candidates || []).map(order => order.customerName || order.id).join('، ') || 'صفوف متعددة في ملف الشحن')}</td></tr>`).join('');
+    document.getElementById('shippingMatching').innerHTML = `<div class="hint-box">تمت مطابقة ${Utils.formatNumber(shipping.matches.length)} طلب برقم الهاتف فقط. دون تغيير: ${Utils.formatNumber(shipping.unchanged.length)}. غير مطابق: ${Utils.formatNumber(shipping.unmatched.length)}. تعارضات تحتاج مراجعة يدوية: ${Utils.formatNumber(shipping.conflicts.length)}. تحديثات قديمة تم منعها: ${Utils.formatNumber(shipping.stale.length)}. لن تُنشأ طلبات جديدة.</div>${conflictRows ? `<div class="table-wrap"><table><thead><tr><th>السطر</th><th>الهاتف</th><th>سبب التعارض</th><th>الطلبات المرشحة</th></tr></thead><tbody>${conflictRows}</tbody></table></div>` : ''}`;
     renderShippingResults(); shippingStage(4);
   }
   function renderShippingResults() {
-    document.getElementById('shippingResultsBody').innerHTML = shipping.matches.map((match, index) => `<tr><td>${Utils.escapeHtml(match.order.customerName || match.row.customerName)}</td><td>${Utils.escapeHtml(match.order.customerPhone || match.row.customerPhone)}</td><td>${Utils.escapeHtml(match.order.moderatorName)}</td><td>${Utils.escapeHtml(match.order.departmentName)}</td><td>${Utils.escapeHtml(match.row.waybillNumber)}</td><td>${Utils.escapeHtml(match.row.governorate)}</td><td><select data-shipping-status="${index}"><option ${match.shipmentStatus === 'لم يتم التحديث' ? 'selected' : ''}>لم يتم التحديث</option><option ${match.shipmentStatus === 'تم التسليم' ? 'selected' : ''}>تم التسليم</option><option ${match.shipmentStatus === 'مرتجع' ? 'selected' : ''}>مرتجع</option><option ${match.shipmentStatus === 'مؤجل' ? 'selected' : ''}>مؤجل</option><option ${match.shipmentStatus === 'في الشحن' ? 'selected' : ''}>في الشحن</option></select></td></tr>`).join('') || '<tr><td colspan="7" class="empty-state">لا توجد طلبات مطابقة للمراجعة</td></tr>';
+    const statuses = ['لم يتم التحديث', 'تم الإنشاء', 'تم الاستلام', 'في الشحن', 'تم التسليم', 'مرتجع', 'ملغي', 'غير معروف'];
+    document.getElementById('shippingResultsBody').innerHTML = shipping.matches.map((match, index) => `<tr><td>${Utils.escapeHtml(match.order.customerName || '—')}</td><td>${Utils.escapeHtml(match.order.customerPhone || match.row.customerPhone)}</td><td>${Utils.escapeHtml(match.order.moderatorName)}</td><td>${Utils.escapeHtml(match.order.departmentName)}</td><td>${Utils.escapeHtml(match.row.waybillNumber)}</td><td>${Utils.escapeHtml(match.row.governorate)}</td><td><select data-shipping-status="${index}">${statuses.map(status => `<option ${match.shipmentStatus === status ? 'selected' : ''}>${Utils.escapeHtml(status)}</option>`).join('')}</select></td></tr>`).join('') || '<tr><td colspan="7" class="empty-state">لا توجد طلبات مطابقة للمراجعة</td></tr>';
   }
   async function saveShippingUpdates() {
+    Permissions.require('shipping.import');
     if (!shipping.matches.length) return Toast.show('لا توجد طلبات مطابقة لحفظها', 'error');
     document.querySelectorAll('[data-shipping-status]').forEach(select => { shipping.matches[Number(select.dataset.shippingStatus)].shipmentStatus = select.value; });
     const batches = new Map(); shipping.matches.forEach(match => { if (!batches.has(match.order.batchId)) batches.set(match.order.batchId, []); batches.get(match.order.batchId).push(match); });
+    const syncId = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc().id;
     try {
-      for (const [batchId, matches] of batches) { const batch = state.batches.get(batchId); const items = batch.items.map((item, i) => { const id = orderId(batch.id, item, i); const match = matches.find(entry => entry.order.id === id); return match ? { ...item, orderId: id, waybillNumber: match.row.waybillNumber, governorate: match.row.governorate, shipmentStatus: match.shipmentStatus, updatedAt: new Date(), updatedBy: actorEmail() } : item; }); await batch.ref.update({ items, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: actorEmail() }); }
-      document.getElementById('shippingSuccess').textContent = `اكتمل الحفظ: ${shipping.matches.length} طلب مطابق تم تحديثه، و${shipping.unmatched.length} صف غير مطابق.`; await load(); shippingStage(6); Toast.show('تم حفظ تحديثات الشحن', 'success');
+      for (const [, matches] of batches) await ensureEditable(matches[0].order.monthId, 'تحديث شركة الشحن');
+      for (const [batchId, matches] of batches) {
+        const batch = state.batches.get(batchId);
+        await db.runTransaction(async transaction => {
+          const snap = await transaction.get(batch.ref);
+          if (!snap.exists) throw new Error('دفعة الطلب لم تعد موجودة');
+          const data = snap.data() || {}; const currentItems = Array.isArray(data.items) ? data.items : [];
+          const byId = new Map(matches.map(match => [match.order.id, match]));
+          const now = new Date();
+          const items = currentItems.map((item, i) => {
+            const id = orderId(batch.id, item, i); const match = byId.get(id);
+            if (!match) return item;
+            if (Utils.normalizeShippingPhone(item.customerPhone) !== match.row.normalizedPhone) throw new Error('تغير رقم هاتف الطلب أثناء المراجعة؛ أعد تحليل الملف');
+            const sourceUpdate = match.row.lastShippingUpdate || now;
+            if (match.row.lastShippingUpdate && timestampMillis(item.lastShippingUpdate || (item.shipping && (item.shipping.lastShippingUpdate || item.shipping.sourceUpdatedAt))) > sourceUpdate.getTime()) throw new Error('وصل تحديث أحدث لهذا الطلب؛ أعد تحليل الملف');
+            const updated = {
+              ...item, orderId: id, waybillNumber: match.row.waybillNumber, governorate: match.row.governorate,
+              shipmentStatus: match.shipmentStatus, lastShippingUpdate: sourceUpdate, lastShippingSyncedAt: now,
+              shipping: { ...(item.shipping || {}), trackingNumber: match.row.waybillNumber, governorate: match.row.governorate, status: match.shipmentStatus, sourceUpdatedAt: sourceUpdate, lastShippingUpdate: sourceUpdate, lastSyncedAt: now, source: 'shipping_file_import', sourceRowHash: match.row.fingerprint, lastSyncId: syncId, rawStatus: match.row.rawShipmentStatus || null },
+              updatedAt: now, updatedBy: actorEmail()
+            };
+            return updated;
+          });
+          transaction.update(batch.ref, { items, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: actorEmail() });
+          const syncRef = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(batch.monthId).collection(MONTH_SUBCOLLECTIONS.SHIPPING_SYNCS).doc(syncId);
+          transaction.set(syncRef, {
+            source: 'shipping_file_import', fileName: shipping.fileName, syncId, actor: actorEmail(),
+            matchedCount: firebase.firestore.FieldValue.increment(matches.length),
+            sourceRowCount: shipping.rows.length, validCount: shipping.valid.length, unchangedCount: shipping.unchanged.length,
+            unmatchedCount: shipping.unmatched.length, conflictCount: shipping.conflicts.length, invalidCount: shipping.invalid.length,
+            duplicateCount: shipping.duplicates.length, staleCount: shipping.stale.length,
+            completedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          AuditService.appendToBatch(transaction, {
+            action: AuditService.ACTION.ORDERS_UPDATED, entity: 'orders', operation: AuditService.OPERATION.UPDATE,
+            documentId: batch.id, documentLabel: `دفعة ${batch.id}`, monthId: batch.monthId,
+            details: { source: 'shipping_file_import', batchId, matchedOrderIds: matches.map(match => match.order.id), count: matches.length }
+          });
+        });
+      }
+      document.getElementById('shippingSuccess').textContent = `اكتمل الحفظ: ${shipping.matches.length} طلب مطابق تم تحديثه، ${shipping.unchanged.length} دون تغيير، ${shipping.unmatched.length} غير مطابق، ${shipping.conflicts.length} تعارض يحتاج مراجعة يدوية، و${shipping.stale.length} تحديث قديم تم منعه.`; await load(); shippingStage(6); Toast.show('تم حفظ تحديثات الشحن', 'success');
     } catch (error) { console.error('Shipping updates failed', error); Toast.show('تعذر حفظ تحديثات الشحن: ' + error.message, 'error'); }
   }
 
@@ -671,7 +795,7 @@ const OrdersManagement = (() => {
     document.querySelectorAll('[data-shipping-back]').forEach(button => button.addEventListener('click', () => shippingStage(Number(button.dataset.shippingBack))));
     document.getElementById('shippingApplyStatusBtn').addEventListener('click', () => { const status = document.getElementById('shippingApplyStatus').value; shipping.matches.forEach(match => { match.shipmentStatus = status; }); renderShippingResults(); });
     document.getElementById('shippingSaveBtn').addEventListener('click', saveShippingUpdates);
-    document.getElementById('shippingRestartBtn').addEventListener('click', () => { shipping.rows = []; shipping.valid = []; shipping.matches = []; shipping.unmatched = []; document.getElementById('shippingFileInput').value = ''; shippingStage(1); });
+    document.getElementById('shippingRestartBtn').addEventListener('click', () => { Object.assign(shipping, { fileName: '', rows: [], valid: [], invalid: [], matches: [], unchanged: [], unmatched: [], conflicts: [], duplicates: [], stale: [] }); document.getElementById('shippingFileInput').value = ''; shippingStage(1); });
     document.getElementById('ordersGenerateReportBtn').addEventListener('click', generateOrderReport);
     document.getElementById('ordersReportExcelBtn').addEventListener('click', exportOrderReport);
     document.getElementById('ordersReportPrintBtn').addEventListener('click', () => { if (generatedOrderReport.length) window.print(); else Toast.show('أنشئ تقريرًا أولاً', 'error'); });

@@ -284,7 +284,15 @@ service cloud.firestore {
       // Raw imported orders, frozen along with their month.
       match /orderBatches/{batchId} {
         allow read: if hasAnyPermission(['orders.read', 'reports.read', 'backups.create', 'backups.restore']);
-        allow write: if hasAnyPermission(['orders.write', 'orders.import', 'backups.restore']) && !monthLocked(monthId) && !monthArchived(monthId);
+        allow write: if hasAnyPermission(['orders.write', 'orders.import', 'shipping.import', 'backups.restore']) && !monthLocked(monthId) && !monthArchived(monthId);
+      }
+
+      // An import summary is audit evidence, not a second order store. It is
+      // written atomically with the batch update and frozen with its month.
+      match /shippingSyncs/{syncId} {
+        allow read: if hasAnyPermission(['orders.read', 'reports.read', 'audit.read', 'backups.create', 'backups.restore']);
+        allow create, update: if hasAnyPermission(['shipping.import', 'backups.restore']) && !monthLocked(monthId) && !monthArchived(monthId);
+        allow delete: if false;
       }
 
       // The frozen OUTPUT of a closed month: report rows, totals,
@@ -399,7 +407,7 @@ service cloud.firestore {
     // that guarantee: the entry, once written, cannot be removed afterwards.
     match /audit_logs/{logId} {
       allow read: if hasAnyPermission(['audit.read', 'backups.create', 'backups.restore']);
-      allow create: if hasAnyPermission(['employees.write','employees.delete','departments.write','orders.write','orders.import','months.write','months.destructive','reports.calculate','reports.approve','transactions.write','salary_processing.write','salary_processing.approve','salary_processing.pay','salary_processing.export','settlements.write','backups.create','backups.restore','settings.write','users.manage']);
+      allow create: if hasAnyPermission(['employees.write','employees.delete','departments.write','orders.write','orders.import','shipping.import','months.write','months.destructive','reports.calculate','reports.approve','transactions.write','salary_processing.write','salary_processing.approve','salary_processing.pay','salary_processing.export','settlements.write','backups.create','backups.restore','settings.write','users.manage']);
       allow update, delete: if false;
     }
 

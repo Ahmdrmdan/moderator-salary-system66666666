@@ -1,6 +1,6 @@
 # Shipping Integration Design Proposal
 
-**Status:** Design review only. No shipping code, Firestore schema, Firestore Rule, migration, or production-data change is authorized until this document is explicitly approved.
+**Status:** Approved architecture — implementation in progress on `feature/import-improvements`. Production activation remains gated by the phase-two tests and Firebase UAT described below.
 
 ## 1. Goal and design principles
 
@@ -148,6 +148,8 @@ No new Firestore index is required for the initial design because matching reads
 | `Cancelled` | Shipment was cancelled before a final delivery/return. | No automatic transition; correction requires a reviewed newer provider event. |
 | `Unknown` | Provider status is unsupported, missing, or cannot be normalized. | Any non-unknown status with a newer source event. |
 
+The persisted UI labels remain backward-compatible Arabic values: `لم يتم التحديث`, `تم الإنشاء`, `تم الاستلام`, `في الشحن`, `تم التسليم`, `مرتجع`, `ملغي`, and `غير معروف`, respectively. Provider text is normalized into those values and the original provider text is retained as `shipping.rawStatus`.
+
 ### Transition rules
 
 - Provider-specific labels are mapped to the canonical statuses in one shared mapping table.
@@ -216,7 +218,7 @@ No new Firestore index is required for the initial design because matching reads
 - A corrective provider file is the normal rollback mechanism for a completed shipment update. Any administrative reversal must be an explicit audited action with before/after values and transaction coverage.
 - Regression-test Dashboard, Reports, Salary, Transactions, Settlements, Audit, month lock/archive, permissions, and legacy order rendering after every shipping fix.
 
-## 9. Implementation gate and sequence after approval
+## 9. Implementation sequence after approval
 
 1. Confirm the provider's real schema, status vocabulary, timestamps, and phone-number column.
 2. Apply the approved phone-only matching policy, field names, canonical lifecycle, permissions, and financial non-side-effect rule in this document.
@@ -225,6 +227,6 @@ No new Firestore index is required for the initial design because matching reads
 5. Add preview/review UI and read-only Dashboard/Orders/Reports integration.
 6. Run controlled Firebase production UAT with a non-financial test batch, inspect Firestore and audit results, then request approval before activating any salary/transaction/settlement policy.
 
-## Approval gate
+## Production activation gate
 
-This document is a design proposal. Approval must precede all phase-two implementation work, including shipping UI, export, import, Firestore changes, Rules changes, migrations, and production deployment.
+The architecture is approved. Deployment remains blocked until the implementation has passed the local, Rules, browser, and Firebase UAT scenarios in this document; it must then be committed and pushed on the existing feature branch without merging it into `main`.

@@ -138,6 +138,7 @@ const COLLECTIONS = {
  */
 const MONTH_SUBCOLLECTIONS = {
   ORDER_BATCHES: 'orderBatches',
+  SHIPPING_SYNCS: 'shippingSyncs',
   SNAPSHOTS: 'snapshots',
   BACKUPS: 'backups'
 };

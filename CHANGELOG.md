@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Shipping Integration implementation
+
+- Replaced the legacy name-and-phone FIFO shipping matcher with the approved normalized-phone-only matching policy for open orders.
+- Added validation, in-file duplicate detection, unmatched/conflict/stale/unchanged outcomes, tracking-number collision protection, and a manual-review conflict table; no shipping import can create an order.
+- Added backward-compatible shipping fields (`shipping`, `lastShippingUpdate`, `lastShippingSyncedAt`) while retaining legacy flat fields, atomic order/audit writes, and per-month `shippingSyncs` import summaries.
+- Added the distinct `shipping.import` permission and Firestore Rules protection; legacy Admin and Super Admin compatibility is retained.
+- Added contract coverage for Egyptian phone normalization in local, country-prefixed, punctuation-formatted, and Arabic-digit formats.
+
 ## 7.0.11-import-production-uat
 
 - Closed the Import Improvements milestone after a production UAT of the supplied official workbook against Firebase project `ahmed123-95a0e`.

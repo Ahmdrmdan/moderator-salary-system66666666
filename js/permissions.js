@@ -11,7 +11,7 @@ const Permissions = (() => {
     super_admin: { label: 'Owner', permissions: ['*'], system: true },
     admin: { label: 'Admin', permissions: [
       'dashboard.read','departments.read','departments.write','employees.read','employees.write','employees.delete',
-      'orders.read','orders.write','orders.import','months.read','months.write','months.destructive',
+      'orders.read','orders.write','orders.import','shipping.import','months.read','months.write','months.destructive',
       'reports.read','reports.calculate','reports.export','reports.approve','transactions.read','transactions.write',
       'salary_processing.read','salary_processing.write','salary_processing.approve','salary_processing.pay','salary_processing.export',
       'settlements.read','settlements.write','backups.read','backups.create','backups.restore','backups.download',
@@ -25,7 +25,7 @@ const Permissions = (() => {
     viewer: { label: 'Viewer', permissions: ['dashboard.read','months.read','reports.read','archive.read','comparison.read'] },
     sales_manager: { label: 'Sales Manager', permissions: ['dashboard.read','orders.read','orders.import','reports.read','reports.export'] },
     supervisor: { label: 'Supervisor', permissions: ['dashboard.read','employees.read','orders.read','reports.read'] },
-    shipping: { label: 'Shipping', permissions: ['dashboard.read','orders.read','orders.write'] },
+    shipping: { label: 'Shipping', permissions: ['dashboard.read','orders.read','shipping.import'] },
     data_entry: { label: 'Data Entry', permissions: ['dashboard.read','orders.read','orders.import'] },
     pending: { label: 'Pending', permissions: [] }
   };

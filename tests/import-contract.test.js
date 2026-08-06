@@ -10,7 +10,7 @@ const vm = require('vm');
 
 const utilsSource = fs.readFileSync('js/utils.js', 'utf8');
 
-function analyze(rows) {
+function loadUtils(rows = []) {
   const sandbox = {
     console,
     crypto: crypto.webcrypto,
@@ -33,7 +33,11 @@ function analyze(rows) {
   };
   vm.createContext(sandbox);
   vm.runInContext(`${utilsSource}\nthis.__Utils = Utils;`, sandbox, { filename: 'utils.js' });
-  return sandbox.__Utils.analyzeExcelFile(new ArrayBuffer(0));
+  return sandbox.__Utils;
+}
+
+function analyze(rows) {
+  return loadUtils(rows).analyzeExcelFile(new ArrayBuffer(0));
 }
 
 const officialHeaders = [
@@ -106,3 +110,14 @@ const officialHeaders = [
 }
 
 console.log('Import contract tests passed');
+
+{
+  const Utils = loadUtils();
+  assert.strictEqual(Utils.normalizeShippingPhone('010 5025-0777'), '1050250777');
+  assert.strictEqual(Utils.normalizeShippingPhone('+20 10-5025-0777'), '1050250777');
+  assert.strictEqual(Utils.normalizeShippingPhone('0020١٠٥٠٢٥٠٧٧٧'), '1050250777');
+  assert.strictEqual(Utils.normalizeShippingPhone('٠١٠٥٠٢٥٠٧٧٧'), '1050250777');
+  assert.strictEqual(Utils.normalizeShippingPhone(''), '');
+}
+
+console.log('Shipping phone normalization contract tests passed');
