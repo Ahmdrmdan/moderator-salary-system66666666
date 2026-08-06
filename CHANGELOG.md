@@ -13,6 +13,7 @@
 ## Unreleased — Orders module closure
 
 - Restored access to the existing guarded per-order edit and delete workflows in the Orders table. These actions remain hidden for read-only users and unavailable for locked months; no CRUD data model or permission boundary changed.
+- Versioned the Orders runtime URL with this closure fix so active production browser sessions cannot retain the prior table renderer.
 
 ## 7.0.11-import-production-uat
 
