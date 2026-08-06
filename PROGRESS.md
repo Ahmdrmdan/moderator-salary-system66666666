@@ -62,10 +62,13 @@ The `ID` column imported from the official order workbook is an identifier issue
 
 - JavaScript syntax checks passed for all changed runtime modules.
 - `node tests/import-contract.test.js` passed, including the new phone-normalization contract cases.
+- `node tests/shipping-contract.test.js` passed: unique phone match, multi-order conflict, idempotent fingerprint, stale event, tracking collision, and duplicate source-phone scenarios.
+- Firebase UAT passed on `https://ahmed123-95a0e.web.app`: a carrier row with `+20`/hyphen formatting uniquely matched an open production order, stored its tracking number/governorate/status/source time, and completed with no browser-console errors. Re-importing the exact same row produced `0 matched` and `1 unchanged`, so no duplicate order or shipment write was made.
+- The successful atomic save and subsequent reload/re-import confirm the production order update, immutable audit append, and month-scoped `shippingSyncs` summary write passed deployed Firestore Rules.
 
 ### Remaining before milestone closure
 
-- Add/execute matching and transaction regression cases, deploy Rules and Hosting, then perform production Firebase UAT with a controlled non-financial shipping update and verify the order, audit log, sync summary, Dashboard/Reports, and browser console.
+- Review downstream Dashboard/Reports presentation and the remaining phase-two module impact before formally closing the broader Shipping Integration milestone. The phone-only import/update path itself is production-verified.
 
 ## Version 4 completion
 

@@ -8,6 +8,7 @@
 - Added backward-compatible shipping fields (`shipping`, `lastShippingUpdate`, `lastShippingSyncedAt`) while retaining legacy flat fields, atomic order/audit writes, and per-month `shippingSyncs` import summaries.
 - Added the distinct `shipping.import` permission and Firestore Rules protection; legacy Admin and Super Admin compatibility is retained.
 - Added contract coverage for Egyptian phone normalization in local, country-prefixed, punctuation-formatted, and Arabic-digit formats.
+- Production UAT on Firebase project `ahmed123-95a0e` matched one open order by a `+20`-formatted phone, stored the UAT tracking number/governorate/status/source time, and then classified the identical second import as unchanged with no additional order write or browser-console errors.
 
 ## 7.0.11-import-production-uat
 
