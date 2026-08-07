@@ -1,5 +1,24 @@
 # PROGRESS.md — Final Production Audit
 
+## Payroll Workflow Engine — phase 1 complete, awaiting review
+
+### Scope
+
+- Introduced `js/payroll-workflow.js` as a state-machine extension of the existing Month, Smart Approval, and Salary Processing flows. It owns transition validation and permission mapping only; it does not calculate salary, render UI, query data independently, or alter the Report/Dashboard design.
+- New documents persist `workflowState`, `workflowVersion`, `workflowUpdatedAt`, and `workflowUpdatedBy`. Existing documents are read through safe derivation from their established report, lock, archive, and Salary Snapshot status fields, with no migration.
+- The workflow records calculation, review, approval, Snapshot creation/readiness, final payment, paid archive, and pre-payment reopening. The existing one-step Snapshot approval remains atomic in behavior and records both Snapshot-created and ready-for-payment milestones.
+
+### Validation and safety
+
+- Approval requires the pre-existing Smart Approval assessment to have zero critical findings. Snapshot creation requires an approved/locked report and rejects a duplicate Snapshot. Final payment requires every employee payment. Final archive requires the linked Snapshot to be fully paid.
+- Reopening remains supported for an approved report before payroll payment. A paid archived report is intentionally terminal: reopening it could permit a new calculation against an immutable paid Snapshot, so the engine rejects that unsafe transition.
+- Firestore Rules allow only the required lifecycle metadata on a locked-to-open reopen, only the required payment metadata during payment, and a locked archive only when the server-side Salary Snapshot is already `paid`.
+
+### Verification
+
+- Passed JavaScript syntax checks for `js/payroll-workflow.js`, `js/months.js`, `js/app.js`, and `js/salary-processing.js`, the new Payroll Workflow contract suite, the full eleven-suite regression set, and `git diff --check`.
+- Firestore Emulator compilation could not run in this environment because Java is not installed on PATH; no Firebase Deploy was performed. The Rules change is covered by static contract/regression review and remains pending Firebase UAT in the later approved UI-binding phase.
+
 ## Monthly Report 2.0 UI / UX — approved for v7.2.0
 
 ### Scope and visual implementation

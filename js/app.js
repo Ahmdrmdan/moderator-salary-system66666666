@@ -1139,7 +1139,12 @@ const App = (() => {
     }, assessment => {
       // Critical findings never expose this callback from SmartApproval.
       state.pendingApprovalAssessment = assessment;
-      openCloseMonthModal();
+      Months.startWorkflowReview(monthId, assessment)
+        .then(() => openCloseMonthModal())
+        .catch(err => {
+          console.error('Could not start payroll workflow review:', err);
+          Toast.show(err.message || 'تعذر بدء مرحلة المراجعة.', 'error');
+        });
     });
   }
 
@@ -1289,7 +1294,8 @@ const App = (() => {
           warningsCount: assessment.warnings.length,
           criticalCount: assessment.critical.length,
           checksCount: assessment.totalChecks
-        }
+        },
+        approvalAssessment: assessment
       });
 
       Toast.show(
@@ -4610,6 +4616,11 @@ const App = (() => {
       state.currentMonthDepartmentBonusRules = departmentRulesSnapshot;
 
       const reportRef = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(state.currentMonthId);
+      PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.CALCULATE, {
+        currentState: (Months.byId(state.currentMonthId) || {}).workflowState,
+        month: Months.byId(state.currentMonthId) || {},
+        report
+      });
       const reportPayload = {
         report,
         totals,
@@ -4620,7 +4631,8 @@ const App = (() => {
         bonusRules: { ...globalRules },
         departmentBonusRules: departmentRulesSnapshot,
         carryDebt,
-        calculatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        calculatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        ...PayrollWorkflow.metadata(PayrollWorkflow.STATE.CALCULATED)
       };
       const calculationAudit = {
         action: AuditService.ACTION.REPORT_CALCULATED,
@@ -4657,7 +4669,8 @@ const App = (() => {
             ? Months.STATUS.LOCKED : Months.STATUS.OPEN,
           report,
           totals,
-          departmentTotals
+          departmentTotals,
+          workflowState: PayrollWorkflow.STATE.CALCULATED
         });
       } catch (err) {
         console.error('Could not refresh month summary:', err);

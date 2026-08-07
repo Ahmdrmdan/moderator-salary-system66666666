@@ -181,6 +181,7 @@ const Months = (() => {
       // in this direction is safe (an open month is editable, which is the
       // pre-existing behaviour); the opposite would silently freeze data.
       status: d.status === STATUS.LOCKED ? STATUS.LOCKED : STATUS.OPEN,
+      workflowState: PayrollWorkflow.derive(d),
       archived: d.archived === true,
       archivedAt: d.archivedAt || null,
       archivedBy: d.archivedBy || null,
@@ -380,7 +381,8 @@ const Months = (() => {
       departmentTotals: [],
       orderCount: 0,
       isEmpty: true,
-      archived: false
+      archived: false,
+      ...PayrollWorkflow.metadata(PayrollWorkflow.STATE.DRAFT)
     });
 
     // Mirror the new month into the index so the Months page lists it
@@ -394,7 +396,8 @@ const Months = (() => {
       orderCount: 0,
       isEmpty: true,
       archived: false,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      ...PayrollWorkflow.metadata(PayrollWorkflow.STATE.DRAFT)
     });
 
     return true;
@@ -558,6 +561,7 @@ const Months = (() => {
       archived: data.archived === true,
       archivedAt: data.archivedAt || null,
       archivedBy: data.archivedBy || null,
+      workflowState: PayrollWorkflow.derive(data),
       orderCount: Utils.toFiniteNumber(data.orderCount) ??
         (totals ? Utils.toFiniteNumber(totals.ordersCount) : null),
       isEmpty: data.isEmpty === true,
@@ -567,6 +571,49 @@ const Months = (() => {
       calculatedAt: data.calculatedAt || null,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+  }
+
+  /**
+   * Records the existing Smart Approval review as an explicit workflow
+   * transition. This changes lifecycle metadata only: report figures,
+   * snapshots and the UI remain untouched. The summary update and audit are
+   * committed with the report state in one batch so the index cannot present
+   * a different workflow state from the underlying month.
+   */
+  async function startWorkflowReview(monthId, assessment) {
+    if (!Utils.isValidMonthId(monthId)) throw new Error('صيغة الشهر غير صحيحة');
+
+    const monthRef = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(monthId);
+    const snap = await monthRef.get();
+    if (!snap.exists) throw new Error('الشهر غير موجود');
+    const month = snap.data() || {};
+    PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.START_REVIEW, {
+      month,
+      report: month.report,
+      approvalAssessment: assessment
+    });
+
+    const metadata = PayrollWorkflow.metadata(PayrollWorkflow.STATE.IN_REVIEW);
+    const batch = db.batch();
+    batch.set(monthRef, metadata, { merge: true });
+    batch.set(db.collection(COLLECTIONS.MONTHLY_SUMMARIES).doc(monthId), metadata, { merge: true });
+    AuditService.appendToBatch(batch, {
+      action: 'payroll_workflow.review_started',
+      entity: 'monthly_reports',
+      operation: AuditService.OPERATION.UPDATE,
+      documentId: monthId,
+      documentLabel: month.monthLabel || Utils.monthLabelFromId(monthId),
+      monthId,
+      severity: AuditService.SEVERITY.INFO,
+      details: {
+        from: PayrollWorkflow.derive(month),
+        to: PayrollWorkflow.STATE.IN_REVIEW,
+        warningsCount: Array.isArray(assessment && assessment.warnings) ? assessment.warnings.length : 0,
+        criticalCount: Array.isArray(assessment && assessment.critical) ? assessment.critical.length : 0
+      }
+    });
+    await batch.commit();
+    return PayrollWorkflow.STATE.IN_REVIEW;
   }
 
   /* ============================================================
@@ -777,6 +824,17 @@ const Months = (() => {
       );
     }
 
+    // Approval is the only transition that can lock a calculated report.
+    // The caller supplies the already-computed Smart Approval assessment;
+    // keeping it here makes the repository-level close safe even when a UI
+    // handler is bypassed.
+    PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.APPROVE, {
+      currentState: PayrollWorkflow.derive(monthData),
+      month: monthData,
+      report,
+      approvalAssessment: sources.approvalAssessment
+    });
+
     // ---- 2. Snapshot: the frozen output ----
     const snapshotId = await createSnapshot(monthId, monthData);
 
@@ -830,6 +888,7 @@ const Months = (() => {
         ? auth.currentUser.email : null,
       snapshotId,
       backupChunks,
+      ...PayrollWorkflow.metadata(PayrollWorkflow.STATE.APPROVED),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -859,7 +918,8 @@ const Months = (() => {
       closedBy: (typeof auth !== 'undefined' && auth.currentUser)
         ? auth.currentUser.email : null,
       snapshotId,
-      backupChunks
+      backupChunks,
+      ...PayrollWorkflow.metadata(PayrollWorkflow.STATE.APPROVED)
     }, { merge: true });
 
     // ---- 7. Next month, open, and now active ----
@@ -894,9 +954,9 @@ const Months = (() => {
   }
 
   /**
-   * Reopens an approved month without touching its report, snapshots,
-   * backups, or summary contents. The Firestore Rules permit only this
-   * exact locked-to-open status transition for an administrator.
+   * Reopens an approved (pre-payment) month without touching its report,
+   * snapshots, backups, or summary contents. The narrow Firestore Rule
+   * permits only the lifecycle fields needed for this transition.
    */
   async function reopenMonth(monthId, action = ACTION.MONTH_REOPENED) {
     if (!Utils.isValidMonthId(monthId)) {
@@ -910,6 +970,12 @@ const Months = (() => {
     }
     const monthData = snap.data() || {};
     const wasLocked = monthData.status === STATUS.LOCKED;
+    PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.REOPEN, {
+      currentState: PayrollWorkflow.derive(monthData),
+      month: monthData,
+      report: monthData.report
+    });
+    const workflowMetadata = PayrollWorkflow.metadata(PayrollWorkflow.STATE.REOPENED);
 
     // Legacy documents could have been indexed as locked before their own
     // `status` write was denied. Normalize the authoritative report document
@@ -918,18 +984,25 @@ const Months = (() => {
     if (wasLocked) {
       // This is deliberately the only write to a locked month document. The
       // rule for reopening rejects a request that changes any other field.
-      await monthRef.update({ status: STATUS.OPEN });
+      await monthRef.update({ status: STATUS.OPEN, ...workflowMetadata });
     } else if (monthData.status !== STATUS.OPEN) {
-      await monthRef.set({ status: STATUS.OPEN }, { merge: true });
+      await monthRef.set({ status: STATUS.OPEN, ...workflowMetadata }, { merge: true });
     }
 
     // Keep the lightweight archive/index status in sync after the month is
     // open again. This retains the existing summary document and all of its
     // data; only its lifecycle status is refreshed from the month document.
-    await refreshSummary(monthId, { ...monthData, status: STATUS.OPEN });
+    await refreshSummary(monthId, {
+      ...monthData,
+      status: STATUS.OPEN,
+      workflowState: PayrollWorkflow.STATE.REOPENED
+    });
 
     const indexed = state.byId.get(monthId);
-    if (indexed) indexed.status = STATUS.OPEN;
+    if (indexed) {
+      indexed.status = STATUS.OPEN;
+      indexed.workflowState = PayrollWorkflow.STATE.REOPENED;
+    }
     notify();
     await writeAuditLog(action, {
       monthId,
@@ -940,31 +1013,50 @@ const Months = (() => {
     return { monthId, wasLocked };
   }
 
-  /** Marks an open, non-active month as archived. Archived months remain
-   * visible and readable but cannot receive imports or other edits. */
+  /** Marks an open administrative month, or a fully paid locked payroll,
+   * as archived. Archived months remain visible and readable but cannot
+   * receive imports or other edits. */
   async function archiveMonth(monthId) {
     if (!Utils.isValidMonthId(monthId)) throw new Error('صيغة الشهر غير صحيحة');
     if (monthId === activeMonthId()) throw new Error('لا يمكن أرشفة الشهر النشط. فعّل شهرًا آخر أولًا.');
 
     const monthRef = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(monthId);
     const summaryRef = db.collection(COLLECTIONS.MONTHLY_SUMMARIES).doc(monthId);
+    const salaryRef = db.collection('salary_processing').doc(monthId);
     await db.runTransaction(async transaction => {
-      const snap = await transaction.get(monthRef);
+      const [snap, salarySnap] = await Promise.all([
+        transaction.get(monthRef), transaction.get(salaryRef)
+      ]);
       if (!snap.exists) throw new Error('الشهر غير موجود');
       const data = snap.data() || {};
-      if (data.status === STATUS.LOCKED) throw new Error('الشهر المعتمد محفوظ بالفعل في الأرشيف ولا يحتاج أرشفة إضافية');
       if (data.archived === true) throw new Error('الشهر مؤرشف بالفعل');
+      const salarySnapshot = salarySnap.exists ? (salarySnap.data() || {}) : null;
+      if (data.status === STATUS.LOCKED) {
+        // A closed report enters the formal archive only after every salary
+        // payment is recorded. Open-month archive behaviour remains exactly
+        // as it was for historical administrative cleanup.
+        PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.ARCHIVE, {
+          month: data,
+          salarySnapshot
+        });
+      }
       const fields = {
         archived: true,
         archivedAt: firebase.firestore.FieldValue.serverTimestamp(),
         archivedBy: auth.currentUser ? (auth.currentUser.email || null) : null
       };
+      if (data.status === STATUS.LOCKED) {
+        Object.assign(fields, PayrollWorkflow.metadata(PayrollWorkflow.STATE.ARCHIVED));
+      }
       transaction.update(monthRef, fields);
       transaction.set(summaryRef, fields, { merge: true });
       AuditService.appendToBatch(transaction, {
         action: ACTION.MONTH_ARCHIVED, entity: 'months', operation: AuditService.OPERATION.UPDATE,
         documentId: monthId, documentLabel: data.monthLabel || Utils.monthLabelFromId(monthId), monthId,
-        before: { archived: false }, after: { archived: true }, details: { monthId }
+        before: { archived: false }, after: { archived: true }, details: {
+          monthId,
+          workflowState: data.status === STATUS.LOCKED ? PayrollWorkflow.STATE.ARCHIVED : null
+        }
       });
     });
   }
@@ -1643,6 +1735,7 @@ const Months = (() => {
     createBackup,
     loadMonthDetails,
     refreshSummary,
+    startWorkflowReview,
     // audit
     writeAuditLog,
     recentAuditLogs,

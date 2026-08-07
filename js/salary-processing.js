@@ -114,7 +114,19 @@ const SalaryProcessing = (() => {
     const warnings=c.rows.filter(r=>val(r,['deductions','totalDeductions'])&&!r.deductionReason);
     if(warnings.length&&!confirm(`يوجد ${warnings.length} خصم بلا سبب. هل تريد المتابعة؟`))return;
     const ref=db.collection(collection).doc(c.monthId);
-    await commitWithAudit(batch=>batch.set(ref,{version:1,period:{type:'month',monthId:c.monthId},status:'approved',approvedAt:firebase.firestore.FieldValue.serverTimestamp(),approvedBy:auth.currentUser?.email||null,report:c.rows,totals:c.totals,employeeManualEntries:{},employeePayments:{},payment:{status:'unpaid',paidAt:null,paidBy:null},createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:false}),{action:'salary_processing.approved',entity:'salary_processing',operation:AuditService.OPERATION.CREATE,documentId:c.monthId,documentLabel:`Payroll ${c.monthId}`,monthId:c.monthId,severity:AuditService.SEVERITY.WARNING,details:{period:c.monthId,status:'approved',employeeCount:c.rows.length}});
+    const month=Months.byId(c.monthId)||{};
+    const workflowContext={month,report:c.rows,salarySnapshot:snapshot};
+    PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.CREATE_SALARY_SNAPSHOT,workflowContext);
+    // The current product makes a newly saved salary snapshot immediately
+    // payable. Keep that established one-step behavior while recording both
+    // logical milestones so a later UI can expose them without migrating
+    // historical snapshots or changing a financial calculation.
+    PayrollWorkflow.assertTransition(PayrollWorkflow.STATE.SALARY_SNAPSHOT_CREATED,PayrollWorkflow.STATE.READY_FOR_PAYMENT,{
+      ...workflowContext,
+      salarySnapshot:{status:'approved',report:c.rows}
+    });
+    const workflow=PayrollWorkflow.metadata(PayrollWorkflow.STATE.READY_FOR_PAYMENT);
+    await commitWithAudit(batch=>batch.set(ref,{version:1,period:{type:'month',monthId:c.monthId},status:'approved',approvedAt:firebase.firestore.FieldValue.serverTimestamp(),approvedBy:auth.currentUser?.email||null,report:c.rows,totals:c.totals,employeeManualEntries:{},employeePayments:{},payment:{status:'unpaid',paidAt:null,paidBy:null},salarySnapshotCreatedAt:firebase.firestore.FieldValue.serverTimestamp(),readyForPaymentAt:firebase.firestore.FieldValue.serverTimestamp(),createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),...workflow},{merge:false}),{action:'salary_processing.approved',entity:'salary_processing',operation:AuditService.OPERATION.CREATE,documentId:c.monthId,documentLabel:`Payroll ${c.monthId}`,monthId:c.monthId,severity:AuditService.SEVERITY.WARNING,details:{period:c.monthId,status:'approved',employeeCount:c.rows.length,workflowTransitions:[PayrollWorkflow.STATE.SALARY_SNAPSHOT_CREATED,PayrollWorkflow.STATE.READY_FOR_PAYMENT]}});
     await load();Toast.show('تم اعتماد وحفظ Snapshot الرواتب','success');
   }
   async function pay(ids){
@@ -125,7 +137,11 @@ const SalaryProcessing = (() => {
     ids.forEach(id=>payments[id]={status:'paid',paidAt:when,paidBy:actor});
     const all=(snapshot.report||[]).every(r=>payments[employeeId(r)]?.status==='paid');
     const ref=db.collection(collection).doc(periodId);
-    await commitWithAudit(batch=>batch.update(ref,{employeePayments:payments,status:all?'paid':'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp()}),{action:'salary_processing.paid',entity:'salary_processing',operation:AuditService.OPERATION.UPDATE,documentId:periodId,documentLabel:`Payroll ${periodId}`,monthId:periodId,severity:AuditService.SEVERITY.INFO,details:{period:periodId,status:all?'paid':'approved',paidEmployeeIds:ids}});
+    if(all){
+      PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.PAY,{month:Months.byId(periodId)||{},salarySnapshot:{...snapshot,employeePayments:payments}});
+    }
+    const workflow=all?PayrollWorkflow.metadata(PayrollWorkflow.STATE.PAID):{};
+    await commitWithAudit(batch=>batch.update(ref,{employeePayments:payments,status:all?'paid':'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp(),...workflow}),{action:'salary_processing.paid',entity:'salary_processing',operation:AuditService.OPERATION.UPDATE,documentId:periodId,documentLabel:`Payroll ${periodId}`,monthId:periodId,severity:AuditService.SEVERITY.INFO,details:{period:periodId,status:all?'paid':'approved',workflowState:all?PayrollWorkflow.STATE.PAID:PayrollWorkflow.STATE.READY_FOR_PAYMENT,paidEmployeeIds:ids}});
     await load();
   }
   async function adjust(id){

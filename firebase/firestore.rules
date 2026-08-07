@@ -296,7 +296,10 @@ service cloud.firestore {
       function isReopeningWrite() {
         return thisMonthIsLocked() &&
           request.resource.data.status == 'open' &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'status', 'workflowState', 'workflowVersion',
+            'workflowUpdatedAt', 'workflowUpdatedBy'
+          ]);
       }
 
       // Archive/restore only change the lifecycle metadata. They are kept
@@ -307,6 +310,21 @@ service cloud.firestore {
           request.resource.data.archived == true &&
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['archived', 'archivedAt', 'archivedBy']);
+      }
+
+      // A locked month is archived only after its payroll snapshot is fully
+      // paid. The narrow field list preserves the immutable report, totals,
+      // backup and close evidence while allowing the final workflow marker.
+      function isPaidArchiveWrite() {
+        return thisMonthIsLocked() && !thisMonthIsArchived() &&
+          request.resource.data.archived == true &&
+          request.resource.data.workflowState == 'archived' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'archived', 'archivedAt', 'archivedBy', 'workflowState',
+            'workflowVersion', 'workflowUpdatedAt', 'workflowUpdatedBy'
+          ]) &&
+          exists(/databases/$(database)/documents/salary_processing/$(monthId)) &&
+          get(/databases/$(database)/documents/salary_processing/$(monthId)).data.status == 'paid';
       }
 
       function isArchiveRestoreWrite() {
@@ -325,7 +343,7 @@ service cloud.firestore {
       allow create: if hasAnyPermission(['reports.calculate', 'months.write']);
       allow update: if hasAnyPermission(['reports.calculate', 'reports.approve', 'months.write', 'months.destructive']) &&
         ((!thisMonthIsLocked() && !thisMonthIsArchived()) || isClosingWrite() ||
-          isReopeningWrite() || isArchiveWrite() || isArchiveRestoreWrite());
+          isReopeningWrite() || isArchiveWrite() || isPaidArchiveWrite() || isArchiveRestoreWrite());
       // A month can be deleted only when the app marked it empty at creation
       // and the client transaction independently verified no order batches.
       allow delete: if hasAnyPermission(['months.destructive']) && !thisMonthIsLocked() &&
@@ -400,11 +418,19 @@ service cloud.firestore {
       // During an atomic archive restore, the parent month becomes
       // unarchived in the same transaction; getAfter keeps the two documents
       // in lockstep without allowing a standalone summary edit while archived.
-      allow update: if hasAnyPermission(['reports.approve', 'months.write']) && !monthLocked(monthId) &&
-        (!monthArchived(monthId) ||
-          (exists(/databases/$(database)/documents/monthly_reports/$(monthId)) &&
-           getAfter(/databases/$(database)/documents/monthly_reports/$(monthId)).data.keys().hasAll(['archived']) &&
-           getAfter(/databases/$(database)/documents/monthly_reports/$(monthId)).data.archived == false));
+      allow update: if hasAnyPermission(['reports.approve', 'months.write']) &&
+        ((!monthLocked(monthId) &&
+          (!monthArchived(monthId) ||
+            (exists(/databases/$(database)/documents/monthly_reports/$(monthId)) &&
+             getAfter(/databases/$(database)/documents/monthly_reports/$(monthId)).data.keys().hasAll(['archived']) &&
+             getAfter(/databases/$(database)/documents/monthly_reports/$(monthId)).data.archived == false))) ||
+          (monthLocked(monthId) &&
+            exists(/databases/$(database)/documents/monthly_reports/$(monthId)) &&
+            getAfter(/databases/$(database)/documents/monthly_reports/$(monthId)).data.archived == true &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'archived', 'archivedAt', 'archivedBy', 'workflowState',
+              'workflowVersion', 'workflowUpdatedAt', 'workflowUpdatedBy'
+            ])));
       allow delete: if hasAnyPermission(['months.destructive']) &&
         exists(/databases/$(database)/documents/monthly_reports/$(monthId)) &&
         get(/databases/$(database)/documents/monthly_reports/$(monthId)).data.keys().hasAll(['isEmpty']) &&
@@ -440,7 +466,10 @@ service cloud.firestore {
       allow update: if (isSuperAdmin() && hasAnyPermission(['backups.restore'])) ||
         (resource.data.status != 'paid' && request.resource.data.period.monthId == monthId &&
           ((request.resource.data.diff(resource.data).affectedKeys().hasOnly(['employeeManualEntries', 'updatedAt']) && hasAnyPermission(['salary_processing.write'])) ||
-           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['employeePayments', 'status', 'updatedAt']) && hasAnyPermission(['salary_processing.pay']))));
+           (request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'employeePayments', 'status', 'workflowState', 'workflowVersion',
+             'workflowUpdatedAt', 'workflowUpdatedBy', 'updatedAt'
+           ]) && hasAnyPermission(['salary_processing.pay']))));
       allow delete: if false;
     }
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Payroll Workflow Engine (phase 1)
+
+- Added a backward-compatible monthly payroll state machine: Draft, Calculated, In Review, Approved, Salary Snapshot Created, Ready for Payment, Paid, Archived, and Reopened. Legacy reports and Salary Snapshots derive their state from existing `status`, report, and archive fields, so no migration or historical data rewrite is required.
+- Guarded the existing Calculate, Smart Approval, month close, Salary Snapshot, payment, archive, and reopen operations with the valid workflow transition and the permissions already used by those operations. Smart Approval remains the approval validation source; no salary formula, report calculation, or payment amount changed.
+- Persisted small workflow metadata with the existing report/snapshot documents and summary index, together with append-only audit entries. Creating the existing Salary Snapshot continues to make it immediately ready for payment, while recording both logical milestones for the future workflow UI.
+- Permitted the final archive marker for a locked report only after the linked Salary Snapshot is fully paid; a paid archive is terminal to prevent recalculation against an immutable paid Snapshot.
+
 ## [7.2.0] — 2026-08-07 (Monthly Report 2.0 UI / UX)
 
 - Reorganized the existing monthly-report screen into a clear Arabic review workflow: calculate, review, approve the report, approve the independent Salary Snapshot, then record payment. All existing controls, IDs, permissions, calculations, Firestore reads/writes, and Snapshot behavior remain unchanged.
