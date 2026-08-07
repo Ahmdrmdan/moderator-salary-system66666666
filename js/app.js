@@ -438,20 +438,20 @@ const App = (() => {
     // so "single department" exports are department-scoped end to end.
     document.getElementById('calculateBtn').addEventListener('click', calculateReport);
     document.getElementById('exportExcelBtn').addEventListener('click', () => {
-      if (!requireReport()) return;
+      if (!requireReportExport()) return;
       Reports.exportExcel(exportRows(), currentMonthLabel(), exportContext());
     });
     document.getElementById('exportPdfBtn').addEventListener('click', () => {
-      if (!requireReport()) return;
+      if (!requireReportExport()) return;
       Reports.exportPDF(exportRows(), currentMonthLabel(), state.settings.companyName, exportContext());
     });
     document.getElementById('copyReportBtn').addEventListener('click', async () => {
-      if (!requireReport()) return;
+      if (!requireReportExport()) return;
       await Reports.copyReport(exportRows());
       Toast.show('تم نسخ التقرير', 'success');
     });
     document.getElementById('printReportBtn').addEventListener('click', () => {
-      if (!requireReport()) return;
+      if (!requireReportExport()) return;
       Reports.printReport(exportRows(), currentMonthLabel(), state.settings, exportContext());
     });
     document.getElementById('reportSearch').addEventListener('input', Utils.debounce((e) => {
@@ -4473,7 +4473,8 @@ const App = (() => {
       state.currentDepartmentTotals = departmentTotals;
       state.currentMonthDepartmentBonusRules = departmentRulesSnapshot;
 
-      await db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(state.currentMonthId).set({
+      const reportRef = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(state.currentMonthId);
+      const reportPayload = {
         report,
         totals,
         departmentTotals,
@@ -4484,7 +4485,30 @@ const App = (() => {
         departmentBonusRules: departmentRulesSnapshot,
         carryDebt,
         calculatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+      };
+      const calculationAudit = {
+        action: AuditService.ACTION.REPORT_CALCULATED,
+        entity: 'months',
+        operation: AuditService.OPERATION.UPDATE,
+        documentId: state.currentMonthId,
+        documentLabel: currentMonthLabel(),
+        monthId: state.currentMonthId,
+        details: {
+          monthId: state.currentMonthId,
+          monthLabel: currentMonthLabel(),
+          employeeCount: report.length,
+          excludedInactive: excludedCount,
+          finalSalaryTotal: totals ? (totals.finalSalary || 0) : 0,
+          totalBonus: totals ? (totals.totalBonus || 0) : 0,
+          totalAdvances: totals ? (totals.totalAdvances || 0) : 0,
+          carriedDebtTotal: totals ? (totals.carriedDebt || 0) : 0,
+          indebtedEmployees: report.filter(r => r.carriedDebt > 0).length
+        }
+      };
+      const calculationBatch = db.batch();
+      calculationBatch.set(reportRef, reportPayload, { merge: true });
+      AuditService.appendToBatch(calculationBatch, calculationAudit);
+      await calculationBatch.commit();
 
       // Keep the lightweight month index in step with the report, so the
       // Months page dashboard is accurate without waiting for a close.
@@ -4507,30 +4531,6 @@ const App = (() => {
       renderDashboard();
       updateCloseMonthButtonState();
       renderReportApprovalStatus();
-
-      // Auditing the calculation records the FIGURES, not the rows: the
-      // report itself is stored on the month document, so duplicating it
-      // here would double the storage for no extra information. What the log
-      // adds is who ran it, when, and what the headline totals came out as -
-      // which is what makes "these numbers changed" traceable.
-      await AuditService.log(AuditService.ACTION.REPORT_CALCULATED, {
-        entity: 'months',
-        operation: AuditService.OPERATION.UPDATE,
-        documentId: state.currentMonthId,
-        documentLabel: currentMonthLabel(),
-        monthId: state.currentMonthId,
-        details: {
-          monthId: state.currentMonthId,
-          monthLabel: currentMonthLabel(),
-          employeeCount: report.length,
-          excludedInactive: excludedCount,
-          finalSalaryTotal: totals ? (totals.finalSalary || 0) : 0,
-          totalBonus: totals ? (totals.totalBonus || 0) : 0,
-          totalAdvances: totals ? (totals.totalAdvances || 0) : 0,
-          carriedDebtTotal: totals ? (totals.carriedDebt || 0) : 0,
-          indebtedEmployees: report.filter(r => r.carriedDebt > 0).length
-        }
-      });
 
       const indebted = report.filter(r => r.carriedDebt > 0).length;
       const notes = [];
@@ -4570,6 +4570,17 @@ const App = (() => {
       return false;
     }
     return true;
+  }
+
+  /** Keeps capability denial inside the export boundary, not only the UI. */
+  function requireReportExport() {
+    try {
+      Permissions.require('reports.export');
+      return requireReport();
+    } catch (err) {
+      Toast.show(err.message || 'ليس لديك صلاحية تصدير التقرير', 'error');
+      return false;
+    }
   }
 
   /* ============================================================
