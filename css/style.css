@@ -2675,6 +2675,30 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
 #view-report .workspace-checklist-group.is-warning { border-color:rgba(245,158,11,.25); background:rgba(245,158,11,.045); }
 #view-report .workspace-checklist-group.is-passed { border-color:rgba(52,211,153,.18); }
 #view-report .report-review-readiness { display:block; margin-top:8px; color:var(--ink-muted); font-size:11px; }
+#view-report .report-approval-decision-panel {
+  display:grid;
+  justify-items:center;
+  gap:12px;
+  padding:20px;
+  border:1px solid rgba(115,167,255,.26);
+  border-radius:12px;
+  text-align:center;
+  background:linear-gradient(135deg,rgba(115,167,255,.12),rgba(25,29,34,.68));
+}
+#view-report .report-approval-decision-panel h4 { margin:3px 0 0; color:var(--ink); font-size:18px; }
+#view-report .report-approval-decision-panel p { margin:5px 0 0; color:var(--ink-muted); font-size:12px; }
+#view-report .report-approval-ack { justify-content:center; margin:0; color:var(--ink-muted); }
+#view-report .report-approval-decision-panel .report-state-workspace {
+  grid-template-columns:1fr;
+  width:min(100%,560px);
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+#view-report .report-approval-decision-panel .report-state-workspace-heading { display:none; }
+#view-report .report-approval-decision-panel .report-actions { justify-content:center; }
+#view-report .report-approval-decision-panel .report-primary-actions { justify-content:center; }
 #view-report .report-state-workspace {
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;

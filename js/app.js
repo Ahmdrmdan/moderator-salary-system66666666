@@ -1119,9 +1119,11 @@ const App = (() => {
    * CLOSE MONTH  (زر إنهاء الشهر)
    * ============================================================ */
 
-  /** Runs the read-only Smart Approval review before the existing irreversible
-   * confirmation. The report is re-read from Firestore so the assessment is
-   * always based on the persisted state rather than a stale visible table. */
+  /**
+   * Enters or confirms the existing approval flow from the report workspace.
+   * The readiness assessment and close operation are unchanged; only their
+   * presentation moved from stacked dialogs into the state-driven report.
+   */
   async function openSmartApproval() {
     Permissions.require('reports.approve');
     const monthId = Months.activeMonthId();
@@ -1133,22 +1135,40 @@ const App = (() => {
       console.warn('Could not read report for Smart Approval:', err);
     }
     const indexed = monthId ? Months.byId(monthId) : null;
-    await SmartApproval.open({
+    const approvalContext = {
       monthId,
       month: { ...(indexed || {}), ...(details || {}) },
       report: details ? details.report : [],
       totals: details ? details.totals : null,
       departments: Departments.all()
-    }, assessment => {
-      // Critical findings never expose this callback from SmartApproval.
-      state.pendingApprovalAssessment = assessment;
-      Months.startWorkflowReview(monthId, assessment)
-        .then(() => openCloseMonthModal())
-        .catch(err => {
-          console.error('Could not start payroll workflow review:', err);
-          Toast.show(err.message || 'تعذر بدء مرحلة المراجعة.', 'error');
-        });
-    });
+    };
+    const assessment = SmartApproval.assess(approvalContext);
+    state.pendingApprovalAssessment = assessment;
+    const workflowState = PayrollWorkflow.derive(approvalContext.month);
+
+    if (workflowState === PayrollWorkflow.STATE.CALCULATED) {
+      try {
+        await Months.startWorkflowReview(monthId, assessment);
+        await selectMonth(monthId);
+        if (typeof PayrollWorkflowUI !== 'undefined') {
+          PayrollWorkflowUI.render({
+            month: { ...approvalContext.month, workflowState: PayrollWorkflow.STATE.IN_REVIEW },
+            report: approvalContext.report
+          });
+        }
+      } catch (err) {
+        console.error('Could not start payroll workflow review:', err);
+        Toast.show(err.message || 'تعذر فتح مساحة الاعتماد.', 'error');
+      }
+      return;
+    }
+
+    if (workflowState === PayrollWorkflow.STATE.IN_REVIEW) {
+      await approveReportFromWorkspace(assessment);
+      return;
+    }
+
+    Toast.show('الحالة الحالية للتقرير لا تسمح بفتح أو تأكيد الاعتماد.', 'error');
   }
 
   /**
@@ -1260,29 +1280,8 @@ const App = (() => {
     document.getElementById('closeMonthModal').classList.remove('open');
   }
 
-  /**
-   * Executes the close. All the heavy lifting lives in Months.closeMonth();
-   * this function's job is the UI contract around it.
-   */
-  async function onConfirmCloseMonth() {
-    Permissions.require('reports.approve');
+  async function completeMonthApproval(assessment, { stayInReport = false } = {}) {
     const monthId = Months.activeMonthId();
-    if (!monthId) return;
-
-    const assessment = state.pendingApprovalAssessment;
-    if (!assessment || assessment.monthId !== monthId || assessment.critical.length) {
-      closeCloseMonthModal();
-      Toast.show('لازم يكتمل فحص Smart Approval بدون أخطاء مانعة قبل الاعتماد.', 'error');
-      openSmartApproval();
-      return;
-    }
-
-    if (!document.getElementById('closeMonthAck').checked) {
-      Toast.show('لازم تأكد إنك موافق على قفل الشهر', 'error');
-      return;
-    }
-
-    closeCloseMonthModal();
     Loading.show('جاري إنهاء الشهر... من فضلك ما تقفلش الصفحة');
 
     try {
@@ -1307,18 +1306,22 @@ const App = (() => {
         'success'
       );
 
-      // Prepare the newly opened month in the background so the app is
-      // ready to work on it, then land the admin on the Archive - where
-      // the month they just closed now appears.
-      if (result.nextMonthId) {
-        await selectMonth(result.nextMonthId);
-      } else {
+      if (stayInReport) {
         await selectMonth(monthId);
+        onMonthsChanged();
+        switchView('report');
+        document.getElementById('pageTitle').textContent = 'التقرير الشهري';
+        document.getElementById('breadcrumbCurrent').textContent = 'التقرير الشهري';
+      } else {
+        if (result.nextMonthId) {
+          await selectMonth(result.nextMonthId);
+        } else {
+          await selectMonth(monthId);
+        }
+        onMonthsChanged();
+        switchView('archive');
+        document.getElementById('pageTitle').textContent = 'الأرشيف';
       }
-
-      onMonthsChanged();
-      switchView('archive');
-      document.getElementById('pageTitle').textContent = 'الأرشيف';
     } catch (err) {
       console.error('closeMonth failed:', err);
       Toast.show('خطأ أثناء إنهاء الشهر: ' + err.message, 'error');
@@ -1326,6 +1329,47 @@ const App = (() => {
       state.pendingApprovalAssessment = null;
       Loading.hide();
     }
+  }
+
+  async function approveReportFromWorkspace(assessment = state.pendingApprovalAssessment) {
+    Permissions.require('reports.approve');
+    const monthId = Months.activeMonthId();
+    const acknowledgement = document.getElementById('reportApprovalAck');
+    if (!assessment || assessment.monthId !== monthId || assessment.critical.length) {
+      Toast.show('توجد فحوصات غير مكتملة أو أخطاء مانعة قبل اعتماد التقرير.', 'error');
+      return;
+    }
+    if (!acknowledgement || !acknowledgement.checked) {
+      Toast.show('أكّد مراجعة فحوصات الجاهزية قبل اعتماد التقرير.', 'error');
+      return;
+    }
+    await completeMonthApproval(assessment, { stayInReport: true });
+  }
+
+  /**
+   * Executes the close. All the heavy lifting lives in Months.closeMonth();
+   * this function's job is the UI contract around it.
+   */
+  async function onConfirmCloseMonth() {
+    Permissions.require('reports.approve');
+    const monthId = Months.activeMonthId();
+    if (!monthId) return;
+
+    const assessment = state.pendingApprovalAssessment;
+    if (!assessment || assessment.monthId !== monthId || assessment.critical.length) {
+      closeCloseMonthModal();
+      Toast.show('لازم يكتمل فحص Smart Approval بدون أخطاء مانعة قبل الاعتماد.', 'error');
+      openSmartApproval();
+      return;
+    }
+
+    if (!document.getElementById('closeMonthAck').checked) {
+      Toast.show('لازم تأكد إنك موافق على قفل الشهر', 'error');
+      return;
+    }
+
+    closeCloseMonthModal();
+    await completeMonthApproval(assessment);
   }
 
   /* ============================================================

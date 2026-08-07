@@ -571,8 +571,12 @@ Haba&#9;7&#9;750"></textarea>
             <div class="report-section-heading"><div><span class="report-eyebrow">مرحلة الاعتماد</span><h3 id="reportApprovalWorkspaceTitle">مساحة اعتماد التقرير</h3><p>راجع الملخص التنفيذي وفحوصات الجاهزية قبل إنشاء كشف الرواتب.</p></div></div>
             <div class="report-approval-executive" id="reportApprovalExecutive" aria-live="polite"></div>
             <div class="report-approval-checklist" id="reportApprovalChecklist" aria-live="polite"></div>
+            <section class="report-approval-decision-panel" aria-label="قرار اعتماد التقرير">
+              <div><span class="report-eyebrow">قرار الاعتماد</span><h4>اعتماد التقرير الشهري</h4><p>يتم حفظ النسخة النهائية وقفل الشهر وفق نفس قواعد الاعتماد الحالية.</p></div>
+              <label class="check-field report-approval-ack" for="reportApprovalAck"><input type="checkbox" id="reportApprovalAck"> راجعت فحوصات الجاهزية وأؤكد اعتماد التقرير.</label>
+              <div class="report-workspace-slot" data-workspace-slot="approval-actions"></div>
+            </section>
           </section>
-          <div class="report-workspace-slot" data-workspace-slot="approval-actions"></div>
         </section>
 
         <section class="report-workspace" id="reportPayrollWorkspace" data-workspace="payroll" aria-labelledby="reportPayrollWorkspaceTitle" aria-hidden="true" inert>

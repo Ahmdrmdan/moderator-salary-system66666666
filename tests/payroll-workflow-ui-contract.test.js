@@ -46,10 +46,12 @@ assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.DRAFT), 'calculation',
   'draft reports expose the calculation workspace');
 assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.REOPENED), 'calculation',
   'reopened reports return to calculation without a new lifecycle state');
-assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.IN_REVIEW), 'review',
-  'review states expose the existing employee review workspace');
-assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.APPROVED), 'approval',
-  'approved reports expose the Salary Snapshot approval workspace');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.CALCULATED), 'review',
+  'calculated reports expose the employee review workspace');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.IN_REVIEW), 'approval',
+  'an in-review report exposes the dedicated approval workspace');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.APPROVED), 'payroll',
+  'an approved report advances to the dedicated payroll workspace');
 assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.SALARY_SNAPSHOT_CREATED), 'payroll',
   'the created Snapshot state exposes the existing payroll workspace');
 assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.READY_FOR_PAYMENT), 'payment',
@@ -75,6 +77,8 @@ assert.match(dashboard, /id="salarySnapshotDashboard"/,
   'the existing Salary Snapshot is retained as the payroll, payment, and archive surface');
 assert.match(dashboard, /data-workspace-slot="approval-decision"/,
   'the Decision Summary can move into the approval workspace without duplicating its data');
+assert.match(dashboard, /id="reportApprovalAck"/,
+  'approval confirmation remains an inline report control, not a dialog-only acknowledgement');
 assert.match(uiSource, /function mountWorkspaceSurfaces\(workspace\)/,
   'Workspace Manager mounts existing surfaces into the active workspace');
 assert.doesNotMatch(uiSource, /element\.hidden\s*=/,

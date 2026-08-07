@@ -19,6 +19,12 @@ assert.match(appSource, /function requireReportExport\(\)[\s\S]*Permissions\.req
   'direct export attempts remain guarded and permission refusal is handled without an uncaught error');
 assert.strictEqual((appSource.match(/if \(!requireReportExport\(\)\) return;/g) || []).length, 4,
   'Excel, PDF, copy, and print all use the same internal export guard');
+assert.match(appSource, /function openSmartApproval\(\)[\s\S]*SmartApproval\.assess\(approvalContext\)[\s\S]*Months\.startWorkflowReview/,
+  'entering approval uses the established assessment and review transition from the report workspace');
+assert.match(appSource, /function approveReportFromWorkspace[\s\S]*completeMonthApproval\(assessment, \{ stayInReport: true \}\)/,
+  'inline approval reuses the established close lifecycle while keeping the user in the report');
+assert.doesNotMatch(appSource, /await SmartApproval\.open\(/,
+  'report approval no longer launches the legacy Smart Approval dialog');
 
 // Calculation and its report audit entry must be queued into one batch.
 assert.match(appSource, /const calculationBatch = db\.batch\(\);[\s\S]*calculationBatch\.set\(reportRef, reportPayload, \{ merge: true \}\);[\s\S]*AuditService\.appendToBatch\(calculationBatch, calculationAudit\);[\s\S]*await calculationBatch\.commit\(\);/,

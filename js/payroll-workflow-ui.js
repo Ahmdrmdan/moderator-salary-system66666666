@@ -40,8 +40,9 @@ const PayrollWorkflowUI = (() => {
 
   function workspaceFor(state) {
     if ([PayrollWorkflow.STATE.DRAFT, PayrollWorkflow.STATE.REOPENED].includes(state)) return WORKSPACE.CALCULATION;
-    if ([PayrollWorkflow.STATE.CALCULATED, PayrollWorkflow.STATE.IN_REVIEW].includes(state)) return WORKSPACE.REVIEW;
-    if (state === PayrollWorkflow.STATE.APPROVED) return WORKSPACE.APPROVAL;
+    if (state === PayrollWorkflow.STATE.CALCULATED) return WORKSPACE.REVIEW;
+    if (state === PayrollWorkflow.STATE.IN_REVIEW) return WORKSPACE.APPROVAL;
+    if (state === PayrollWorkflow.STATE.APPROVED) return WORKSPACE.PAYROLL;
     if (state === PayrollWorkflow.STATE.SALARY_SNAPSHOT_CREATED) return WORKSPACE.PAYROLL;
     if (state === PayrollWorkflow.STATE.READY_FOR_PAYMENT) return WORKSPACE.PAYMENT;
     return WORKSPACE.ARCHIVE;
@@ -334,19 +335,38 @@ const PayrollWorkflowUI = (() => {
     const canSnapshot = canAction(PayrollWorkflow.ACTION.CREATE_SALARY_SNAPSHOT, context);
     const canPay = canAction(PayrollWorkflow.ACTION.PAY, context);
     const canArchive = canAction(PayrollWorkflow.ACTION.ARCHIVE, context);
+    const assessment = state === PayrollWorkflow.STATE.IN_REVIEW && typeof SmartApproval !== 'undefined' && SmartApproval.assess
+      ? SmartApproval.assess(assessmentContext(context)) : null;
+    const acknowledgement = $('reportApprovalAck');
+    const canApprove = state === PayrollWorkflow.STATE.IN_REVIEW && Permissions.can('reports.approve') &&
+      !!assessment && assessment.critical.length === 0 && !!(acknowledgement && acknowledgement.checked);
 
-    setAction('calculateBtn', [WORKSPACE.CALCULATION, WORKSPACE.REVIEW].includes(workspaceFor(state)), canCalculate,
+    setAction('calculateBtn', workspaceFor(state) === WORKSPACE.CALCULATION, canCalculate,
       canCalculate ? 'حساب التقرير' : 'الحالة الحالية لا تسمح بالحساب.');
     setAction('approveReportBtn',
       [PayrollWorkflow.STATE.CALCULATED, PayrollWorkflow.STATE.IN_REVIEW].includes(state),
-      canReview,
-      canReview ? 'بدء مراجعة واعتماد التقرير' : 'احسب التقرير أولًا أو راجع الصلاحيات.');
+      state === PayrollWorkflow.STATE.CALCULATED ? canReview : canApprove,
+      state === PayrollWorkflow.STATE.CALCULATED
+        ? (canReview ? 'فتح مساحة الاعتماد' : 'احسب التقرير أولًا أو راجع الصلاحيات.')
+        : (canApprove ? 'اعتماد التقرير بعد اكتمال فحوصات الجاهزية' : 'أكمل فحوصات الجاهزية والتأكيد قبل الاعتماد.'));
     setAction('salarySnapshotApproveBtn', state === PayrollWorkflow.STATE.APPROVED, canSnapshot,
       canSnapshot ? 'إنشاء كشف الرواتب' : 'لا يمكن إنشاء كشف الرواتب في الحالة الحالية.');
     setAction('salaryMarkAllPaidBtn', state === PayrollWorkflow.STATE.READY_FOR_PAYMENT, canPay,
       canPay ? 'تسجيل صرف الجميع' : 'كشف الرواتب غير جاهز للصرف أو لا تملك الصلاحية.');
     setAction('workflowArchiveBtn', state === PayrollWorkflow.STATE.PAID, canArchive,
       canArchive ? 'أرشفة دورة الرواتب المدفوعة' : 'تتطلب الأرشفة اكتمال الصرف وصلاحية إدارة الأشهر.');
+
+    const approveButton = $('approveReportBtn');
+    if (approveButton) approveButton.textContent = state === PayrollWorkflow.STATE.CALCULATED
+      ? 'فتح مساحة الاعتماد' : 'اعتماد التقرير';
+    const secondaryActions = query('#reportStateWorkspace .report-secondary-actions');
+    if (secondaryActions) secondaryActions.hidden = workspaceFor(state) !== WORKSPACE.REVIEW;
+    const actionWorkspace = $('reportStateWorkspace');
+    if (actionWorkspace) {
+      const visibleActions = [...actionWorkspace.querySelectorAll('button')].some(button =>
+        !button.hidden && !(button.closest('.report-secondary-actions') || {}).hidden);
+      actionWorkspace.hidden = !visibleActions;
+    }
   }
 
   function render(input = {}) {
@@ -407,6 +427,8 @@ const PayrollWorkflowUI = (() => {
     initialized = true;
     const archiveButton = $('workflowArchiveBtn');
     if (archiveButton) archiveButton.addEventListener('click', archiveCurrentCycle);
+    const approvalAcknowledgement = $('reportApprovalAck');
+    if (approvalAcknowledgement) approvalAcknowledgement.addEventListener('change', () => render());
     render();
   }
 
