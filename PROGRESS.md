@@ -1,6 +1,36 @@
-# PROGRESS.md — Final Reset-Month Production Fix
+# PROGRESS.md — Final Production Audit
 
-## Users & Security Audit (awaiting user review)
+## Final Production Audit (awaiting user review)
+
+### Scope and outcome
+
+- Reviewed the approved production modules: Import, Shipping Integration, Orders, Departments, Employees, Salary Processing, Reports, Transactions, Dashboard, and Users & Security.
+- Re-ran all 10 contract suites plus `node --check` for every application JavaScript file. Every check passed, including import compatibility/duplicates, phone-only shipping matching, CRUD and permission boundaries, atomic report/salary/transaction writes, Dashboard reads/actions, and the role/security matrix.
+- Reviewed Firebase target alignment, Hosting assets, Firestore Rules/index definitions, permission-gated routes, and documented legacy compatibility paths. No runtime, Firestore, or authorization regression was observed in the final production smoke test.
+
+### Root causes fixed during this audit
+
+- The Dashboard referenced `cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js`, which returns HTTP 404. It caused the documented Chart.js Console warning and left chart rendering dependent on a failed external request. The pinned Chart.js 4.4.4 UMD file is now served as `js/vendor/chart.umd.js` from Firebase Hosting; `tests/dashboard-contract.test.js` prevents reintroducing an external Chart.js dependency.
+- `index.html` initialized Authentication against the retired `moderator-salary9` project while `js/firebase.js`, Firestore Rules, and Hosting target `ahmed123-95a0e`. Opening the published root URL could therefore evaluate a different Auth session before redirecting. The root router now uses the same production project, verified by `tests/production-config-contract.test.js` and production UAT.
+
+### UX and production UAT
+
+- Authenticated production root route: `https://ahmed123-95a0e.web.app/` redirected on first load to `dashboard.html?v=7.0.19-final-audit` using the active production session and displayed the active month.
+- First-click navigation passed for Dashboard, Departments, Employees, Orders, Months, Month Comparison, Reports, Transactions, Settlements, Archive, and Backups. First-click open/close checks passed for the Department and Employee dialogs.
+- Browser Console contained zero errors and zero warnings during the final authenticated Dashboard/root smoke tests. No order, report, salary, transaction, user, or Audit data was written during this UAT.
+- Firebase Hosting was deployed successfully to `ahmed123-95a0e`; the locally served Chart.js asset returned HTTP 200 with `text/javascript` from the published site.
+
+### Remaining technical debt and recommendations
+
+- No blocking production defect remains from the recorded technical-debt list: the stale root Firebase configuration and failed Chart.js dependency were resolved in this audit.
+- Firebase SDKs are intentionally hosted by Google. Lucide and jsPDF remain external CDN dependencies; pinning/bundling them is a future resilience improvement, not a current defect, and was not expanded into this stabilization audit.
+- Keep the current contract suites in the release gate and add a browser-runner when CI infrastructure is introduced, so first-click and download workflows are automatically exercised in addition to the existing deterministic contracts.
+
+### Scope confirmation
+
+- No schema migration, Firestore Rule change, role change, calculation change, report history change, or production-business-data write was made in this audit. The branch remains `feature/import-improvements` and has not been merged into `main`.
+
+## Users & Security Audit (closed and approved)
 
 ### Root cause and minimal fix
 
@@ -23,7 +53,7 @@
 - Passed: `node --check js/auth.js`, `node --check js/user-management.js`, `node tests/users-security-contract.test.js`, every `tests/*-contract.test.js` suite, and `git diff --check`.
 - Security role matrix passed for Super Admin, Admin, the existing Supervisor role as the system's Moderator-compatible operational role, Viewer (Read Only), Pending, and Disabled. No new `Moderator` authentication role was created.
 - Firebase deployed both Hosting and Firestore Rules to project `ahmed123-95a0e`; rules compilation completed successfully and the published app loads `js/auth.js?v=7.0.18-users-security` and `js/user-management.js?v=7.0.18-users-security`.
-- Production UAT as `admin.login.20260807@ahmed123-95a0e.local` reloaded the Firebase-hosted Dashboard through the Authentication guard and confirmed the active session, current month, and versioned assets without changing any account, role, user document, or business data. Browser Console contained zero errors; the sole existing Chart.js CDN warning remains unrelated technical debt.
+- Production UAT as `admin.login.20260807@ahmed123-95a0e.local` reloaded the Firebase-hosted Dashboard through the Authentication guard and confirmed the active session, current month, and versioned assets without changing any account, role, user document, or business data. The former Chart.js CDN warning was resolved during Final Production Audit.
 
 ### Scope confirmation
 

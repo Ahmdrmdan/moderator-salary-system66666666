@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased — Users & Security audit (awaiting review)
+## Unreleased — Final Production Audit (awaiting user review)
+
+- Completed the production-wide regression audit across Imports, Shipping, Orders, Departments, Employees, Salary, Reports, Transactions, Dashboard, and Users & Security. Every module contract suite and JavaScript syntax check passed.
+- Replaced the unavailable external Chart.js path with the pinned Chart.js 4.4.4 UMD build hosted by Firebase alongside the application. Dashboard charts no longer depend on a client-accessible CDN.
+- Aligned the Hosting root authentication router (`/`) with the current `ahmed123-95a0e` Firebase project, eliminating the retired-project session split before the Dashboard redirect.
+- Added production-configuration contract coverage for the CLI target, Dashboard client, and root Authentication router to remain on the same Firebase project.
+- Completed production UAT for the authenticated root route, Dashboard loading, first-click navigation/dialog behavior, and Console health without modifying production business data.
+
+## Unreleased — Users & Security audit (closed and approved)
 
 - Hardened Firestore authorization so explicit `pending`, `suspended`, and `disabled` profiles cannot use any stored permission, while legacy profiles without a status retain active-safe compatibility.
 - Closed the self-registration escalation path: a new account may create only a `pending` profile with an empty stored permission list. The one-time bootstrap profile and marker now require the same atomic write.
