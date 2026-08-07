@@ -9,6 +9,7 @@ const authSource = fs.readFileSync('js/auth.js', 'utf8');
 const usersSource = fs.readFileSync('js/user-management.js', 'utf8');
 const permissionsSource = fs.readFileSync('js/permissions.js', 'utf8');
 const dashboardSource = fs.readFileSync('dashboard.html', 'utf8');
+const stylesSource = fs.readFileSync('css/style.css', 'utf8');
 
 // Firestore remains the authority for every direct API path. A missing legacy
 // status is safe-compatible, while every explicit inactive state is denied.
@@ -46,6 +47,8 @@ assert.match(authSource, /'auth\/account-pending': 'تم إنشاء طلب ال�
   'pending Firebase Auth users receive the actionable approval message');
 assert.match(dashboardSource, /data-config-content="bonus"><div class="settings-card">[\s\S]*?<div class="settings-bonus-content">[\s\S]*?<\/div><\/div><div class="settings-card">/,
   'the Settings bonus cards remain structurally balanced so User Management stays inside main content');
+assert.match(stylesSource, /\.sidebar\s*\{[\s\S]*?height:\s*100vh;[\s\S]*?overflow-y:\s*auto;/,
+  'the fixed-height sidebar scrolls so the User Management navigation item remains reachable');
 
 // No permission is introduced: the Users editor exposes existing system keys.
 ['dashboard.read', 'departments.read', 'departments.write', 'shipping.import',

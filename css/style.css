@@ -228,6 +228,7 @@ table { border-collapse:separate; border-spacing:0; } th { position:sticky; top:
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow-y: auto;
 }
 body.sidebar-collapsed .sidebar { width: var(--sidebar-w-collapsed); }
 body.sidebar-collapsed .nav-label,
