@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Dashboard Analytics Filters (v7.1, awaiting review)
+
+- Added two explicitly separate Dashboard scopes: **Monthly Scope** (month and department) continues to drive the existing frozen report, financial Snapshot, settlement values, monthly summary, and payroll charts; **Analytics Filters** (period/custom dates) drive only date-based operational orders, shipping, delivery, operational charts, rankings, products, governorates, alerts, and recent activity.
+- Added Today, Yesterday, Last 7 Days, Last 30 Days, This Month, Last Month, and validated custom date ranges. Operational data refreshes in place without a page reload; Reset restores This Month.
+- Reclassified the existing charts into three monthly Snapshot charts and three time-based operational charts, so no bonus or salary number is presented as if it were calculated for a partial date range.
+- Added a bounded `audit.read` date-range read for the existing Recent Activity widget. It uses only the existing `at` field, existing permission, and a 50-entry limit; no Firestore Rule, Schema, role, or financial calculation changed.
+
 ## [7.0.11] — 2026-08-07 (UI / UX consistency release)
 
 - Extended the approved Dashboard design language across Departments, Employees, Orders (including Import and Shipping tabs), Months, Month Comparison, Reports and Salary views, Transactions, Settlements, Archive, Backups, Audit, Settings, and User Management.

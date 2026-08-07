@@ -7,6 +7,7 @@ const appSource = fs.readFileSync('js/app.js', 'utf8');
 const chartsSource = fs.readFileSync('js/charts.js', 'utf8');
 const htmlSource = fs.readFileSync('dashboard.html', 'utf8');
 const widgetsSource = fs.readFileSync('js/dashboard-widgets.js', 'utf8');
+const auditSource = fs.readFileSync('js/audit.js', 'utf8');
 const stylesSource = fs.readFileSync('css/style.css', 'utf8');
 
 // The dashboard charts are a production dependency: a stale CDN path left the
@@ -30,6 +31,8 @@ assert.match(chartsSource, /function renderDashboardScopes\(monthlyReport, opera
   'monthly and operational charts render through explicitly separate scopes');
 assert.match(widgetsSource, /function refresh\(context = \{\}\)/,
   'operational widgets retain their existing cache-only refresh boundary');
+assert.match(auditSource, /async function getInRange\(fromDate, toDate, limit = 50\)[\s\S]*?\.where\('at', '>=',[\s\S]*?\.where\('at', '<',[\s\S]*?\.orderBy\('at', 'desc'\)/,
+  'recent activity is read through a bounded single-field Audit date range');
 
 // The UI audit is explicitly visual-only. These stable hooks guarantee that
 // the existing data bindings and quick-action controls remain in place.

@@ -1,5 +1,27 @@
 # PROGRESS.md — Final Production Audit
 
+## Dashboard Analytics Filters — v7.1 (awaiting user review)
+
+### Approved architecture and implementation
+
+- Introduced two visible Dashboard scope panels immediately below the Hero and above Quick Actions. The first, **نطاق التقرير الشهري**, contains month and department controls and retains the existing selected-month/report scope. The second, **التحليلات التشغيلية**, contains only date controls, Update, and Reset.
+- The monthly state remains the existing `currentMonthId` and `departmentFilter`; it preserves immutable reports, payroll Snapshot values, advances, adjustments, settlements, and monthly charts. A separate in-memory `dashboardAnalytics` state owns period/custom dates and never passes data into payroll or report calculations.
+- Operational rows are filtered from the existing authorized Orders cache by normalized `orderDate`. They update operational KPIs, shipping/delivery widgets, employee/department/product/governorate rankings, alerts, and the three operational charts in place.
+- Split chart rendering into explicit monthly and operational inputs. The bonus and payroll charts remain monthly; sales, package distribution, and department-order charts receive only date-filtered raw orders.
+- Added `AuditService.getInRange(from, to, 50)` for the existing Recent Activity widget. It is a bounded, single-field `at` query under the pre-existing `audit.read` permission and requires no Rule, index, or Schema change.
+
+### Verification and Firebase UAT
+
+- Passed local JavaScript syntax checks for `js/app.js`, `js/charts.js`, and `js/audit.js`; passed the full Dashboard, Departments, Employees, Import, Shipping, Production Configuration, Reports, Salary, Transactions, and Users & Security contract suite; `git diff --check` passed.
+- Firebase Hosting deployed successfully from `feature/dashboard-analytics-filters` to project `ahmed123-95a0e`.
+- Published UAT confirmed both scope panels, real department options, all six chart canvases divided into three monthly and three operational charts, custom date visibility, custom range application, Last 7 Days application, direct Reset to This Month, and the Update action without a page reload.
+- Browser Console and runtime logs remained empty during Dashboard load and all tested filter interactions. No production business, payroll, report, user, or audit data was written during UAT.
+
+### Scope confirmation
+
+- No Business Logic, Firestore Schema, Rule, role, permission, query used by payroll/report processing, or salary formula changed. The only new read is the approved bounded Audit date-range read for the existing widget.
+- The feature remains unmerged and untagged pending review.
+
 ## System UI / UX Consistency Audit — Phase 2 (closed and merged as v7.0.11)
 
 ### Visual audit and scope
