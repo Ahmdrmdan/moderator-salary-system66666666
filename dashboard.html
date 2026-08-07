@@ -556,8 +556,8 @@ Haba&#9;7&#9;750"></textarea>
           <div class="field"><label for="transactionAmountInput">المبلغ (ج.م)</label><input type="number" id="transactionAmountInput" required step="1" placeholder="مثال: 1000"></div>
           <div class="field"><label for="transactionDateInput">التاريخ</label><input type="date" id="transactionDateInput" required></div>
           <div class="field"><label for="transactionNoteInput">الملاحظة</label><input type="text" id="transactionNoteInput" placeholder="ملاحظة اختيارية"></div>
-          <button type="submit" class="btn btn-accent" id="transactionSaveBtn">💾 حفظ العملية</button>
-          <button type="button" class="btn hidden" id="transactionCancelEditBtn">إلغاء التعديل</button>
+          <button type="submit" class="btn btn-accent" id="transactionSaveBtn" data-permission="transactions.write">💾 حفظ العملية</button>
+          <button type="button" class="btn hidden" id="transactionCancelEditBtn" data-permission="transactions.write">إلغاء التعديل</button>
         </form>
         <div class="hint-box" id="transactionFormHint">السلفة تُسجل بمبلغ موجب وتُخصم من المستحقات. التسوية تقبل مبلغًا موجبًا للإضافة أو سالبًا للخصم.</div>
       </div>
@@ -1442,7 +1442,7 @@ Haba&#9;7&#9;750"></textarea>
 <script src="js/smart-approval.js"></script>
 <script src="js/user-management.js"></script>
 <script src="js/ui-icons.js"></script>
-<script src="js/app.js?v=7.0.15-reports-stabilization"></script>
+<script src="js/app.js?v=7.0.16-transactions-stabilization"></script>
 <script src="js/data-sources.js?v=7.0.11-import"></script>
 <script>
   Auth.guardPage((user, profile) => {

@@ -906,16 +906,26 @@ const App = (() => {
     // Every control that mutates the selected month.
     const writeControls = [
       'calculateBtn',
-      'importTextBtn', 'excelFileInput',
+      'importTextBtn', 'excelFileInput'
+    ];
+    writeControls.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = readOnly;
+    });
+
+    // Transaction fields have their own capability gate. This prevents the
+    // month-state refresh from re-enabling a read-only user's form after the
+    // shared permission layer correctly disabled its Save button.
+    const canWriteTransactions = Permissions.can('transactions.write');
+    [
       'transactionEmployeeInput', 'transactionTypeInput', 'transactionAmountInput',
       'transactionDateInput', 'transactionNoteInput',
       'advanceModeratorInput', 'advanceAmountInput', 'advanceDateInput', 'advanceNoteInput',
       'adjustmentModeratorInput', 'adjustmentAmountInput', 'adjustmentDateInput',
       'adjustmentReasonInput'
-    ];
-    writeControls.forEach(id => {
+    ].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.disabled = readOnly;
+      if (el) el.disabled = readOnly || !canWriteTransactions;
     });
 
     // Submit buttons live inside their forms, so they're addressed by form.
@@ -923,7 +933,7 @@ const App = (() => {
       const form = document.getElementById(formId);
       if (!form) return;
       const submitBtn = form.querySelector('button[type="submit"]');
-      if (submitBtn) submitBtn.disabled = readOnly;
+      if (submitBtn) submitBtn.disabled = readOnly || !canWriteTransactions;
     });
 
     const textArea = document.getElementById('importTextArea');
@@ -2627,6 +2637,7 @@ const App = (() => {
 
   async function onAddAdvance(e) {
     e.preventDefault();
+    if (!requireTransactionsWrite()) return;
     const rawName = document.getElementById('advanceModeratorInput').value;
     const amount = Number(document.getElementById('advanceAmountInput').value);
     const date = document.getElementById('advanceDateInput').value;
@@ -2682,6 +2693,7 @@ const App = (() => {
   }
 
   function onDeleteAdvance(id) {
+    if (!requireTransactionsWrite()) return;
     const advance = state.advances.find(a => a.id === id);
     // Deleting an advance rewrites the month it belongs to, so a closed
     // month's advances are as immutable as its report. Fail CLOSED when the
@@ -2731,6 +2743,17 @@ const App = (() => {
    * ============================================================ */
 
   const TX_TYPE = { ADVANCE: 'advance', ADJUSTMENT: 'adjustment' };
+
+  /** Catches direct/stale UI attempts without producing an uncaught error. */
+  function requireTransactionsWrite() {
+    try {
+      Permissions.require('transactions.write');
+      return true;
+    } catch (err) {
+      Toast.show(err.message || 'ليس لديك صلاحية إجراء هذه العملية', 'error');
+      return false;
+    }
+  }
 
   function renderTransactionSelectors() {
     const employeeSelect = document.getElementById('transactionEmployeeInput');
@@ -2798,6 +2821,7 @@ const App = (() => {
   }
 
   function beginTransactionEdit(type, id) {
+    if (!requireTransactionsWrite()) return;
     const record = transactionRecord(type, id);
     if (!record) { Toast.show('تعذر العثور على العملية. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; }
     try { Months.assertEditable(record.monthId, 'تعديل العملية'); } catch (err) { Toast.show(err.message, 'error'); return; }
@@ -2816,8 +2840,8 @@ const App = (() => {
   }
 
   async function onSaveTransaction(e) {
-    Permissions.require('transactions.write');
     e.preventDefault();
+    if (!requireTransactionsWrite()) return;
     const employeeId = document.getElementById('transactionEmployeeInput').value;
     const type = document.getElementById('transactionTypeInput').value;
     const amount = Number(document.getElementById('transactionAmountInput').value);
@@ -2869,13 +2893,7 @@ const App = (() => {
   }
 
   function approveTransaction(type, id) {
-    // All data writes are enforced again by Firestore Rules. This client-side
-    // guard avoids turning a missing/non-admin profile into the opaque
-    // "Missing or insufficient permissions" error at the approval button.
-    if (state.userRole !== 'admin') {
-      Toast.show('اعتماد العمليات متاح للمسؤول فقط. راجع صلاحيات حسابك.', 'error');
-      return;
-    }
+    if (!requireTransactionsWrite()) return;
     const record = transactionRecord(type, id);
     if (!record) { Toast.show('تعذر العثور على العملية.', 'error'); return; }
     try { Months.assertEditable(record.monthId, 'اعتماد العملية'); } catch (err) { Toast.show(err.message, 'error'); return; }
@@ -2986,6 +3004,7 @@ const App = (() => {
 
     const rows = ledgerRows();
     const locked = isViewingLockedMonth();
+    const canWrite = Permissions.can('transactions.write');
 
     renderLedgerSummary();
 
@@ -3022,7 +3041,9 @@ const App = (() => {
         <td>${r.detail ? Utils.escapeHtml(r.detail) : '—'}</td>
         <td class="actions-cell">${locked
           ? '<span class="text-muted-inline">🔒</span>'
-          : `${r.status !== 'approved' ? `<button class="btn-icon" data-action="approve" data-id="${Utils.escapeHtml(r.id)}" data-type="${r.type}" title="اعتماد">✅</button>` : ''}
+          : !canWrite
+            ? '<span class="text-muted-inline">—</span>'
+            : `${r.status !== 'approved' ? `<button class="btn-icon" data-action="approve" data-id="${Utils.escapeHtml(r.id)}" data-type="${r.type}" title="اعتماد">✅</button>` : ''}
              <button class="btn-icon" data-action="edit" data-id="${Utils.escapeHtml(r.id)}" data-type="${r.type}" title="تعديل">✏️</button>
              <button class="btn-icon btn-danger" data-action="delete" data-id="${Utils.escapeHtml(r.id)}" data-type="${r.type}" title="حذف">🗑️</button>`}</td>
       </tr>`;
@@ -3101,6 +3122,7 @@ const App = (() => {
 
   async function onAddAdjustment(e) {
     e.preventDefault();
+    if (!requireTransactionsWrite()) return;
     const rawName = document.getElementById('adjustmentModeratorInput').value;
     const amount = Number(document.getElementById('adjustmentAmountInput').value);
     const date = document.getElementById('adjustmentDateInput').value;
@@ -3144,6 +3166,7 @@ const App = (() => {
   }
 
   function onDeleteAdjustment(id) {
+    if (!requireTransactionsWrite()) return;
     const adjustment = state.adjustments.find(a => a.id === id);
     // Same fail-closed rule as advances: no local record means we can't
     // prove the month is open.
