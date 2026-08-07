@@ -1,6 +1,32 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
-## Transactions Stabilization (awaiting user review)
+## Dashboard Stabilization (awaiting user review)
+
+### Root cause and minimal fix
+
+- Dashboard bootstrap still initialized Months and settlements for roles that could open Dashboard but were not allowed to read those collections. The dashboard status loader also queried both backups and Audit as one unconditional `Promise.all`, so a legitimate denied read produced a Console warning and discarded the other result.
+- The status loader now asks only for data allowed by the existing client capability. It refreshes the existing Dashboard renderer once both permitted reads complete, which gives Recent Activity the latest Audit cache without changing any widget aggregation, calculation, or scope.
+- Dashboard quick actions depended on disabled UI state alone. Each now uses one caught existing-permission boundary, so a direct or stale event becomes the standard visible denial message rather than an unhandled rejection.
+- `renderMonthStatusUI()` could re-enable the pre-existing Report Calculate control after permissions had disabled it. Its existing month-lock state now combines with the current `reports.calculate` capability.
+
+### Files changed
+
+- `dashboard.html` — versioned the App runtime URL for the deployed Dashboard fix.
+- `js/app.js` — capability-gated Dashboard bootstrap/status reads, widget refresh after a successful read, quick-action guards, and permission-stable Calculate control.
+- `tests/dashboard-contract.test.js` — Dashboard capability, asynchronous refresh, quick-action, and month-state regression coverage.
+
+### Verification completed
+
+- Passed: `node --check js/app.js`, `node --check tests/dashboard-contract.test.js`, every `tests/*-contract.test.js` suite, and `git diff --check`.
+- Firebase Hosting deployed to project `ahmed123-95a0e`; the published dashboard loads `js/app.js?v=7.0.17-dashboard-stabilization`.
+- Production UAT as `admin.login.20260807@ahmed123-95a0e.local` loaded the current Dashboard, July 2026 status strip, scoped operational widgets, and Recent Activity. The Add Employee quick action opened and closed without save; Import Orders opened the Import tab with no file selected. No production record, report, salary amount, Audit entry, import, or backup was created or changed.
+- Browser Console contained zero errors. The sole existing Chart.js CDN warning remains recorded as pre-existing technical debt outside this limited stabilization scope. Restricted-role suppression and direct-event denial are covered by the isolated Dashboard contract without changing any production account or permission.
+
+### Scope confirmation
+
+- No Dashboard statistic or calculation, report/salary logic, historical data, Firestore schema, Firestore Rule, migration, or production data changed in this stage.
+
+## Transactions Stabilization (closed and approved)
 
 ### Root cause and minimal fix
 

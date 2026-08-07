@@ -1,11 +1,20 @@
 # Changelog
 
-## Unreleased — Transactions stabilization (awaiting review)
+## Unreleased — Dashboard stabilization (awaiting review)
+
+- Stopped Dashboard bootstrap from requesting monthly data or settlements for roles that lack their existing read capability, while retaining the safe defaults already used by the Dashboard.
+- Made the backup and Audit status reads independently capability-gated. After their asynchronous read completes, the existing Dashboard widgets refresh from the same scoped cache; no Dashboard statistic or calculation changed.
+- Added caught internal capability guards for every existing Dashboard quick action. Stale or programmatic events now show the normal permission message instead of creating an unhandled browser rejection.
+- Kept the report Calculate control disabled after a month-status refresh whenever `reports.calculate` is absent.
+- Added Dashboard contract coverage for the capability-gated reads, widget refresh, quick-action guards, and Calculate-button regression.
+
+## Unreleased — Transactions stabilization (closed)
 
 - Bound the current Transaction save and edit-cancel controls, all transaction form fields, and every ledger create/edit/delete/approve action to `transactions.write`. Read-only users retain the ledger, search, and filters without mutation controls.
 - Moved `preventDefault()` ahead of the write guard and added a caught capability boundary for direct or stale Transaction events, preventing permission rejection from becoming a browser-console error.
 - Replaced the hard-coded `admin` transaction-approval check with the existing `transactions.write` capability, preserving compatible Super Admin access without changing any Firestore Rule.
 - Added Transactions contract coverage for read-only UI state, internal guards, legacy record defaults, DataLayer audit batching, and existing Firestore write permissions.
+- Formally approved and closed after Firebase UAT; no production financial or Audit data was created during testing.
 
 ## Unreleased — Reports stabilization (closed)
 
