@@ -2403,3 +2403,66 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   #view-report .report-workflow-card { padding:0; }
   #view-report .report-context-bar { align-items:stretch; flex-direction:column; }
 }
+
+/* Payroll Workflow Engine — Stage 2: decision summary view migration.
+   The existing dynamic financial summary remains the sole source of values. */
+#view-report .report-summary-section {
+  display:grid;
+  gap:14px;
+  padding:18px 20px 20px;
+  border-color:rgba(115,167,255,.18);
+  background:linear-gradient(135deg,rgba(115,167,255,.06),var(--layer-1) 42%);
+}
+#view-report .report-summary-section .report-section-heading {
+  align-items:center;
+  margin:0;
+  padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+#view-report .report-summary-section .report-section-heading h3 { font-size:18px; }
+#view-report .report-summary-section .report-section-heading > p { max-width:360px; }
+#view-report #reportFinancialSummary {
+  grid-template-columns:minmax(0,1.25fr) minmax(168px,.82fr) minmax(235px,1.5fr);
+  gap:10px;
+}
+#view-report .report-summary-group {
+  display:grid;
+  align-content:start;
+  min-height:112px;
+  padding:13px 14px;
+  border-color:rgba(255,255,255,.08);
+  border-radius:11px;
+  background:rgba(6,12,18,.18);
+}
+#view-report .report-summary-group h4 { margin-bottom:10px; }
+#view-report .report-summary-values { gap:9px; }
+#view-report .report-summary-earnings .report-summary-values { gap:6px; }
+#view-report .report-summary-group .cs-item { padding:3px 4px; }
+#view-report .report-summary-group .cs-value { font-size:15px; }
+#view-report .report-summary-deductions { border-color:rgba(245,158,11,.16); }
+#view-report .report-summary-net {
+  min-height:128px;
+  padding:16px 18px;
+  border-color:rgba(115,167,255,.34);
+  background:linear-gradient(135deg,rgba(115,167,255,.21),rgba(52,211,153,.085));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+#view-report .report-summary-net h4 { color:#cde0ff; }
+#view-report .report-summary-net .report-summary-values { align-content:center; height:100%; }
+#view-report .report-summary-net .cs-value { color:#e2edff; font-size:25px; letter-spacing:-.025em; }
+#view-report .report-summary-net .cs-label { color:#b5c8e6; font-size:11px; }
+
+@media (max-width:1200px) {
+  #view-report #reportFinancialSummary { grid-template-columns:minmax(0,1fr) minmax(210px,.9fr); }
+  #view-report .report-summary-earnings { grid-column:1 / -1; }
+  #view-report .report-summary-net { min-height:120px; }
+}
+@media (max-width:900px) {
+  #view-report .report-summary-section { padding:18px; }
+  #view-report .report-summary-section .report-section-heading { align-items:flex-start; flex-direction:column; }
+}
+@media (max-width:600px) {
+  #view-report #reportFinancialSummary { grid-template-columns:1fr; }
+  #view-report .report-summary-earnings { grid-column:auto; }
+  #view-report .report-summary-net { min-height:116px; }
+}
