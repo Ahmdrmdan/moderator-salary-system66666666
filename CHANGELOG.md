@@ -1,11 +1,19 @@
 # Changelog
 
-## Unreleased — Reports stabilization (awaiting review)
+## Unreleased — Transactions stabilization (awaiting review)
+
+- Bound the current Transaction save and edit-cancel controls, all transaction form fields, and every ledger create/edit/delete/approve action to `transactions.write`. Read-only users retain the ledger, search, and filters without mutation controls.
+- Moved `preventDefault()` ahead of the write guard and added a caught capability boundary for direct or stale Transaction events, preventing permission rejection from becoming a browser-console error.
+- Replaced the hard-coded `admin` transaction-approval check with the existing `transactions.write` capability, preserving compatible Super Admin access without changing any Firestore Rule.
+- Added Transactions contract coverage for read-only UI state, internal guards, legacy record defaults, DataLayer audit batching, and existing Firestore write permissions.
+
+## Unreleased — Reports stabilization (closed)
 
 - Bound the existing Report Calculate, Approve, Excel, PDF, Copy, and Print controls to their current `reports.calculate`, `reports.approve`, and `reports.export` capabilities.
 - Added a caught internal export guard for Excel, PDF, clipboard copy, and print so direct or stale UI events show a permission message without producing an uncaught browser error.
 - Changed report calculation to commit the existing monthly-report payload and `report_calculated` Audit entry in one Firestore batch. Salary formulas, report schema, historical reports, and Firestore Rules remain unchanged.
 - Added Reports contract coverage for capability metadata, protected export actions, atomic report/audit writes, and stable report totals.
+- Formally approved and closed after Firebase UAT; no production report, export, Audit entry, or financial record was created during testing.
 
 ## Unreleased — Salary stabilization (closed)
 

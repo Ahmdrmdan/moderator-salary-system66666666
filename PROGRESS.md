@@ -1,6 +1,31 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
-## Reports Stabilization (awaiting user review)
+## Transactions Stabilization (awaiting user review)
+
+### Root cause and minimal fix
+
+- The unified Transaction form checked `transactions.write` before calling `preventDefault()`, which could turn a denied submit into an uncaught browser error. The handler now stops the submit first and uses one caught internal guard for every create, edit, delete, and approve path, including the legacy hidden forms.
+- The month-status refresh could re-enable Transaction fields after the shared permission layer disabled the Save button. Transaction fields and form submits now combine the existing month read-only state with `transactions.write`.
+- Ledger action buttons did not respect write access, and approval was tied to a literal `admin` role name. The rendered actions and approval now use only the existing `transactions.write` capability; read-only users retain ledger search and filters.
+
+### Files changed
+
+- `dashboard.html` — capability metadata for Transaction save/cancel and an App runtime cache version.
+- `js/app.js` — safe transaction write guard, permission-aware form state and ledger actions, and capability-based approval.
+- `tests/transactions-contract.test.js` — capability, submit-order, legacy-display, DataLayer atomicity, and Rules compatibility coverage.
+
+### Verification completed
+
+- Passed: `node --check js/app.js`, `node tests/transactions-contract.test.js`, `node tests/reports-contract.test.js`, `node tests/salary-processing-contract.test.js`, `node tests/employees-contract.test.js`, `node tests/departments-contract.test.js`, `node tests/import-contract.test.js`, and `node tests/shipping-contract.test.js`; `git diff --check` passed before commit.
+- Firebase Hosting deployed to project `ahmed123-95a0e`; the published dashboard loads `js/app.js?v=7.0.16-transactions-stabilization`.
+- Production UAT as `admin.login.20260807@ahmed123-95a0e.local` opened Transactions, confirmed the permitted Save control, retained enabled search/filter controls, and rendered the current empty ledger without actions or errors. No advance, adjustment, audit entry, report, or other production data was created or changed. The browser recorded zero errors and one pre-existing Chart.js warning only.
+- Read-only action suppression, direct-submit denial, and legacy record compatibility are covered by the isolated Transaction contract without modifying any production account or permission.
+
+### Scope confirmation
+
+- No financial amount, salary/report calculation, historical record, Firestore schema, Firestore Rule, migration, or production data was changed in this stage.
+
+## Reports Stabilization (closed and approved)
 
 ### Root cause and minimal fix
 
