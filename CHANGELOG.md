@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — Monthly Report 2.0 UI / UX
+
+- Reorganized the existing monthly-report screen into a clear Arabic review workflow: calculate, review, approve the report, approve the independent Salary Snapshot, then record payment. All existing controls, IDs, permissions, calculations, Firestore reads/writes, and Snapshot behavior remain unchanged.
+- Added a visual context strip for the current report scope and the already-stored last calculation/approval/update timestamps. The export indicator is explicitly session-local because the current schema has no persisted export timestamp.
+- Grouped the unchanged financial summary into earnings, deductions, and a visually prominent net-payment decision; moved the existing employee table into the primary review position with grouped headers and a highlighted net column.
+- Moved the existing Salary Snapshot into its own clearly labelled review area after the report table, retaining every Snapshot table, payment control, chart, and audit interaction without changing its data or lifecycle.
+- Localized the remaining visible Salary Snapshot status, empty-state, action, and drawer labels into Arabic without changing stored status values or audit semantics.
+- Added a versioned stylesheet/runtime reference so published clients cannot combine this visual layout with cached assets, and updated visual contract expectations accordingly.
+
 ## [7.1.0] — 2026-08-07 (Dashboard Analytics Filters)
 
 - Added two explicitly separate Dashboard scopes: **Monthly Scope** (month and department) continues to drive the existing frozen report, financial Snapshot, settlement values, monthly summary, and payroll charts; **Analytics Filters** (period/custom dates) drive only date-based operational orders, shipping, delivery, operational charts, rankings, products, governorates, alerts, and recent activity.

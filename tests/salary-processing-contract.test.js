@@ -58,7 +58,7 @@ assert.strictEqual(totals.net, 2160);
 assert.match(source, /commitWithAudit\(batch=>batch\.set/, 'approval writes the snapshot through a batch');
 assert.match(source, /commitWithAudit\(batch=>batch\.update/, 'adjustment and payment writes use a batch');
 assert.match(source, /AuditService\.appendToBatch\(batch,audit\)/, 'the audit entry shares the financial write batch');
-assert.match(source, /status==='paid'\?'Paid'/, 'paid snapshots have a distinct visible status');
+assert.match(source, /status==='paid'\?'تم الصرف'/, 'paid snapshots have a distinct visible Arabic status');
 assert.match(source, /Permissions\.can\('salary_processing\.write'\)/, 'Snapshot adjustment controls use the existing write capability');
 assert.match(source, /Permissions\.can\('salary_processing\.pay'\)/, 'payment controls use the existing payment capability');
 assert.match(source, /Permissions\.can\('salary_processing\.export'\)/, 'export controls use the existing export capability');

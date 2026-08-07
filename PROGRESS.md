@@ -1,5 +1,27 @@
 # PROGRESS.md — Final Production Audit
 
+## Monthly Report 2.0 UI / UX — awaiting review
+
+### Scope and visual implementation
+
+- Reorganized only the existing Report view. The new Arabic hierarchy is: report identity and two independent statuses, report context, review workflow, existing actions, grouped financial summary, the existing employee decision table, its existing calculation note, then the existing Salary Snapshot and its existing supporting charts.
+- The workflow is visual guidance only. It does not alter when calculation, approval, Snapshot approval, payment, export, print, or copy operations are enabled or executed.
+- Existing report and Snapshot DOM IDs remain unique and unchanged. The employee table retains its same 13 data columns and 9 loaded rows; only a non-data group-header row and visual net-payment emphasis were added.
+- `lastUpdate`, `lastCalculation`, and `lastApproval` render from existing monthly fields. `lastExport` is intentionally session-only UI state, refreshed after the existing export, copy, or print action; it writes no Firestore document and adds no schema field.
+- Snapshot status, toolbar, KPI, department summary, review table, payment table, ranking, charts, drawer labels, and empty states were translated or repositioned visually only. Stored values such as `approved` and `paid` remain unchanged.
+
+### Verification and Firebase UAT
+
+- Passed syntax checks for `js/app.js`, `js/salary-processing.js`, and `js/reports.js`; passed all contract suites: Dashboard, Departments, Employees, Import, Shipping, Production Configuration, Reports, Salary Processing, Transactions, and Users & Security. `git diff --check` passed.
+- Firebase Hosting was deployed to `ahmed123-95a0e`. Published UAT loaded the Report view from a signed-in production session, confirmed the cache-busted CSS and runtime URLs, the report Hero/context/action layout, the three financial summary groups, all 13 existing employee-table data columns, and the independent monthly-report/Snapshot status cards.
+- The selected production scope contained no Salary Snapshot, so no production calculation, approval, payment, or other financial write was performed. The unchanged Snapshot identifiers, structure, status mapping, and contracts were verified locally; the published page correctly leaves the Snapshot surface hidden when no Snapshot exists.
+- Published UAT exercised the existing Copy action only. It updated the session-local `آخر تصدير` indicator, did not write production data, and produced no Console or Runtime errors. Browser error logs remained empty during report load and the tested action.
+
+### Scope confirmation and review status
+
+- No Business Logic, salary formula, report/Snapshot calculation, Firestore Schema, Rule, query, permission, role, or production business data changed.
+- This branch is deployed for review only. It has not been merged to `main` and no release tag has been created.
+
 ## Dashboard Analytics Filters — v7.1.0 (closed and merged)
 
 ### Approved architecture and implementation

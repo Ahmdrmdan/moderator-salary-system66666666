@@ -59,6 +59,9 @@ const App = (() => {
     dashboardAnalytics: { period: 'this_month', from: '', to: '', auditLogs: [], loading: false, auditTimer: null, auditRequestId: 0 },
     sort: { key: 'name', dir: 'asc' },
     searchTerm: '',
+    // Presentation-only: this is deliberately session-local because report
+    // exports are not persisted as a report field or audit event.
+    reportUi: { lastExportedAt: null },
     employeeSearchTerm: '',
     archiveSearchTerm: '',
     // Unified السلف/التسويات ledger
@@ -500,19 +503,23 @@ const App = (() => {
     document.getElementById('exportExcelBtn').addEventListener('click', () => {
       if (!requireReportExport()) return;
       Reports.exportExcel(exportRows(), currentMonthLabel(), exportContext());
+      markReportExported();
     });
     document.getElementById('exportPdfBtn').addEventListener('click', () => {
       if (!requireReportExport()) return;
       Reports.exportPDF(exportRows(), currentMonthLabel(), state.settings.companyName, exportContext());
+      markReportExported();
     });
     document.getElementById('copyReportBtn').addEventListener('click', async () => {
       if (!requireReportExport()) return;
       await Reports.copyReport(exportRows());
+      markReportExported();
       Toast.show('تم نسخ التقرير', 'success');
     });
     document.getElementById('printReportBtn').addEventListener('click', () => {
       if (!requireReportExport()) return;
       Reports.printReport(exportRows(), currentMonthLabel(), state.settings, exportContext());
+      markReportExported();
     });
     document.getElementById('reportSearch').addEventListener('input', Utils.debounce((e) => {
       state.searchTerm = e.target.value;
@@ -1074,6 +1081,35 @@ const App = (() => {
     } else {
       notice.innerHTML = '<strong>التقرير غير معتمد.</strong> راجع النتائج، ثم اضغط «اعتماد التقرير» لحفظ النسخة النهائية وقفل الشهر.';
     }
+
+    renderReportContextMeta(month);
+  }
+
+  /**
+   * Context timestamps are a read-only view of fields already loaded for the
+   * selected month.  Export time is intentionally session-only: the existing
+   * data model does not persist exports, and this UI refresh must not add a
+   * Firestore write or an audit query.
+   */
+  function renderReportContextMeta(month = state.currentMonthId ? Months.byId(state.currentMonthId) : null) {
+    const set = (id, value) => {
+      const node = document.getElementById(id);
+      if (node) node.textContent = value ? Utils.formatDateTime(value) : '—';
+    };
+    set('reportLastUpdated', month && (month.updatedAt || month.calculatedAt || month.closedAt));
+    set('reportLastCalculated', month && month.calculatedAt);
+    set('reportLastApproved', month && month.closedAt);
+    const exportNode = document.getElementById('reportLastExported');
+    if (exportNode) {
+      exportNode.textContent = state.reportUi && state.reportUi.lastExportedAt
+        ? `${Utils.formatDateTime(state.reportUi.lastExportedAt)} (هذه الجلسة)`
+        : 'غير مسجل';
+    }
+  }
+
+  function markReportExported() {
+    state.reportUi = { ...(state.reportUi || {}), lastExportedAt: new Date() };
+    renderReportContextMeta();
   }
 
   /* ============================================================
@@ -5267,17 +5303,28 @@ const App = (() => {
     const summary = document.getElementById('reportFinancialSummary');
     if (!summary) return;
     const deductions = Utils.round2((totals.totalAdvances || 0) + (totals.previousDebt || 0));
-    summary.innerHTML = [
-      ['إجمالي الراتب الأساسي', totals.salary],
-      ['إجمالي البونص', totals.totalBonus],
-      ['إجمالي التسويات', totals.totalAdjustments],
-      ['إجمالي الخصومات', deductions],
-      ['صافي المستحقات', totals.finalSalary]
-    ].map(([label, value]) => `
-      <div class="cs-item">
-        <div class="cs-value">${Utils.formatCurrency(value || 0)}</div>
-        <div class="cs-label">${label}</div>
-      </div>`).join('');
+    const groups = [
+      { key: 'earnings', title: 'الاستحقاقات', values: [
+        ['إجمالي الراتب الأساسي', totals.salary],
+        ['إجمالي البونص', totals.totalBonus],
+        ['إجمالي التسويات', totals.totalAdjustments]
+      ] },
+      { key: 'deductions', title: 'الخصومات', values: [
+        ['إجمالي الخصومات', deductions]
+      ] },
+      { key: 'net', title: 'قرار الصرف', values: [
+        ['صافي المستحقات', totals.finalSalary]
+      ] }
+    ];
+    summary.innerHTML = groups.map(group => `
+      <section class="report-summary-group report-summary-${group.key}">
+        <h4>${group.title}</h4>
+        <div class="report-summary-values">${group.values.map(([label, value]) => `
+          <div class="cs-item">
+            <div class="cs-value">${Utils.formatCurrency(value || 0)}</div>
+            <div class="cs-label">${label}</div>
+          </div>`).join('')}</div>
+      </section>`).join('');
   }
 
   /** Footer totals for exactly the rows currently on screen. */
