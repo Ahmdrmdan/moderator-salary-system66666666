@@ -8,6 +8,7 @@ const rulesSource = fs.readFileSync('firebase/firestore.rules', 'utf8');
 const authSource = fs.readFileSync('js/auth.js', 'utf8');
 const usersSource = fs.readFileSync('js/user-management.js', 'utf8');
 const permissionsSource = fs.readFileSync('js/permissions.js', 'utf8');
+const dashboardSource = fs.readFileSync('dashboard.html', 'utf8');
 
 // Firestore remains the authority for every direct API path. A missing legacy
 // status is safe-compatible, while every explicit inactive state is denied.
@@ -39,6 +40,12 @@ assert.doesNotMatch(authSource, /migratedAt: firebase\.firestore\.FieldValue\.se
   'legacy profile normalization is no longer a client-side migration');
 assert.match(authSource, /Permissions\.setProfile\(profile\);[\s\S]*?if \(\(profile\.status \|\| 'active'\) !== 'active' \|\| !Permissions\.can\('dashboard\.read'\)\)[\s\S]*?await db\.collection\(COLLECTIONS\.USERS\)\.doc\(user\.uid\)\.set\(\{ lastActivityAt:/,
   'only an active dashboard user records page activity');
+assert.match(authSource, /const profile = await ensureUserDoc\(cred\.user\);[\s\S]*?const status = profile\.status \|\| 'active';[\s\S]*?error\.code = status === 'pending' \? 'auth\/account-pending' : 'auth\/account-inactive';/,
+  'a first sign-in safely provisions the pending profile and reports its actual lifecycle state');
+assert.match(authSource, /'auth\/account-pending': 'تم إنشاء طلب الحساب بنجاح وهو بانتظار تفعيل المسؤول\.'/,
+  'pending Firebase Auth users receive the actionable approval message');
+assert.match(dashboardSource, /data-config-content="bonus"><div class="settings-card">[\s\S]*?<div class="settings-bonus-content">[\s\S]*?<\/div><\/div><div class="settings-card">/,
+  'the Settings bonus cards remain structurally balanced so User Management stays inside main content');
 
 // No permission is introduced: the Users editor exposes existing system keys.
 ['dashboard.read', 'departments.read', 'departments.write', 'shipping.import',

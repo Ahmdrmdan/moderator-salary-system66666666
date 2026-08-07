@@ -112,7 +112,13 @@ const Auth = (() => {
     try {
       const cred = await auth.signInWithEmailAndPassword(email, password);
       const profile = await ensureUserDoc(cred.user);
-      if ((profile.status || 'active') !== 'active') { await auth.signOut(); throw new Error('تم تعطيل هذا الحساب أو إيقافه'); }
+      const status = profile.status || 'active';
+      if (status !== 'active') {
+        await auth.signOut();
+        const error = new Error(status === 'pending' ? 'Account pending approval' : 'Account inactive');
+        error.code = status === 'pending' ? 'auth/account-pending' : 'auth/account-inactive';
+        throw error;
+      }
       await db.collection(COLLECTIONS.USERS).doc(cred.user.uid).set({ lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(), lastActivityAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
       if (typeof AuditService !== 'undefined') await AuditService.log('auth.login', { entity:'users', operation:AuditService.OPERATION.UPDATE, documentId:cred.user.uid, documentLabel:cred.user.email || cred.user.uid, details:{ event:'login' } });
       return cred.user;
@@ -138,7 +144,9 @@ const Auth = (() => {
       'auth/wrong-password': 'كلمة المرور غير صحيحة',
       'auth/invalid-credential': 'بيانات الدخول غير صحيحة',
       'auth/too-many-requests': 'محاولات كثيرة جدًا، حاول لاحقًا',
-      'auth/network-request-failed': 'تعذر الاتصال بالخادم، تحقق من الإنترنت'
+      'auth/network-request-failed': 'تعذر الاتصال بالخادم، تحقق من الإنترنت',
+      'auth/account-pending': 'تم إنشاء طلب الحساب بنجاح وهو بانتظار تفعيل المسؤول.',
+      'auth/account-inactive': 'هذا الحساب موقوف أو معطّل. تواصل مع المسؤول.'
     };
     return map[code] || 'حدث خطأ أثناء تسجيل الدخول، حاول مرة أخرى';
   }

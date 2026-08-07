@@ -863,6 +863,7 @@ Haba&#9;7&#9;750"></textarea>
           </div>
 
           </div><div class="config-panel" data-config-content="bonus"><div class="settings-card"><span class="settings-card-icon">🎁</span><div><h3>جدول البونص الافتراضي</h3><p>يُستخدم تلقائيًا للأقسام التي لا تملك Override خاصًا.</p></div><h3 style="font-size:14px;margin:14px 0 12px;color:var(--text-secondary)">حسب عدد العبوات فقط</h3>
+          <div class="settings-bonus-content">
           <div class="bonus-rules-grid">
             <div class="field"><label for="bonusRule1">1 عبوة</label><input type="number" id="bonusRule1" step="1"></div>
             <div class="field"><label for="bonusRule2">2 عبوة</label><input type="number" id="bonusRule2" step="1"></div>
@@ -885,7 +886,7 @@ Haba&#9;7&#9;750"></textarea>
 
     <section class="view" id="view-users">
       <div class="panel">
-        <div class="panel-header"><div><h2>إدارة المستخدمين والصلاحيات</h2><p class="muted">الحسابات تُنشأ عبر Firebase Authentication فقط.</p></div><button class="btn btn-sm" id="refreshUsersBtn">تحديث</button></div>
+        <div class="panel-header"><div><h2>إدارة المستخدمين والصلاحيات</h2><p class="muted">تُنشأ الحسابات عبر Firebase Authentication، ثم يظهر الحساب كـ Pending بعد أول تسجيل دخول لاعتماده.</p></div><button class="btn btn-sm" id="refreshUsersBtn">تحديث</button></div>
         <div class="users-toolbar"><input class="search-input" id="usersSearch" placeholder="بحث بالبريد الإلكتروني..."><select id="usersStatusFilter"><option value="all">كل الحالات</option><option value="active">نشط</option><option value="suspended">موقوف مؤقتًا</option><option value="pending">بانتظار التفعيل</option><option value="disabled">معطّل</option></select></div>
         <div class="table-wrap"><table><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>آخر دخول</th><th>آخر نشاط</th><th>الجلسات</th><th>الصلاحيات الفعالة</th><th></th></tr></thead><tbody id="usersTableBody"></tbody></table></div>
       </div>
@@ -1422,7 +1423,7 @@ Haba&#9;7&#9;750"></textarea>
 <script src="js/utils.js?v=7.0.12-orders-excel-runtime"></script>
 <script src="js/service-common.js"></script>
 <script src="js/audit.js"></script>
-<script src="js/auth.js?v=7.0.18-users-security"></script>
+<script src="js/auth.js?v=7.0.10-users-lifecycle-hotfix"></script>
 <script src="js/permissions.js?v=7.0.12-shipping"></script>
 <script src="js/departments.js?v=7.0.12-departments-stabilization"></script>
 <script src="js/backup.js"></script>
