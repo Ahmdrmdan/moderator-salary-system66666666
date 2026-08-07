@@ -7,6 +7,13 @@ const appSource = fs.readFileSync('js/app.js', 'utf8');
 const htmlSource = fs.readFileSync('dashboard.html', 'utf8');
 const widgetsSource = fs.readFileSync('js/dashboard-widgets.js', 'utf8');
 
+// The dashboard charts are a production dependency: a stale CDN path left the
+// widgets in their fallback state despite the rest of the dashboard loading.
+assert.match(htmlSource, /https:\/\/cdn\.jsdelivr\.net\/npm\/chart\.js@4\.4\.4\/dist\/chart\.umd\.min\.js/,
+  'dashboard loads the pinned Chart.js UMD build from its supported CDN path');
+assert.doesNotMatch(htmlSource, /cdnjs\.cloudflare\.com\/ajax\/libs\/Chart\.js\/4\.4\.4\/chart\.umd\.min\.js/,
+  'dashboard no longer references the unavailable Chart.js CDN path');
+
 // Dashboard-only roles must not make reads that Firestore correctly denies.
 assert.match(appSource, /const canReadMonths = \['months\.read', 'reports\.read', 'archive\.read', 'comparison\.read', 'backups\.create', 'backups\.restore'\][\s\S]*?\.some\(permission => Permissions\.can\(permission\)\);/,
   'month bootstrap derives access from the existing monthly-report read capabilities');
