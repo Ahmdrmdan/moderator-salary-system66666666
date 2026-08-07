@@ -1,5 +1,30 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
+## Employees Stabilization (awaiting user review)
+
+### Root cause and minimal fix
+
+- Employee management controls were rendered after the static permission pass and therefore appeared for `employees.read`-only users. A direct form submit could also throw before preventing the browser event. The repair renders Add/Edit/inline-salary/Reactivate only for `employees.write`, Delete only for `employees.delete`, and retains a caught internal `Permissions.require` guard for stale or direct events.
+- Employees created before departments were previously read with null shape and the listener could start a migration write. The listener now supplies `Moderators`, `active`, empty-note, null-date, and zero-salary defaults in memory only. It performs no migration and no Firestore write during a legacy read.
+
+### Files changed
+
+- `dashboard.html` — capability metadata for Add Employee and an Employees runtime cache version.
+- `js/app.js` — permission-aware Employee controls, caught internal guards, and read-only legacy normalization.
+- `tests/employees-contract.test.js` — new permission and legacy-data contract coverage.
+- `firebase.json` — revalidation header for HTML release shells.
+
+### Verification completed
+
+- Passed: `node --check js/app.js`, `node tests/employees-contract.test.js`, `node tests/departments-contract.test.js`, `node tests/import-contract.test.js`, and `node tests/shipping-contract.test.js`.
+- Deployed Firebase Hosting to project `ahmed123-95a0e`; the deployed `dashboard.html` returns `Cache-Control: no-cache` and loads `js/app.js?v=7.0.13-employees-stabilization`.
+- Production UAT as `admin.login.20260807@ahmed123-95a0e.local` opened Employees, showed nine existing rows with the safe `Moderators` department default, allowed only the administrator's existing management controls, opened and closed Add Employee without saving, and returned one row for the `Haba` search. No employee, salary, report, or historical document was changed and the browser console recorded zero errors.
+- The `employees.read`-only behavior is exercised by the new isolated permission contract without modifying any production user account: no write/delete capability is granted and direct guards deny both operations.
+
+### Out-of-scope observation (not changed)
+
+- `index.html` still contains a bootstrap Firebase configuration for the legacy `moderator-salary9` project while `js/firebase.js` correctly targets `ahmed123-95a0e`. This is outside the approved Employees scope; it was not modified in this stage and should be handled as a focused Authentication follow-up.
+
 ## Departments Stabilization (completed and approved)
 
 ### Root cause and minimal fix

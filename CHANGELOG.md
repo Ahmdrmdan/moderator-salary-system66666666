@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Employees stabilization (awaiting review)
+
+- Restricted the Employees UI by capability: adding, editing, inline fixed-salary editing, and reactivation require `employees.write`; permanent deletion requires `employees.delete`. The Firestore Rules and DataLayer checks remain the authoritative write boundaries.
+- Replaced automatic legacy-employee migration on read with safe in-memory defaults. A missing `departmentId` now reads as `Moderators`; no legacy employee document, payroll row, or historical report is written or recalculated when Employees loads.
+- Added the Employees contract test for read-only roles, internal permission guards, and legacy-data compatibility.
+- Added `no-cache` to Firebase Hosting HTML responses so a deployed dashboard shell revalidates before loading its versioned runtime scripts.
+
 ## Unreleased — Departments stabilization (closed)
 
 - Fixed the existing Departments serialization gap: `commission`, `useBonusOverride`, `bonusType`, and `salesBonusRules` now round-trip through validation, Firestore writes, and normalization. Older department documents safely retain hourly/package/default values without migration.
