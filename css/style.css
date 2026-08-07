@@ -1177,3 +1177,230 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
 .dashboard-executive-section{margin-top:24px}.dashboard-operational-widgets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.executive-widget{min-height:180px}.executive-widget .panel-header h3{margin:0;font-size:14px}.widget-empty{display:grid;place-items:center;min-height:105px;color:var(--ink-faint);font-size:13px;border-top:1px solid var(--line)}@media(max-width:900px){.dashboard-operational-widgets{grid-template-columns:1fr}}
 .widget-ranking{padding:6px 16px 12px}.widget-ranking>div{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}.widget-ranking>div:last-child{border-bottom:0}.widget-ranking span{color:var(--ink-muted);white-space:nowrap}
 .salary-snapshot-dashboard{margin:18px 0}.salary-workflow{display:flex;gap:8px;overflow:auto;padding:12px 0;margin-bottom:12px}.salary-workflow span{white-space:nowrap;padding:7px 10px;border:1px solid var(--line);border-radius:999px;color:var(--ink-muted);font-size:11px}.salary-workflow span.done{background:var(--brand-soft);border-color:var(--brand);color:var(--ink)}
+
+/* =========================================================================
+   DASHBOARD UI / UX CONSISTENCY AUDIT — visual-only composition
+   Keeps all existing IDs, actions, data bindings and chart canvases intact.
+   ========================================================================= */
+#view-dashboard {
+  --dashboard-gap: 18px;
+  --dashboard-card-pad: 18px;
+  max-width: 1560px;
+  margin-inline: auto;
+}
+
+.topbar {
+  position: relative;
+  display: flex;
+  align-items: end;
+  min-height: 88px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+  box-shadow: var(--shadow-card);
+}
+.topbar::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block: 18px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--brand);
+}
+.topbar h1 { font-size: 25px; letter-spacing: -.03em; }
+.topbar .subtitle { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.breadcrumb { margin-bottom: 4px; }
+
+#view-dashboard .dashboard-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(330px, .88fr);
+  align-items: stretch;
+  gap: 28px;
+  min-height: 218px;
+  padding: 26px 28px;
+  margin-bottom: 14px;
+  border-color: rgba(115, 167, 255, .30);
+  border-radius: var(--radius-dialog);
+  background: linear-gradient(112deg, rgba(115, 167, 255, .19), rgba(25, 29, 34, .98) 55%, rgba(52, 211, 153, .07));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .20);
+}
+#view-dashboard .dashboard-hero::after {
+  content: '';
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  inset-inline-start: -110px;
+  inset-block-start: -210px;
+  border: 1px solid rgba(115, 167, 255, .20);
+  border-radius: 50%;
+  box-shadow: 0 0 0 30px rgba(115, 167, 255, .04), 0 0 0 61px rgba(115, 167, 255, .025);
+  pointer-events: none;
+}
+#view-dashboard .dashboard-hero-copy { align-self: center; max-width: 620px; }
+#view-dashboard .dashboard-hero h2 { max-width: 490px; font-size: clamp(22px, 2.2vw, 30px); line-height: 1.35; }
+#view-dashboard .dashboard-hero p { max-width: 540px; margin-top: 10px; line-height: 1.8; }
+#view-dashboard .dashboard-hero-orbit { display: none; }
+#view-dashboard .dashboard-hero .dashboard-status {
+  z-index: 1;
+  align-content: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding: 12px;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 14px;
+  background: rgba(8, 11, 15, .30);
+  backdrop-filter: blur(8px);
+}
+#view-dashboard .dashboard-status-item {
+  min-height: 70px;
+  padding: 10px 12px;
+  border-color: rgba(255, 255, 255, .09);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .035);
+}
+#view-dashboard .dashboard-status-item:last-child { grid-column: 1 / -1; min-height: 58px; }
+#view-dashboard .dashboard-status-item span { font-size: 10px; color: var(--ink-faint); }
+#view-dashboard .dashboard-status-item strong { display: block; overflow: hidden; margin-top: 4px; color: var(--ink); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+#view-dashboard .dashboard-quick-actions {
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 22px;
+  border-radius: 14px;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-card);
+}
+#view-dashboard .dashboard-quick-actions::before { padding-inline: 5px 10px; color: var(--ink-muted); font-size: 11px; }
+#view-dashboard .dashboard-quick-actions .btn { min-height: 36px; padding: 7px 12px; font-size: 12px; }
+
+#view-dashboard .section-heading {
+  align-items: center;
+  margin: 30px 0 13px;
+}
+#view-dashboard .section-heading h2 { font-size: 18px; }
+#view-dashboard .section-heading .eyebrow { margin-bottom: 3px; }
+#view-dashboard .section-caption { max-width: 260px; text-align: start; line-height: 1.55; }
+#view-dashboard .dashboard-alerts { margin-top: 0; }
+#view-dashboard .alerts-grid { gap: 12px; }
+#view-dashboard .alert-card {
+  min-height: 92px;
+  padding: 15px;
+  border-radius: 12px;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-card);
+}
+#view-dashboard .alert-card strong { font-size: 13px; }
+#view-dashboard .alert-card p { font-size: 11px; }
+
+#view-dashboard .cards-grid { gap: var(--dashboard-gap); }
+#view-dashboard .cards-grid-operational { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+#view-dashboard .dashboard-financial-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#view-dashboard .stat-card {
+  display: grid;
+  grid-template-areas: 'icon label' 'icon value';
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  align-items: center;
+  min-height: 124px;
+  padding: var(--dashboard-card-pad);
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-card);
+}
+#view-dashboard .cards-grid-operational .stat-card { min-height: 118px; }
+#view-dashboard .stat-card:hover { transform: translateY(-2px); border-color: rgba(115, 167, 255, .32); }
+#view-dashboard .stat-card .stat-icon {
+  grid-area: icon;
+  width: 40px;
+  height: 40px;
+  margin: 0 0 0 12px;
+  border-radius: 12px;
+  font-size: 18px;
+}
+#view-dashboard .stat-card .stat-label {
+  grid-area: label;
+  align-self: end;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+#view-dashboard .stat-card .stat-value {
+  grid-area: value;
+  align-self: start;
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: clamp(20px, 1.8vw, 27px);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+#view-dashboard .dashboard-insights-grid,
+#view-dashboard .dashboard-operational-widgets { gap: var(--dashboard-gap); }
+#view-dashboard .dashboard-insights-panel,
+#view-dashboard .executive-widget,
+#view-dashboard #departmentBreakdownPanel {
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+}
+#view-dashboard .dashboard-insights-panel .panel-header,
+#view-dashboard .executive-widget .panel-header,
+#view-dashboard #departmentBreakdownPanel .panel-header { min-height: 64px; padding: 16px 18px; }
+#view-dashboard .dashboard-insight { padding: 12px 14px; border: 1px solid rgba(255, 255, 255, .06); background: rgba(255, 255, 255, .022); }
+#view-dashboard .dashboard-operational-widgets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+#view-dashboard .charts-grid { gap: var(--dashboard-gap); margin-top: 24px; }
+#view-dashboard .chart-card {
+  min-height: 310px;
+  padding: 18px;
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+}
+#view-dashboard .chart-card h3 { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+#view-dashboard .chart-wrap { padding: 10px; border-radius: 10px; background: rgba(0, 0, 0, .12); }
+#view-dashboard #departmentBreakdownPanel { margin-top: 24px; }
+#view-dashboard #departmentBreakdownPanel .table-wrap { margin: 0 16px 16px; }
+
+.sidebar { padding: 18px 12px; }
+.sidebar-header { min-height: 45px; margin-bottom: 20px; padding: 0 5px; }
+.sidebar-brand-text h2 { font-size: 14px; }
+.nav-group-label { margin-top: 3px; padding: 16px 10px 7px; }
+.nav-item { min-height: 40px; margin: 2px 0; border-radius: 10px; }
+.nav-item.active { box-shadow: inset -3px 0 0 var(--brand), 0 4px 14px rgba(115, 167, 255, .08); }
+.sidebar-footer { margin-top: 16px; padding: 14px 5px 0; }
+
+@media (max-width: 1360px) {
+  #view-dashboard .cards-grid-operational { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 980px) {
+  #view-dashboard .dashboard-hero { grid-template-columns: 1fr; }
+  #view-dashboard .dashboard-hero .dashboard-status { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #view-dashboard .dashboard-status-item:last-child { grid-column: auto; min-height: 70px; }
+  #view-dashboard .dashboard-financial-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #view-dashboard .dashboard-operational-widgets { grid-template-columns: 1fr; }
+}
+@media (max-width: 780px) {
+  .topbar { min-height: auto; padding: 15px 16px; margin-bottom: 16px; }
+  .topbar h1 { font-size: 21px; }
+  #view-dashboard .dashboard-hero { min-height: auto; padding: 20px; gap: 18px; }
+  #view-dashboard .dashboard-hero .dashboard-status { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #view-dashboard .dashboard-quick-actions .btn { flex: 1 1 calc(50% - 6px); }
+  #view-dashboard .section-heading { align-items: flex-start; }
+  #view-dashboard .cards-grid-operational,
+  #view-dashboard .dashboard-financial-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #view-dashboard .stat-card { min-height: 112px; padding: 14px; }
+  #view-dashboard .charts-grid { margin-top: 18px; }
+}
+@media (max-width: 460px) {
+  #view-dashboard .dashboard-hero .dashboard-status,
+  #view-dashboard .cards-grid-operational,
+  #view-dashboard .dashboard-financial-grid { grid-template-columns: 1fr; }
+  #view-dashboard .dashboard-status-item:last-child { grid-column: auto; }
+  #view-dashboard .dashboard-quick-actions .btn { flex-basis: 100%; }
+}
