@@ -1530,3 +1530,240 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
   #view-dashboard .dashboard-quick-actions .btn { min-height: 40px; }
   #view-dashboard #quickCalculateReportBtn { min-width: 0; }
 }
+
+/* =========================================================================
+   SYSTEM UI / UX CONSISTENCY AUDIT — shared visual components only
+   No selectors below change a view's data, behavior, permissions or binding.
+   ========================================================================= */
+.view:not(#view-dashboard) {
+  --view-gap: 18px;
+  max-width: 1560px;
+  margin-inline: auto;
+}
+.view:not(#view-dashboard) > .panel,
+.view:not(#view-dashboard) > .orders-center-header,
+.view:not(#view-dashboard) > .orders-center-tabs,
+.view:not(#view-dashboard) > .orders-center-panel,
+.view:not(#view-dashboard) > .active-month-hero,
+.view:not(#view-dashboard) > .comparison-toolbar {
+  margin-bottom: var(--view-gap);
+}
+.view:not(#view-dashboard) > .panel:first-child,
+.view:not(#view-dashboard) .orders-center-panel > .panel:first-child {
+  border-top: 2px solid rgba(115, 167, 255, .34);
+}
+
+.view:not(#view-dashboard) .panel,
+.view:not(#view-dashboard) .settings-card,
+.view:not(#view-dashboard) .comparison-metric-card,
+.view:not(#view-dashboard) .audit-timeline-card {
+  border-color: rgba(255, 255, 255, .105);
+  background: var(--layer-1);
+}
+.view:not(#view-dashboard) .panel-header {
+  min-height: 68px;
+  padding: 17px 20px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .075);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .022), transparent);
+}
+.view:not(#view-dashboard) .panel-header h2,
+.view:not(#view-dashboard) .panel-header h3 {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.015em;
+}
+.view:not(#view-dashboard) .panel-subtitle { max-width: 760px; color: var(--ink-muted); line-height: 1.7; }
+
+.view:not(#view-dashboard) .toolbar,
+.view:not(#view-dashboard) .users-toolbar,
+.view:not(#view-dashboard) .comparison-toolbar,
+.view:not(#view-dashboard) .orders-filters,
+.view:not(#view-dashboard) .orders-toolbar,
+.view:not(#view-dashboard) .inline-form {
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  margin: 16px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, .12);
+}
+.view:not(#view-dashboard) .toolbar,
+.view:not(#view-dashboard) .users-toolbar,
+.view:not(#view-dashboard) .comparison-toolbar,
+.view:not(#view-dashboard) .orders-toolbar { margin-inline: 16px; }
+.view:not(#view-dashboard) .inline-form { margin: 16px 0; }
+.view:not(#view-dashboard) .toolbar > *,
+.view:not(#view-dashboard) .users-toolbar > *,
+.view:not(#view-dashboard) .comparison-toolbar > *,
+.view:not(#view-dashboard) .orders-filters > *,
+.view:not(#view-dashboard) .inline-form > .field { min-width: min(100%, 170px); }
+
+.view:not(#view-dashboard) .btn,
+.modal .btn {
+  min-height: 38px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.view:not(#view-dashboard) .btn-sm,
+.modal .btn-sm { min-height: 34px; padding: 6px 10px; font-size: 11px; }
+.view:not(#view-dashboard) .btn:not(.btn-accent):not(.btn-danger-outline),
+.modal .btn:not(.btn-accent):not(.btn-danger-outline) {
+  color: var(--ink-muted);
+  background: rgba(255, 255, 255, .025);
+  border-color: rgba(255, 255, 255, .12);
+}
+.view:not(#view-dashboard) .btn:not(.btn-accent):not(.btn-danger-outline):hover:not(:disabled),
+.modal .btn:not(.btn-accent):not(.btn-danger-outline):hover:not(:disabled) {
+  color: var(--ink);
+  background: rgba(115, 167, 255, .08);
+  border-color: rgba(115, 167, 255, .32);
+}
+
+.view:not(#view-dashboard) .table-wrap {
+  margin: 16px;
+  overflow: auto;
+  border-color: rgba(255, 255, 255, .11);
+  background: rgba(0, 0, 0, .10);
+}
+.view:not(#view-dashboard) .table-wrap thead th {
+  height: 48px;
+  padding: 11px 14px;
+  color: #c7d0dc;
+  background: rgba(255, 255, 255, .045);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.view:not(#view-dashboard) .table-wrap tbody td {
+  min-height: 50px;
+  padding: 13px 14px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  vertical-align: middle;
+}
+.view:not(#view-dashboard) .table-wrap tbody tr { transition: background .14s ease, color .14s ease; }
+.view:not(#view-dashboard) .table-wrap tbody tr:hover { background: rgba(115, 167, 255, .085); }
+.view:not(#view-dashboard) .table-wrap tfoot { border-top: 1px solid rgba(255, 255, 255, .08); }
+
+.view:not(#view-dashboard) .field { margin-bottom: 14px; }
+.view:not(#view-dashboard) .field label {
+  margin-bottom: 6px;
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.view:not(#view-dashboard) input:not([type="checkbox"]):not([type="radio"]),
+.view:not(#view-dashboard) select,
+.view:not(#view-dashboard) textarea {
+  min-height: 40px;
+  border-color: rgba(255, 255, 255, .12);
+  background: rgba(0, 0, 0, .15);
+}
+.view:not(#view-dashboard) textarea { min-height: 92px; line-height: 1.7; }
+.view:not(#view-dashboard) input:hover,
+.view:not(#view-dashboard) select:hover,
+.view:not(#view-dashboard) textarea:hover { border-color: rgba(115, 167, 255, .28); }
+.view:not(#view-dashboard) input:focus,
+.view:not(#view-dashboard) select:focus,
+.view:not(#view-dashboard) textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+
+.orders-center-header {
+  padding: 26px 28px;
+  border-color: rgba(115, 167, 255, .24);
+  border-radius: var(--radius-dialog);
+  background: linear-gradient(120deg, rgba(115, 167, 255, .14), var(--layer-1) 55%, rgba(52, 211, 153, .05));
+  box-shadow: var(--shadow-card);
+}
+.orders-center-header .eyebrow { margin-bottom: 7px; }
+.orders-center-header h2 { font-size: 24px; letter-spacing: -.03em; }
+.orders-center-tabs,
+.config-tabs {
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 14px;
+  background: var(--layer-1);
+  box-shadow: var(--shadow-card);
+}
+.orders-center-tab,
+.config-tab {
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  color: var(--ink-muted);
+}
+.orders-center-tab:hover,
+.config-tab:hover { color: var(--ink); background: rgba(255, 255, 255, .05); }
+.orders-center-tab.active,
+.config-tab.active {
+  color: #0e1a2b;
+  border-color: transparent;
+  background: var(--brand);
+  box-shadow: 0 5px 14px rgba(115, 167, 255, .18);
+}
+.orders-center-panel > .panel,
+.orders-center-panel .panel { margin-bottom: 18px; }
+
+.hint-box,
+.locked-banner,
+.empty-state,
+.empty-cell,
+.comparison-empty-state {
+  border-radius: 14px;
+  border-color: rgba(115, 167, 255, .18);
+  background: rgba(115, 167, 255, .055);
+}
+.view:not(#view-dashboard) .hint-box { margin: 16px; }
+.dropzone {
+  min-height: 190px;
+  border-radius: 16px;
+  border-color: rgba(115, 167, 255, .24);
+  background: rgba(115, 167, 255, .035);
+}
+.dropzone:hover,
+.dropzone.dropzone-active { border-color: var(--brand); background: rgba(115, 167, 255, .08); }
+
+.modal {
+  max-height: min(88vh, 920px);
+  border-color: rgba(255, 255, 255, .15);
+  background: var(--layer-1);
+}
+.modal-header { min-height: 66px; padding: 18px 22px; background: rgba(255, 255, 255, .018); }
+.modal-body { padding: 22px; }
+.modal-footer { min-height: 68px; padding: 15px 22px; background: rgba(0, 0, 0, .10); }
+.modal .form-grid { gap: 14px; }
+.modal .hint-box { margin: 0 0 16px; }
+
+.settings-card { box-shadow: var(--shadow-card); }
+.settings-department-row,
+.permission-group-card,
+.audit-timeline-card { border-color: rgba(255, 255, 255, .11); }
+.audit-timeline-card:hover { border-color: rgba(115, 167, 255, .30); }
+
+@media (max-width: 900px) {
+  .view:not(#view-dashboard) .orders-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .view:not(#view-dashboard) .table-wrap { margin: 14px; }
+}
+@media (max-width: 680px) {
+  .view:not(#view-dashboard) > .panel,
+  .view:not(#view-dashboard) > .orders-center-header,
+  .view:not(#view-dashboard) > .orders-center-tabs,
+  .view:not(#view-dashboard) > .orders-center-panel,
+  .view:not(#view-dashboard) > .active-month-hero,
+  .view:not(#view-dashboard) > .comparison-toolbar { margin-bottom: 14px; }
+  .view:not(#view-dashboard) .panel-header { min-height: auto; padding: 15px 16px; }
+  .view:not(#view-dashboard) .toolbar,
+  .view:not(#view-dashboard) .users-toolbar,
+  .view:not(#view-dashboard) .comparison-toolbar,
+  .view:not(#view-dashboard) .orders-filters,
+  .view:not(#view-dashboard) .orders-toolbar { margin: 14px; padding: 10px; }
+  .view:not(#view-dashboard) .inline-form { padding: 10px; }
+  .view:not(#view-dashboard) .orders-filters { grid-template-columns: 1fr; }
+  .view:not(#view-dashboard) .table-wrap { margin: 12px; border-radius: 10px; }
+  .view:not(#view-dashboard) .table-wrap tbody td { padding: 11px 12px; }
+  .orders-center-header { padding: 20px; }
+  .orders-center-header h2 { font-size: 20px; }
+  .modal-header,.modal-body,.modal-footer { padding-inline: 16px; }
+}
