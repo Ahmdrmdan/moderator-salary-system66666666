@@ -2325,3 +2325,81 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   #view-report .report-table-wrap,
   #view-report .salary-snapshot-dashboard .table-wrap { margin:0; }
 }
+
+/* Payroll Workflow Engine — Stage 1: view-only workflow header migration.
+   Existing report states, identifiers, and operation bindings remain untouched. */
+#view-report .report-workflow-header {
+  display:grid;
+  gap:10px;
+  padding:20px 22px 16px;
+  border:1px solid rgba(115,167,255,.20);
+  border-radius:var(--radius-dialog);
+  background:linear-gradient(120deg,rgba(115,167,255,.105),rgba(25,29,34,.96) 54%,rgba(52,211,153,.035));
+  box-shadow:var(--shadow-card);
+}
+#view-report .monthly-report-hero {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:22px;
+  align-items:center;
+  padding:0 0 14px;
+  border:0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+#view-report .monthly-report-title h2 { font-size:24px; }
+#view-report .monthly-report-title .panel-subtitle { max-width:630px; margin-top:5px; }
+#view-report .report-status-rail { gap:8px; min-width:318px; }
+#view-report .report-status-card {
+  gap:6px;
+  padding:10px 12px;
+  border-color:rgba(255,255,255,.09);
+  border-radius:10px;
+  background:rgba(6,12,18,.24);
+}
+#view-report .report-workflow-card {
+  display:grid;
+  grid-template-columns:minmax(185px,.42fr) minmax(0,1fr);
+  gap:18px;
+  align-items:center;
+  padding:12px 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+#view-report .report-workflow-card .report-eyebrow { margin-bottom:4px; }
+#view-report .report-workflow-card p { font-size:11px; }
+#view-report .report-workflow { justify-content:space-between; gap:8px; }
+#view-report .report-workflow li { gap:6px; font-size:10px; }
+#view-report .report-workflow li span {
+  width:22px;
+  height:22px;
+  font-size:10px;
+  box-shadow:none;
+}
+#view-report .report-context-bar {
+  gap:12px;
+  padding:10px 12px;
+  border-color:rgba(255,255,255,.08);
+  border-radius:10px;
+  background:rgba(6,12,18,.18);
+}
+#view-report .report-context-primary { min-width:142px; padding-inline-end:12px; }
+#view-report .report-context-primary strong { font-size:13px; }
+#view-report .report-context-meta { gap:4px; }
+#view-report .report-context-meta span { gap:3px; padding:2px 6px; }
+
+@media (max-width:1200px) {
+  #view-report .monthly-report-hero { grid-template-columns:1fr; align-items:start; }
+  #view-report .report-status-rail { width:100%; min-width:0; max-width:520px; }
+  #view-report .report-workflow-card { grid-template-columns:1fr; gap:10px; }
+  #view-report .report-workflow { justify-content:flex-start; }
+}
+@media (max-width:900px) {
+  #view-report .report-workflow-header { gap:12px; padding:18px; }
+  #view-report .monthly-report-hero { padding-bottom:12px; }
+  #view-report .report-workflow-card { padding:0; }
+  #view-report .report-context-bar { align-items:stretch; flex-direction:column; }
+}

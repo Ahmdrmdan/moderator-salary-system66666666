@@ -453,37 +453,39 @@ Haba&#9;7&#9;750"></textarea>
     <!-- ===================== VIEW: REPORT ===================== -->
     <section class="view" id="view-report">
       <div class="panel monthly-report-shell">
-        <header class="monthly-report-hero">
-          <div class="monthly-report-title">
-            <span class="report-eyebrow">مركز إقفال الرواتب</span>
-            <h2>التقرير الشهري</h2>
-            <p class="panel-subtitle">راجع النسخة المحسوبة، اعتمد التقرير، ثم أكمل اعتماد وصرف كشف الرواتب المستقل.</p>
-          </div>
-          <div class="report-status-rail" aria-label="حالات دورة الرواتب">
-            <div class="report-status-card report-status-card-main"><span>حالة التقرير الشهري</span><strong id="reportApprovalBadge" class="badge badge-locked">غير معتمد</strong></div>
-            <div class="report-status-card"><span>حالة كشف الرواتب</span><strong id="salaryProcessingStatus" class="badge badge-locked">مسودة</strong></div>
-          </div>
-        </header>
+        <section class="report-workflow-header" aria-label="رأس ومسار التقرير الشهري">
+          <header class="monthly-report-hero">
+            <div class="monthly-report-title">
+              <span class="report-eyebrow">مركز إقفال الرواتب</span>
+              <h2>التقرير الشهري</h2>
+              <p class="panel-subtitle">راجع النسخة المحسوبة، اعتمد التقرير، ثم أكمل اعتماد وصرف كشف الرواتب المستقل.</p>
+            </div>
+            <div class="report-status-rail" aria-label="حالات دورة الرواتب">
+              <div class="report-status-card report-status-card-main"><span>حالة التقرير الشهري</span><strong id="reportApprovalBadge" class="badge badge-locked">غير معتمد</strong></div>
+              <div class="report-status-card"><span>حالة كشف الرواتب</span><strong id="salaryProcessingStatus" class="badge badge-locked">مسودة</strong></div>
+            </div>
+          </header>
 
-        <section class="report-context-bar" aria-label="سياق التقرير الحالي">
-          <div class="report-context-primary"><span>النطاق الحالي</span><strong id="reportScopeLabel">كل الأقسام</strong></div>
-          <div class="report-context-meta" aria-live="polite">
-            <span><b>آخر تحديث</b><em id="reportLastUpdated">—</em></span>
-            <span><b>آخر حساب</b><em id="reportLastCalculated">—</em></span>
-            <span><b>آخر اعتماد</b><em id="reportLastApproved">—</em></span>
-            <span><b>آخر تصدير</b><em id="reportLastExported">غير مسجل</em></span>
-          </div>
-        </section>
+          <section class="report-workflow-card" aria-labelledby="reportWorkflowTitle">
+            <div><span class="report-eyebrow" id="reportWorkflowTitle">مسار المراجعة والاعتماد</span><p>يبقى التقرير الشهري وكشف الرواتب مسارين مستقلين بوضوح.</p></div>
+            <ol class="report-workflow">
+              <li><span>1</span>حساب التقرير</li>
+              <li><span>2</span>مراجعة المستحقات</li>
+              <li><span>3</span>اعتماد التقرير</li>
+              <li><span>4</span>اعتماد كشف الرواتب</li>
+              <li><span>5</span>صرف الرواتب</li>
+            </ol>
+          </section>
 
-        <section class="report-workflow-card" aria-labelledby="reportWorkflowTitle">
-          <div><span class="report-eyebrow" id="reportWorkflowTitle">مسار المراجعة والاعتماد</span><p>يبقى التقرير الشهري وكشف الرواتب مسارين مستقلين بوضوح.</p></div>
-          <ol class="report-workflow">
-            <li><span>1</span>حساب التقرير</li>
-            <li><span>2</span>مراجعة المستحقات</li>
-            <li><span>3</span>اعتماد التقرير</li>
-            <li><span>4</span>اعتماد كشف الرواتب</li>
-            <li><span>5</span>صرف الرواتب</li>
-          </ol>
+          <section class="report-context-bar" aria-label="سياق التقرير الحالي">
+            <div class="report-context-primary"><span>النطاق الحالي</span><strong id="reportScopeLabel">كل الأقسام</strong></div>
+            <div class="report-context-meta" aria-live="polite">
+              <span><b>آخر تحديث</b><em id="reportLastUpdated">—</em></span>
+              <span><b>آخر حساب</b><em id="reportLastCalculated">—</em></span>
+              <span><b>آخر اعتماد</b><em id="reportLastApproved">—</em></span>
+              <span><b>آخر تصدير</b><em id="reportLastExported">غير مسجل</em></span>
+            </div>
+          </section>
         </section>
 
         <div class="hint-box report-approval-notice" id="reportApprovalNotice"></div>
