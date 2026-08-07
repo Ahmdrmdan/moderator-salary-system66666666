@@ -4869,7 +4869,7 @@ const App = (() => {
     const status = document.getElementById('dashboardAnalyticsScopeLabel');
     if (status) status.textContent = range.valid ? (analytics.loading ? 'جارٍ تحديث التحليلات…' : `${range.label}: ${range.from} — ${range.to}`) : 'أدخل تاريخ بداية ونهاية صحيحين.';
     renderDashboard();
-    if (range.valid) {
+    if (range.valid && !options.skipAudit) {
       if (options.immediateAudit) return loadDashboardAnalyticsAudit(range);
       scheduleDashboardAnalyticsAudit(range);
     }
@@ -4909,6 +4909,9 @@ const App = (() => {
     state.dashboardAnalytics.loading = true;
     if (button) button.disabled = true;
     try {
+      // Paint the loading state before the read begins, without starting a
+      // competing delayed Audit request.
+      applyDashboardAnalyticsFilters({ skipAudit: true });
       if (typeof OrdersManagement !== 'undefined') await OrdersManagement.refresh();
       await applyDashboardAnalyticsFilters({ immediateAudit: true });
     } finally {

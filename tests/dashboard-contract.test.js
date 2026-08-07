@@ -39,6 +39,8 @@ assert.match(appSource, /function scheduleDashboardAnalyticsAudit\(range\)[\s\S]
   'rapid filter changes debounce Audit reads instead of accumulating requests');
 assert.match(appSource, /function refreshDashboardAnalytics\(\)[\s\S]*?refreshDashboardAnalyticsBtn[\s\S]*?dashboardAnalytics\.loading = true[\s\S]*?dashboardAnalytics\.loading = false/,
   'manual refresh exposes a bounded loading state');
+assert.match(appSource, /dashboardAnalytics\.loading = true[\s\S]*?applyDashboardAnalyticsFilters\(\{ skipAudit: true \}\)[\s\S]*?OrdersManagement\.refresh\(\)/,
+  'loading feedback is painted before the operational refresh begins');
 
 // The UI audit is explicitly visual-only. These stable hooks guarantee that
 // the existing data bindings and quick-action controls remain in place.
