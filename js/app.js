@@ -56,7 +56,7 @@ const App = (() => {
     // Dashboard Analytics is deliberately separate from the monthly report
     // scope. It filters only raw operational records and never reprices a
     // frozen payroll/report row.
-    dashboardAnalytics: { period: 'this_month', from: '', to: '', auditLogs: [], loading: false },
+    dashboardAnalytics: { period: 'this_month', from: '', to: '', auditLogs: [], loading: false, auditTimer: null, auditRequestId: 0 },
     sort: { key: 'name', dir: 'asc' },
     searchTerm: '',
     employeeSearchTerm: '',
@@ -339,7 +339,9 @@ const App = (() => {
       await refreshDashboardAnalytics();
     });
     document.getElementById('resetDashboardAnalyticsBtn').addEventListener('click', () => {
-      state.dashboardAnalytics = { period: 'this_month', from: '', to: '', auditLogs: [], loading: false };
+      const previous = state.dashboardAnalytics || {};
+      if (previous.auditTimer) clearTimeout(previous.auditTimer);
+      state.dashboardAnalytics = { period: 'this_month', from: '', to: '', auditLogs: [], loading: false, auditTimer: null, auditRequestId: (previous.auditRequestId || 0) + 1 };
       renderDashboardAnalyticsControls();
       applyDashboardAnalyticsFilters();
     });
@@ -4839,9 +4841,24 @@ const App = (() => {
     set('analyticsDeliveredCount', Utils.formatNumber(delivered));
     const caption = document.getElementById('dashboardAnalyticsCardsCaption');
     if (caption) caption.textContent = canReadOrders ? 'من الطلبات ضمن الفترة المحددة' : 'غير متاح حسب الصلاحيات';
+    const empty = document.getElementById('dashboardAnalyticsEmpty');
+    const range = dashboardAnalyticsRange();
+    if (empty) {
+      const shouldShow = canReadOrders && range.valid && !state.dashboardAnalytics.loading && orders.length === 0;
+      empty.classList.toggle('hidden', !shouldShow);
+      if (shouldShow) empty.textContent = 'لا توجد طلبات مؤرخة ضمن الفترة والقسم المحددين. جرّب نطاقًا آخر أو تأكد من تاريخ الطلبات المستوردة.';
+    }
   }
 
-  function applyDashboardAnalyticsFilters() {
+  function renderDashboardCurrentScopeSummary() {
+    const target = document.getElementById('dashboardCurrentScopeSummary');
+    if (!target) return;
+    const range = dashboardAnalyticsRange();
+    const department = state.departmentFilter === 'all' ? 'كل الأقسام' : Departments.nameOf(state.departmentFilter, 'القسم المحدد');
+    target.innerHTML = `<strong>النطاق الحالي:</strong>&nbsp; التقرير الشهري — ${Utils.escapeHtml(currentMonthLabel() || '—')} / ${Utils.escapeHtml(department)} &nbsp;•&nbsp; التحليلات التشغيلية — ${Utils.escapeHtml(range.label)}${range.valid ? ` (${Utils.escapeHtml(range.from)} إلى ${Utils.escapeHtml(range.to)})` : ''}`;
+  }
+
+  function applyDashboardAnalyticsFilters(options = {}) {
     const analytics = state.dashboardAnalytics || {};
     analytics.period = document.getElementById('dashboardAnalyticsPeriod')?.value || 'this_month';
     analytics.from = document.getElementById('dashboardAnalyticsFrom')?.value || '';
@@ -4850,35 +4867,53 @@ const App = (() => {
     renderDashboardAnalyticsControls();
     const range = dashboardAnalyticsRange();
     const status = document.getElementById('dashboardAnalyticsScopeLabel');
-    if (status) status.textContent = range.valid ? `${range.label}: ${range.from} — ${range.to}` : 'أدخل تاريخ بداية ونهاية صحيحين.';
+    if (status) status.textContent = range.valid ? (analytics.loading ? 'جارٍ تحديث التحليلات…' : `${range.label}: ${range.from} — ${range.to}`) : 'أدخل تاريخ بداية ونهاية صحيحين.';
     renderDashboard();
-    if (range.valid) loadDashboardAnalyticsAudit(range);
+    if (range.valid) {
+      if (options.immediateAudit) return loadDashboardAnalyticsAudit(range);
+      scheduleDashboardAnalyticsAudit(range);
+    }
+  }
+
+  function scheduleDashboardAnalyticsAudit(range) {
+    const analytics = state.dashboardAnalytics;
+    if (analytics.auditTimer) clearTimeout(analytics.auditTimer);
+    analytics.auditTimer = setTimeout(() => {
+      analytics.auditTimer = null;
+      loadDashboardAnalyticsAudit(range);
+    }, 220);
   }
 
   async function loadDashboardAnalyticsAudit(range = dashboardAnalyticsRange()) {
     if (!range.valid || !Permissions.can('audit.read') || typeof AuditService === 'undefined' || typeof AuditService.getInRange !== 'function') return;
+    const requestId = (state.dashboardAnalytics.auditRequestId || 0) + 1;
+    state.dashboardAnalytics.auditRequestId = requestId;
     try {
       const logs = await AuditService.getInRange(range.from, range.to, 50);
       // Ignore an older asynchronous response after the user changed range.
       const current = dashboardAnalyticsRange();
-      if (current.from === range.from && current.to === range.to) {
+      if (state.dashboardAnalytics.auditRequestId === requestId && current.from === range.from && current.to === range.to) {
         state.dashboardAnalytics.auditLogs = logs;
         renderDashboard();
       }
     } catch (err) {
-      state.dashboardAnalytics.auditLogs = [];
-      renderDashboard();
+      if (state.dashboardAnalytics.auditRequestId === requestId) {
+        state.dashboardAnalytics.auditLogs = [];
+        renderDashboard();
+      }
     }
   }
 
   async function refreshDashboardAnalytics() {
     const button = document.getElementById('refreshDashboardAnalyticsBtn');
+    state.dashboardAnalytics.loading = true;
     if (button) button.disabled = true;
     try {
       if (typeof OrdersManagement !== 'undefined') await OrdersManagement.refresh();
-      applyDashboardAnalyticsFilters();
-      await loadDashboardAnalyticsAudit();
+      await applyDashboardAnalyticsFilters({ immediateAudit: true });
     } finally {
+      state.dashboardAnalytics.loading = false;
+      applyDashboardAnalyticsFilters();
       if (button) button.disabled = false;
     }
   }
@@ -4897,6 +4932,7 @@ const App = (() => {
     renderDashboardScopeControls();
     renderDashboardAnalyticsControls();
     renderScopeLabels();
+    renderDashboardCurrentScopeSummary();
     renderDashboardCards(rows, totals);
     renderDashboardAnalyticsCards(analyticsOrders);
     renderDashboardStatus();

@@ -1556,6 +1556,9 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
 #view-dashboard .dashboard-filter-actions { display: flex; gap: 7px; flex: 0 0 auto; }
 #view-dashboard .dashboard-filter-actions .btn { min-height: 38px; white-space: nowrap; }
 #view-dashboard .dashboard-filter-status { min-height: 18px; margin: 11px 0 0; color: var(--ink-muted); font-size: 11px; }
+#view-dashboard .dashboard-current-scope { display: flex; align-items: center; min-height: 38px; margin: 2px 0 14px; padding: 8px 13px; border: 1px solid rgba(115,167,255,.2); border-radius: 11px; color: var(--ink-muted); background: rgba(115,167,255,.055); font-size: 12px; }
+#view-dashboard .dashboard-current-scope strong { color: var(--ink); }
+#view-dashboard .dashboard-analytics-empty { margin-top: 12px; padding: 11px 13px; border: 1px dashed rgba(56,189,248,.38); border-radius: 11px; color: var(--ink-muted); background: rgba(56,189,248,.045); font-size: 12px; }
 #view-dashboard .dashboard-analytics-section, #view-dashboard .dashboard-monthly-charts, #view-dashboard .dashboard-operational-charts { margin-top: 22px; }
 #view-dashboard .dashboard-analytics-cards { grid-template-columns: repeat(4, minmax(0,1fr)); }
 #view-dashboard .dashboard-monthly-charts .charts-grid, #view-dashboard .dashboard-operational-charts .charts-grid { margin-top: 12px; }

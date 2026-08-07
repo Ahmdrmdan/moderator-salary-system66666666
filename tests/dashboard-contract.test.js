@@ -23,6 +23,8 @@ assert.match(htmlSource, /id="dashboardMonthlyScopeForm"[\s\S]*?id="dashboardMon
   'monthly Dashboard scope exposes independent month and department selectors');
 assert.match(htmlSource, /id="dashboardAnalyticsFilters"[\s\S]*?id="dashboardAnalyticsPeriod"[\s\S]*?id="dashboardAnalyticsFrom"[\s\S]*?id="dashboardAnalyticsTo"/,
   'operational analytics exposes a date-period filter with custom range inputs');
+assert.match(htmlSource, /id="dashboardCurrentScopeSummary"[\s\S]*?id="dashboardAnalyticsEmpty"/,
+  'Dashboard shows both the active scopes and an operational empty state');
 assert.match(appSource, /dashboardAnalytics: \{ period: 'this_month'[\s\S]*?function getDashboardAnalyticsOrders\(\)[\s\S]*?order\.orderDate/,
   'analytics date scope is isolated from the monthly report state and filters raw order dates');
 assert.match(appSource, /function renderDashboard\(\)[\s\S]*?renderDashboardAnalyticsCards\(analyticsOrders\)[\s\S]*?DashboardWidgets\.refresh\(\{ orders: analyticsOrders, auditLogs: state\.dashboardAnalytics\.auditLogs/,
@@ -33,6 +35,10 @@ assert.match(widgetsSource, /function refresh\(context = \{\}\)/,
   'operational widgets retain their existing cache-only refresh boundary');
 assert.match(auditSource, /async function getInRange\(fromDate, toDate, limit = 50\)[\s\S]*?\.where\('at', '>=',[\s\S]*?\.where\('at', '<',[\s\S]*?\.orderBy\('at', 'desc'\)/,
   'recent activity is read through a bounded single-field Audit date range');
+assert.match(appSource, /function scheduleDashboardAnalyticsAudit\(range\)[\s\S]*?clearTimeout\(analytics\.auditTimer\)[\s\S]*?setTimeout\([\s\S]*?220\)/,
+  'rapid filter changes debounce Audit reads instead of accumulating requests');
+assert.match(appSource, /function refreshDashboardAnalytics\(\)[\s\S]*?refreshDashboardAnalyticsBtn[\s\S]*?dashboardAnalytics\.loading = true[\s\S]*?dashboardAnalytics\.loading = false/,
+  'manual refresh exposes a bounded loading state');
 
 // The UI audit is explicitly visual-only. These stable hooks guarantee that
 // the existing data bindings and quick-action controls remain in place.

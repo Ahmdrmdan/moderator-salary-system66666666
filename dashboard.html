@@ -125,6 +125,8 @@
         </form>
       </section>
 
+      <div class="dashboard-current-scope" id="dashboardCurrentScopeSummary" role="status" aria-live="polite"></div>
+
       <div class="dashboard-quick-actions" aria-label="إجراءات سريعة">
         <button class="btn" id="quickAddEmployeeBtn" data-permission="employees.write">➕ إضافة موظف</button>
         <button class="btn" id="quickImportOrdersBtn" data-permission="orders.import">📥 استيراد الطلبات</button>
@@ -168,6 +170,7 @@
           <div class="stat-card"><div class="stat-icon">💳</div><div class="stat-value" id="analyticsSalesValue">0</div><div class="stat-label">المبيعات التشغيلية</div></div>
           <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="analyticsDeliveredCount">0</div><div class="stat-label">تم تسليمها</div></div>
         </div>
+        <div class="dashboard-analytics-empty hidden" id="dashboardAnalyticsEmpty" role="status"></div>
       </section>
 
       <div class="dashboard-insights-grid">
