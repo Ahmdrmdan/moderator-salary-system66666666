@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — Dashboard chart-height hotfix (awaiting review)
+
+- Bounded responsive Dashboard chart canvases to their existing fixed-height cards, eliminating the ResizeObserver/flex overflow loop that could grow a chart vertically without limit.
+- Versioned the Dashboard stylesheet URL so the published layout hotfix bypasses a previously cached `style.css` asset.
+- Added Dashboard contract coverage for the bounded chart wrapper, canvas sizing, cache-busted stylesheet, and existing destroy-before-render lifecycle.
+
 ## [7.0.10] — 2026-08-07 (Production release)
 
 - Completed the production-wide regression audit across Imports, Shipping, Orders, Departments, Employees, Salary, Reports, Transactions, Dashboard, and Users & Security. Every module contract suite and JavaScript syntax check passed.

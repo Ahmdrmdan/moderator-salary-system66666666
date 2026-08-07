@@ -1,5 +1,23 @@
 # PROGRESS.md — Final Production Audit
 
+## Dashboard Chart-Height Hotfix (awaiting user review)
+
+### Root cause and limited fix
+
+- Dashboard charts use `responsive: true` with `maintainAspectRatio: false`. Their `.chart-wrap` flex child previously had no shrinkable minimum height, so the canvas height written by Chart.js could become the parent height and trigger a repeating ResizeObserver growth loop. The card itself remained 300px while its canvas overflow grew into the thousands of pixels.
+- The fix applies only to Dashboard chart wrappers: `flex: 1 1 0`, `min-height: 0`, and hidden overflow bound the container; the canvas fills that container at `100%` height and width. No chart data, chart type, Dashboard design, calculation, or render logic changed.
+- The first production deployment still loaded an older cached stylesheet because `dashboard.html` referenced an unversioned CSS URL. The Dashboard stylesheet now uses `?v=7.0.10-chart-height-hotfix`, ensuring clients receive the bounded layout.
+
+### Verification completed
+
+- Passed locally: `node --check js/charts.js`, `node --check js/app.js`, `node tests/dashboard-contract.test.js`, `node tests/production-config-contract.test.js`, and `git diff --check`.
+- Firebase Hosting deployed successfully from `hotfix/dashboard-chart-height`.
+- Production UAT measured all six Dashboard chart cards at 300px, their wrappers at 226px, and canvases at 210px. The same measurements remained unchanged after a second timed observation, confirming no unintended resize/render loop. Browser Console contained zero errors and zero warnings.
+
+### Scope confirmation
+
+- No Firestore data, Rules, Schema, Dashboard statistics, chart data, Chart.js configuration, or visual design was changed. This Hotfix remains unmerged and untagged pending user review.
+
 ## Final Production Audit (closed and approved)
 
 ### Scope and outcome
