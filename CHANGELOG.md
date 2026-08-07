@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.0] - 2026-08-07 (Payroll Workflow release)
+
+- Released the validated two-phase Payroll Workflow: a backward-compatible lifecycle engine and its view-only Monthly Report integration. Existing calculation, Smart Approval, Salary Snapshot, payment, archive, printing, export, permissions, and audit operations retain their established behavior.
+- Added state-aware workflow guidance and action availability across Draft, Calculated, In Review, Approved, Salary Snapshot Created, Ready for Payment, Paid, Archived, and Reopened states. Legacy monthly data derives a safe state from existing fields; no migration or historical rewrite is required.
+- Preserved financial safety by writing only workflow metadata alongside the existing atomic payment/audit batch, and by publishing its narrowly scoped Firestore authorization with the release.
+
+## Unreleased — Payroll Workflow UI Integration (phase 2)
+
+- Connected the approved Monthly Report workflow header, decision-summary state, review guidance, Salary Snapshot timeline, and existing action controls to the Payroll Workflow Engine state rather than static report/snapshot labels.
+- The available action now follows both the current lifecycle state and existing permission: calculate, readiness review/approval, Salary Snapshot creation, payment, and the existing archive operation. Archive reopening now uses `months.write` instead of a role-name check and is hidden once the lifecycle no longer permits it.
+- Final payment now mirrors only the `paid` workflow metadata to the existing month document and monthly summary in the same batch as the existing Salary Snapshot payment/audit write. This prevents a paid report from being presented as reopenable in archive views; no amount, employee payment, report row, or calculation changed.
+
+## Unreleased — Payroll Workflow Engine (phase 1)
+
+- Added a backward-compatible monthly payroll state machine: Draft, Calculated, In Review, Approved, Salary Snapshot Created, Ready for Payment, Paid, Archived, and Reopened. Legacy reports and Salary Snapshots derive their state from existing `status`, report, and archive fields, so no migration or historical data rewrite is required.
+- Guarded the existing Calculate, Smart Approval, month close, Salary Snapshot, payment, archive, and reopen operations with the valid workflow transition and the permissions already used by those operations. Smart Approval remains the approval validation source; no salary formula, report calculation, or payment amount changed.
+- Persisted small workflow metadata with the existing report/snapshot documents and summary index, together with append-only audit entries. Creating the existing Salary Snapshot continues to make it immediately ready for payment, while recording both logical milestones for the future workflow UI.
+- Permitted the final archive marker for a locked report only after the linked Salary Snapshot is fully paid; a paid archive is terminal to prevent recalculation against an immutable paid Snapshot.
+
 ## [7.2.0] — 2026-08-07 (Monthly Report 2.0 UI / UX)
 
 - Reorganized the existing monthly-report screen into a clear Arabic review workflow: calculate, review, approve the report, approve the independent Salary Snapshot, then record payment. All existing controls, IDs, permissions, calculations, Firestore reads/writes, and Snapshot behavior remain unchanged.

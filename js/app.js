@@ -1083,6 +1083,9 @@ const App = (() => {
     }
 
     renderReportContextMeta(month);
+    if (typeof PayrollWorkflowUI !== 'undefined') {
+      PayrollWorkflowUI.render({ month, report: state.currentReport });
+    }
   }
 
   /**
@@ -1139,7 +1142,12 @@ const App = (() => {
     }, assessment => {
       // Critical findings never expose this callback from SmartApproval.
       state.pendingApprovalAssessment = assessment;
-      openCloseMonthModal();
+      Months.startWorkflowReview(monthId, assessment)
+        .then(() => openCloseMonthModal())
+        .catch(err => {
+          console.error('Could not start payroll workflow review:', err);
+          Toast.show(err.message || 'تعذر بدء مرحلة المراجعة.', 'error');
+        });
     });
   }
 
@@ -1289,7 +1297,8 @@ const App = (() => {
           warningsCount: assessment.warnings.length,
           criticalCount: assessment.critical.length,
           checksCount: assessment.totalChecks
-        }
+        },
+        approvalAssessment: assessment
       });
 
       Toast.show(
@@ -1348,6 +1357,7 @@ const App = (() => {
 
     tbody.innerHTML = rows.map(m => {
       const t = m.totals || {};
+      const canReopen = PayrollWorkflowUI.canAction(PayrollWorkflow.ACTION.REOPEN, { month: m, report: [] });
       return `
       <tr>
         <td>${Utils.escapeHtml(m.label)}</td>
@@ -1362,7 +1372,7 @@ const App = (() => {
         <td>${Utils.formatDateTime(m.closedAt)}</td>
         <td class="actions-cell">
           <button class="btn-icon" data-action="details" data-id="${m.id}" title="عرض التفاصيل">👁️</button>
-          ${state.userRole === 'admin' ? `<button class="btn btn-danger-outline" data-action="reopen" data-id="${m.id}">إلغاء اعتماد التقرير</button>` : ''}
+          ${canReopen ? `<button class="btn btn-danger-outline" data-action="reopen" data-id="${m.id}">إلغاء اعتماد التقرير</button>` : ''}
         </td>
       </tr>`;
     }).join('');
@@ -1377,7 +1387,8 @@ const App = (() => {
 
   function confirmReopenApprovedMonth(monthId) {
     const month = Months.byId(monthId);
-    if (!month || month.status !== Months.STATUS.LOCKED || state.userRole !== 'admin') return;
+    if (!month || month.status !== Months.STATUS.LOCKED ||
+        !PayrollWorkflowUI.canAction(PayrollWorkflow.ACTION.REOPEN, { month, report: [] })) return;
 
     Confirm.show(
       `هل أنت متأكد من إلغاء اعتماد تقرير ${month.label}؟ سيصبح الشهر قابلاً للتعديل مرة أخرى، ولن يتم حذف أي Snapshot أو Backup أو Monthly Summary.`,
@@ -1386,7 +1397,7 @@ const App = (() => {
   }
 
   async function reopenApprovedMonth(monthId) {
-    if (state.userRole !== 'admin') {
+    if (!PayrollWorkflowUI.canAction(PayrollWorkflow.ACTION.REOPEN, { month: Months.byId(monthId), report: [] })) {
       Toast.show('غير مصرح لك بإلغاء اعتماد التقرير', 'error');
       return;
     }
@@ -4610,6 +4621,11 @@ const App = (() => {
       state.currentMonthDepartmentBonusRules = departmentRulesSnapshot;
 
       const reportRef = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(state.currentMonthId);
+      PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.CALCULATE, {
+        currentState: (Months.byId(state.currentMonthId) || {}).workflowState,
+        month: Months.byId(state.currentMonthId) || {},
+        report
+      });
       const reportPayload = {
         report,
         totals,
@@ -4620,7 +4636,8 @@ const App = (() => {
         bonusRules: { ...globalRules },
         departmentBonusRules: departmentRulesSnapshot,
         carryDebt,
-        calculatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        calculatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        ...PayrollWorkflow.metadata(PayrollWorkflow.STATE.CALCULATED)
       };
       const calculationAudit = {
         action: AuditService.ACTION.REPORT_CALCULATED,
@@ -4657,7 +4674,8 @@ const App = (() => {
             ? Months.STATUS.LOCKED : Months.STATUS.OPEN,
           report,
           totals,
-          departmentTotals
+          departmentTotals,
+          workflowState: PayrollWorkflow.STATE.CALCULATED
         });
       } catch (err) {
         console.error('Could not refresh month summary:', err);

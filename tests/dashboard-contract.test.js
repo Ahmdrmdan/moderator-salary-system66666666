@@ -23,8 +23,12 @@ assert.match(htmlSource, /id="dashboardMonthlyScopeForm"[\s\S]*?id="dashboardMon
   'monthly Dashboard scope exposes independent month and department selectors');
 assert.match(htmlSource, /id="dashboardAnalyticsFilters"[\s\S]*?id="dashboardAnalyticsPeriod"[\s\S]*?id="dashboardAnalyticsFrom"[\s\S]*?id="dashboardAnalyticsTo"/,
   'operational analytics exposes a date-period filter with custom range inputs');
-assert.match(htmlSource, /id="dashboardCurrentScopeSummary"[\s\S]*?id="dashboardAnalyticsEmpty"/,
-  'Dashboard shows both the active scopes and an operational empty state');
+assert.doesNotMatch(htmlSource, /id="dashboardCurrentScopeSummary"/,
+  'Dashboard does not duplicate the scope already visible in the compact toolbar');
+assert.match(htmlSource, /id="dashboardAnalyticsFilters"[\s\S]*?id="dashboardAnalyticsEmpty"/,
+  'Dashboard retains the operational empty state inside the analytics toolbar flow');
+assert.match(appSource, /function renderDashboardCurrentScopeSummary\(\) \{[\s\S]*?if \(!target\) return;/,
+  'the legacy scope renderer safely remains a no-op after its duplicate display is removed');
 assert.match(appSource, /dashboardAnalytics: \{ period: 'this_month'[\s\S]*?function getDashboardAnalyticsOrders\(\)[\s\S]*?order\.orderDate/,
   'analytics date scope is isolated from the monthly report state and filters raw order dates');
 assert.match(appSource, /function renderDashboard\(\)[\s\S]*?renderDashboardAnalyticsCards\(analyticsOrders\)[\s\S]*?DashboardWidgets\.refresh\(\{ orders: analyticsOrders, auditLogs: state\.dashboardAnalytics\.auditLogs/,
@@ -46,6 +50,14 @@ assert.match(appSource, /dashboardAnalytics\.loading = true[\s\S]*?applyDashboar
 // the existing data bindings and quick-action controls remain in place.
 assert.match(htmlSource, /class="cards-grid dashboard-financial-grid">/,
   'financial KPI cards retain their existing bindings in a visual-only grid');
+assert.ok(
+  htmlSource.indexOf('id="cardTotalFinalSalaries"') < htmlSource.indexOf('id="cardTotalModerators"')
+  && htmlSource.indexOf('id="cardTotalModerators"') < htmlSource.indexOf('id="dashboardAlertsGrid"')
+  && htmlSource.indexOf('id="dashboardAlertsGrid"') < htmlSource.indexOf('id="quickCalculateReportBtn"')
+  && htmlSource.indexOf('id="quickCalculateReportBtn"') < htmlSource.indexOf('id="analyticsOrdersCount"'),
+  'the DOM follows the approved financial-to-operational decision journey');
+assert.match(htmlSource, /class="dashboard-hero dashboard-status-bar"[\s\S]*?id="dashboardStatusReport"[\s\S]*?id="dashboardStatusMonth"[\s\S]*?id="dashboardScopeLabel"[\s\S]*?id="dashboardStatusImport"[\s\S]*?id="dashboardStatusBackup"[\s\S]*?id="dashboardStatusPending"/,
+  'the compact status bar preserves every existing Dashboard status binding');
 assert.match(stylesSource, /#view-dashboard \.dashboard-hero\s*\{[\s\S]*?grid-template-columns:/,
   'dashboard hero has a responsive visual composition');
 assert.match(stylesSource, /#view-dashboard \.stat-card\s*\{[\s\S]*?grid-template-areas:/,

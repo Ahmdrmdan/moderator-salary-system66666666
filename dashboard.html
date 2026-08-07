@@ -68,14 +68,13 @@
   <!-- ============================== MAIN CONTENT ============================== -->
   <main class="main-content">
 
-    <div class="topbar">
+    <div class="topbar dashboard-topbar">
       <div>
         <nav class="breadcrumb" aria-label="مسار الصفحة"><span>نظام الرواتب</span><span class="breadcrumb-separator">/</span><strong id="breadcrumbCurrent">نظرة عامة</strong></nav>
         <h1 id="pageTitle">نظرة عامة</h1>
         <div class="subtitle">
           الشهر النشط: <strong id="currentMonthLabel">-</strong>
           <span id="monthStatusBadge" class="badge badge-active">نشط</span>
-          &nbsp;•&nbsp; النطاق: <strong id="dashboardScopeLabel">كل الأقسام</strong>
         </div>
       </div>
     </div>
@@ -93,28 +92,27 @@
 
     <!-- ===================== VIEW: DASHBOARD ===================== -->
     <section class="view active" id="view-dashboard">
-      <section class="dashboard-hero" aria-label="ملخص الشهر">
-        <div class="dashboard-hero-copy"><span class="eyebrow">مساحة عمل الرواتب</span><h2>نظرة مالية وتشغيلية موحّدة</h2><p>راجع جاهزية الشهر، المؤشرات الأساسية، والتنبيهات قبل اعتماد التقرير.</p></div>
-        <div class="dashboard-hero-orbit" aria-hidden="true"></div>
-      <div class="dashboard-status" role="status" aria-live="polite">
-        <div class="dashboard-status-item"><span>الشهر الحالي</span><strong id="dashboardStatusMonth">—</strong></div>
-        <div class="dashboard-status-item"><span>حالة التقرير</span><strong id="dashboardStatusReport">غير محسوب</strong></div>
-        <div class="dashboard-status-item"><span>آخر Backup</span><strong id="dashboardStatusBackup">لم يتم التحميل</strong></div>
-        <div class="dashboard-status-item"><span>عمليات معلّقة</span><strong id="dashboardStatusPending">0</strong></div>
-        <div class="dashboard-status-item"><span>آخر استيراد</span><strong id="dashboardStatusImport">لا توجد بيانات</strong></div>
-      </div>
+      <section class="dashboard-hero dashboard-status-bar" aria-label="حالة الشهر والتقرير">
+        <div class="dashboard-status" role="status" aria-live="polite">
+          <div class="dashboard-status-item"><span>حالة التقرير</span><strong id="dashboardStatusReport">غير محسوب</strong></div>
+          <div class="dashboard-status-item"><span>الشهر الحالي</span><strong id="dashboardStatusMonth">—</strong></div>
+          <div class="dashboard-status-item"><span>القسم</span><strong id="dashboardScopeLabel">كل الأقسام</strong></div>
+          <div class="dashboard-status-item"><span>آخر استيراد</span><strong id="dashboardStatusImport">لا توجد بيانات</strong></div>
+          <div class="dashboard-status-item"><span>آخر Backup</span><strong id="dashboardStatusBackup">لم يتم التحميل</strong></div>
+          <div class="dashboard-status-item"><span>عمليات معلّقة</span><strong id="dashboardStatusPending">0</strong></div>
+        </div>
       </section>
 
-      <section class="dashboard-filter-stack" aria-label="نطاقات لوحة التحكم">
+      <section class="dashboard-filter-stack dashboard-context-toolbar" aria-label="نطاقات لوحة التحكم">
         <form class="dashboard-scope-panel dashboard-monthly-scope" id="dashboardMonthlyScopeForm">
-          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📊</span><div><span class="eyebrow">Monthly Scope</span><h2>نطاق التقرير الشهري</h2><p>يتحكم في التقرير وSnapshot الرواتب والبونص والسلف والتسويات.</p></div></div>
+          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📊</span><div><h2>نطاق التقرير الشهري</h2></div></div>
           <div class="dashboard-filter-controls">
             <label>الشهر<select id="dashboardMonthFilter" aria-label="الشهر المعروض في التقرير الشهري"></select></label>
             <label>القسم<select id="dashboardDepartmentFilter" aria-label="القسم المعروض في التقرير الشهري"><option value="all">كل الأقسام</option></select></label>
           </div>
         </form>
         <form class="dashboard-scope-panel dashboard-analytics-scope" id="dashboardAnalyticsFilters">
-          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📈</span><div><span class="eyebrow">Analytics Filters</span><h2>التحليلات التشغيلية</h2><p>تؤثر فقط في الطلبات والشحن والرسوم التشغيلية والنشاط والتنبيهات.</p></div></div>
+          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📈</span><div><h2>التحليلات التشغيلية</h2></div></div>
           <div class="dashboard-filter-controls">
             <label>الفترة<select id="dashboardAnalyticsPeriod" aria-label="فترة التحليلات التشغيلية"><option value="today">اليوم</option><option value="yesterday">أمس</option><option value="last_7_days">آخر 7 أيام</option><option value="last_30_days">آخر 30 يوم</option><option value="this_month" selected>هذا الشهر</option><option value="last_month">الشهر الماضي</option><option value="custom">تاريخ مخصص</option></select></label>
             <label class="dashboard-custom-date hidden" id="dashboardAnalyticsFromWrap">من<input type="date" id="dashboardAnalyticsFrom" aria-label="بداية الفترة المخصصة"></label>
@@ -124,31 +122,6 @@
           <p class="dashboard-filter-status" id="dashboardAnalyticsScopeLabel" aria-live="polite"></p>
         </form>
       </section>
-
-      <div class="dashboard-current-scope" id="dashboardCurrentScopeSummary" role="status" aria-live="polite"></div>
-
-      <div class="dashboard-quick-actions" aria-label="إجراءات سريعة">
-        <button class="btn" id="quickAddEmployeeBtn" data-permission="employees.write">➕ إضافة موظف</button>
-        <button class="btn" id="quickImportOrdersBtn" data-permission="orders.import">📥 استيراد الطلبات</button>
-        <button class="btn btn-accent" id="quickCalculateReportBtn" data-permission="reports.calculate">🧮 حساب التقرير</button>
-        <button class="btn" id="quickApproveReportBtn" data-permission="reports.approve">✅ اعتماد التقرير</button>
-        <button class="btn" id="quickBackupBtn" data-permission="backups.create">📦 نسخة احتياطية</button>
-      </div>
-
-      <section class="dashboard-alerts" aria-label="تنبيهات الشهر">
-        <div class="section-heading"><div><span class="eyebrow">متابعة ذكية</span><h2>تنبيهات وإجراءات مقترحة</h2></div><span class="section-caption">تُحدّث من حالة الشهر الحالية</span></div>
-        <div class="alerts-grid" id="dashboardAlertsGrid"><div class="alert-card alert-info"><span class="alert-icon">ℹ️</span><div><strong>حالة التقرير</strong><p>استخدم اعتماد التقرير لإجراء فحص Smart Approval قبل القفل.</p></div></div></div>
-      </section>
-
-      <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">Monthly Snapshot</span><h2>ملخص التقرير الشهري</h2></div><span class="section-caption">لا يتأثر بفترة التحليلات</span></div>
-      <div class="cards-grid cards-grid-operational">
-        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="cardTotalModerators">0</div><div class="stat-label">إجمالي الموظفين</div></div>
-        <div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-value" id="cardActiveEmployees">0</div><div class="stat-label">الموظفون النشطون</div></div>
-        <div class="stat-card"><div class="stat-icon">🏢</div><div class="stat-value" id="cardTotalDepartments">0</div><div class="stat-label">الأقسام النشطة</div></div>
-        <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value" id="cardTotalHours">0</div><div class="stat-label">إجمالي ساعات العمل</div></div>
-        <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="cardTotalOrders">0</div><div class="stat-label">إجمالي الطلبات</div></div>
-        <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-value" id="cardTotalPackages">0</div><div class="stat-label">إجمالي الطرود</div></div>
-      </div>
 
       <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">الذمة المالية</span><h2>المؤشرات المالية</h2></div><span class="section-caption">القيم المسجلة في التقرير</span></div>
       <div class="cards-grid dashboard-financial-grid">
@@ -160,6 +133,29 @@
         <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-value" id="cardTransactionCount">0</div><div class="stat-label">عدد السلف والتسويات</div></div>
         <div class="stat-card"><div class="stat-icon">📌</div><div class="stat-value" id="cardTotalCarriedDebt">0</div><div class="stat-label">ديون مرحّلة للشهر القادم</div></div>
         <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-value" id="cardTotalFinalSalaries">0</div><div class="stat-label">صافي المستحقات</div></div>
+      </div>
+
+      <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">Monthly Snapshot</span><h2>ملخص التقرير الشهري</h2></div><span class="section-caption">لا يتأثر بفترة التحليلات</span></div>
+      <div class="cards-grid cards-grid-operational">
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="cardTotalModerators">0</div><div class="stat-label">إجمالي الموظفين</div></div>
+        <div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-value" id="cardActiveEmployees">0</div><div class="stat-label">الموظفون النشطون</div></div>
+        <div class="stat-card"><div class="stat-icon">🏢</div><div class="stat-value" id="cardTotalDepartments">0</div><div class="stat-label">الأقسام النشطة</div></div>
+        <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value" id="cardTotalHours">0</div><div class="stat-label">إجمالي ساعات العمل</div></div>
+        <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="cardTotalOrders">0</div><div class="stat-label">إجمالي الطلبات</div></div>
+        <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-value" id="cardTotalPackages">0</div><div class="stat-label">إجمالي الطرود</div></div>
+      </div>
+
+      <section class="dashboard-alerts" aria-label="تنبيهات الشهر">
+        <div class="section-heading"><div><span class="eyebrow">متابعة ذكية</span><h2>تنبيهات وإجراءات مقترحة</h2></div><span class="section-caption">تُحدّث من حالة الشهر الحالية</span></div>
+        <div class="alerts-grid" id="dashboardAlertsGrid"><div class="alert-card alert-info"><span class="alert-icon">ℹ️</span><div><strong>حالة التقرير</strong><p>استخدم اعتماد التقرير لإجراء فحص Smart Approval قبل القفل.</p></div></div></div>
+      </section>
+
+      <div class="dashboard-quick-actions" aria-label="إجراءات سريعة">
+        <button class="btn" id="quickAddEmployeeBtn" data-permission="employees.write">➕ إضافة موظف</button>
+        <button class="btn" id="quickImportOrdersBtn" data-permission="orders.import">📥 استيراد الطلبات</button>
+        <button class="btn btn-accent" id="quickCalculateReportBtn" data-permission="reports.calculate">🧮 حساب التقرير</button>
+        <button class="btn" id="quickApproveReportBtn" data-permission="reports.approve">✅ اعتماد التقرير</button>
+        <button class="btn" id="quickBackupBtn" data-permission="backups.create">📦 نسخة احتياطية</button>
       </div>
 
       <section class="dashboard-analytics-section" aria-label="مؤشرات التحليلات التشغيلية">
@@ -457,87 +453,99 @@ Haba&#9;7&#9;750"></textarea>
     <!-- ===================== VIEW: REPORT ===================== -->
     <section class="view" id="view-report">
       <div class="panel monthly-report-shell">
-        <header class="monthly-report-hero">
-          <div class="monthly-report-title">
-            <span class="report-eyebrow">مركز إقفال الرواتب</span>
-            <h2>التقرير الشهري</h2>
-            <p class="panel-subtitle">راجع النسخة المحسوبة، اعتمد التقرير، ثم أكمل اعتماد وصرف كشف الرواتب المستقل.</p>
-          </div>
-          <div class="report-status-rail" aria-label="حالات دورة الرواتب">
-            <div class="report-status-card report-status-card-main"><span>حالة التقرير الشهري</span><strong id="reportApprovalBadge" class="badge badge-locked">غير معتمد</strong></div>
-            <div class="report-status-card"><span>حالة كشف الرواتب</span><strong id="salaryProcessingStatus" class="badge badge-locked">مسودة</strong></div>
-          </div>
-        </header>
+        <section class="report-workflow-header" aria-label="رأس ومسار التقرير الشهري">
+          <header class="monthly-report-hero">
+            <div class="monthly-report-title">
+              <span class="report-eyebrow">مركز إقفال الرواتب</span>
+              <h2>التقرير الشهري</h2>
+              <p class="panel-subtitle">راجع النسخة المحسوبة، اعتمد التقرير، ثم أكمل اعتماد وصرف كشف الرواتب المستقل.</p>
+            </div>
+            <div class="report-status-rail" aria-label="حالات دورة الرواتب">
+              <div class="report-status-card report-status-card-main"><span>حالة التقرير الشهري</span><strong id="reportApprovalBadge" class="badge badge-locked">غير معتمد</strong></div>
+              <div class="report-status-card"><span>حالة كشف الرواتب</span><strong id="salaryProcessingStatus" class="badge badge-locked">مسودة</strong></div>
+            </div>
+          </header>
 
-        <section class="report-context-bar" aria-label="سياق التقرير الحالي">
-          <div class="report-context-primary"><span>النطاق الحالي</span><strong id="reportScopeLabel">كل الأقسام</strong></div>
-          <div class="report-context-meta" aria-live="polite">
-            <span><b>آخر تحديث</b><em id="reportLastUpdated">—</em></span>
-            <span><b>آخر حساب</b><em id="reportLastCalculated">—</em></span>
-            <span><b>آخر اعتماد</b><em id="reportLastApproved">—</em></span>
-            <span><b>آخر تصدير</b><em id="reportLastExported">غير مسجل</em></span>
-          </div>
+          <section class="report-workflow-card" aria-labelledby="reportWorkflowTitle">
+            <div><span class="report-eyebrow" id="reportWorkflowTitle">مسار المراجعة والاعتماد</span><p id="reportWorkflowCurrent">الحالة الحالية: مسودة</p><p id="reportWorkflowNext">الخطوة التالية: حساب التقرير</p></div>
+            <ol class="report-workflow" id="reportWorkflowSteps">
+              <li data-workflow-state="draft"><span>1</span>مسودة</li>
+              <li data-workflow-state="calculated"><span>2</span>تم الحساب</li>
+              <li data-workflow-state="in_review"><span>3</span>قيد المراجعة</li>
+              <li data-workflow-state="approved"><span>4</span>تم الاعتماد</li>
+              <li data-workflow-state="salary_snapshot_created"><span>5</span>تم إنشاء الكشف</li>
+              <li data-workflow-state="ready_for_payment"><span>6</span>جاهز للصرف</li>
+              <li data-workflow-state="paid"><span>7</span>تم الصرف</li>
+              <li data-workflow-state="archived"><span>8</span>مؤرشف</li>
+              <li data-workflow-state="reopened"><span>9</span>أُعيد فتحه</li>
+            </ol>
+          </section>
+
+          <section class="report-context-bar" aria-label="سياق التقرير الحالي">
+            <div class="report-context-primary"><span>النطاق الحالي</span><strong id="reportScopeLabel">كل الأقسام</strong></div>
+            <div class="report-context-meta" aria-live="polite">
+              <span><b>آخر تحديث</b><em id="reportLastUpdated">—</em></span>
+              <span><b>آخر حساب</b><em id="reportLastCalculated">—</em></span>
+              <span><b>آخر اعتماد</b><em id="reportLastApproved">—</em></span>
+              <span><b>آخر تصدير</b><em id="reportLastExported">غير مسجل</em></span>
+            </div>
+          </section>
         </section>
-
-        <section class="report-workflow-card" aria-labelledby="reportWorkflowTitle">
-          <div><span class="report-eyebrow" id="reportWorkflowTitle">مسار المراجعة والاعتماد</span><p>يبقى التقرير الشهري وكشف الرواتب مسارين مستقلين بوضوح.</p></div>
-          <ol class="report-workflow">
-            <li><span>1</span>حساب التقرير</li>
-            <li><span>2</span>مراجعة المستحقات</li>
-            <li><span>3</span>اعتماد التقرير</li>
-            <li><span>4</span>اعتماد كشف الرواتب</li>
-            <li><span>5</span>صرف الرواتب</li>
-          </ol>
-        </section>
-
-        <div class="hint-box report-approval-notice" id="reportApprovalNotice"></div>
-
-        <div class="toolbar report-actions" aria-label="إجراءات التقرير">
-          <div class="report-primary-actions">
-            <button class="btn btn-accent" id="calculateBtn" data-permission="reports.calculate">🧮 حساب التقرير</button>
-            <button class="btn btn-accent" id="approveReportBtn" data-permission="reports.approve">✅ اعتماد التقرير</button>
-            <button class="btn btn-accent" id="salarySnapshotApproveBtn" data-permission="salary_processing.approve">اعتماد كشف الرواتب</button>
-          </div>
-          <div class="report-secondary-actions">
-            <button class="btn" id="exportExcelBtn" data-permission="reports.export">📊 تصدير Excel</button>
-            <button class="btn" id="exportPdfBtn" data-permission="reports.export">📄 تصدير PDF</button>
-            <button class="btn" id="copyReportBtn" data-permission="reports.export">📋 نسخ التقرير</button>
-            <button class="btn" id="printReportBtn" data-permission="reports.export">🖨️ طباعة</button>
-          </div>
-        </div>
 
         <section class="report-summary-section" aria-labelledby="reportSummaryTitle">
-          <div class="report-section-heading"><div><span class="report-eyebrow">نظرة مالية</span><h3 id="reportSummaryTitle">ملخص المراجعة</h3></div><p>المبالغ المعروضة هي نفس القيم المحسوبة والمحفوظه للتقرير الحالي.</p></div>
+          <div class="report-section-heading"><div><span class="report-eyebrow">نظرة مالية</span><h3 id="reportSummaryTitle">ملخص المراجعة</h3></div><p id="reportDecisionState">المبالغ المعروضة هي نفس القيم المحسوبة والمحفوظه للتقرير الحالي.</p></div>
           <div class="close-summary" id="reportFinancialSummary" aria-live="polite"></div>
         </section>
 
         <section class="report-employee-section" aria-labelledby="reportEmployeeTitle">
-          <div class="report-section-heading report-table-heading"><div><span class="report-eyebrow">منطقة القرار</span><h3 id="reportEmployeeTitle">مراجعة مستحقات الموظفين</h3><p>رتّب أي عمود أو ابحث عن موظف لمراجعة الأرقام قبل الاعتماد.</p></div><input type="text" class="search-input" id="reportSearch" placeholder="🔍 بحث عن موظف..."></div>
-          <div class="table-wrap report-table-wrap">
-            <table id="reportTable">
-              <thead>
-                <tr class="report-column-groups">
-                  <th colspan="2">بيانات الموظف</th><th colspan="1">العمل</th><th colspan="3">الاستحقاقات</th><th colspan="3">الخصومات والنتيجة</th><th colspan="3">مؤشرات الأداء</th>
-                </tr>
-                <tr>
-                  <th data-sort="name">اسم الموظف</th>
-                  <th data-sort="departmentName">القسم</th>
-                  <th data-sort="workedHours">ساعات العمل</th>
-                  <th data-sort="salary">الراتب الأساسي</th>
-                  <th data-sort="totalBonus">إجمالي البونص</th>
-                  <th data-sort="totalAdjustments">تسويات يدوية</th>
-                  <th data-sort="totalAdvances">السلف</th>
-                  <th data-sort="previousDebt">دين سابق</th>
-                  <th data-sort="finalSalary" class="report-decision-column">صافي المستحق</th>
-                  <th data-sort="carriedDebt">مرحّل للشهر القادم</th>
-                  <th data-sort="ordersCount">عدد الطلبات</th>
-                  <th data-sort="totalPackages">عدد الطرود</th>
-                  <th data-sort="totalSales">إجمالي المبيعات</th>
-                </tr>
-              </thead>
-              <tbody id="reportTableBody"></tbody>
-              <tfoot id="reportTableFoot"></tfoot>
-            </table>
+          <div class="report-review-workspace">
+            <aside class="report-review-rail" aria-label="مراجعة التقرير وإجراءاته">
+              <div class="report-review-rail-heading"><span class="report-eyebrow">مساحة المراجعة</span><h4>حالة التقرير وإجراءاته</h4><p>راجع الحالة أولًا ثم نفّذ الإجراء المناسب.</p></div>
+              <div class="hint-box report-approval-notice report-review-exception-card" id="reportApprovalNotice"></div>
+              <div class="toolbar report-actions" aria-label="إجراءات التقرير">
+                <div class="report-primary-actions">
+                  <button class="btn btn-accent" id="calculateBtn" data-permission="reports.calculate">🧮 حساب التقرير</button>
+                  <button class="btn btn-accent" id="approveReportBtn" data-permission="reports.approve">✅ اعتماد التقرير</button>
+                  <button class="btn btn-accent" id="salarySnapshotApproveBtn" data-permission="salary_processing.approve">اعتماد كشف الرواتب</button>
+                </div>
+                <div class="report-secondary-actions">
+                  <button class="btn" id="exportExcelBtn" data-permission="reports.export">📊 تصدير Excel</button>
+                  <button class="btn" id="exportPdfBtn" data-permission="reports.export">📄 تصدير PDF</button>
+                  <button class="btn" id="copyReportBtn" data-permission="reports.export">📋 نسخ التقرير</button>
+                  <button class="btn" id="printReportBtn" data-permission="reports.export">🖨️ طباعة</button>
+                </div>
+              </div>
+            </aside>
+
+            <div class="report-review-table-area">
+              <div class="report-section-heading report-table-heading"><div><span class="report-eyebrow">منطقة القرار</span><h3 id="reportEmployeeTitle">مراجعة مستحقات الموظفين</h3><p>رتّب أي عمود أو ابحث عن موظف لمراجعة الأرقام قبل الاعتماد.</p></div><input type="text" class="search-input" id="reportSearch" placeholder="🔍 بحث عن موظف..."></div>
+              <div class="table-wrap report-table-wrap">
+                <table id="reportTable">
+                  <thead>
+                    <tr class="report-column-groups">
+                      <th colspan="2">بيانات الموظف</th><th colspan="1">العمل</th><th colspan="3">الاستحقاقات</th><th colspan="3">الخصومات والنتيجة</th><th colspan="3">مؤشرات الأداء</th>
+                    </tr>
+                    <tr>
+                      <th data-sort="name">اسم الموظف</th>
+                      <th data-sort="departmentName">القسم</th>
+                      <th data-sort="workedHours">ساعات العمل</th>
+                      <th data-sort="salary">الراتب الأساسي</th>
+                      <th data-sort="totalBonus">إجمالي البونص</th>
+                      <th data-sort="totalAdjustments">تسويات يدوية</th>
+                      <th data-sort="totalAdvances">السلف</th>
+                      <th data-sort="previousDebt">دين سابق</th>
+                      <th data-sort="finalSalary" class="report-decision-column">صافي المستحق</th>
+                      <th data-sort="carriedDebt">مرحّل للشهر القادم</th>
+                      <th data-sort="ordersCount">عدد الطلبات</th>
+                      <th data-sort="totalPackages">عدد الطرود</th>
+                      <th data-sort="totalSales">إجمالي المبيعات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reportTableBody"></tbody>
+                  <tfoot id="reportTableFoot"></tfoot>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -552,7 +560,7 @@ Haba&#9;7&#9;750"></textarea>
           </div>
 
           <section class="panel salary-snapshot-review"><div class="panel-header"><h3>مراجعة كشف الرواتب</h3><div><button class="btn btn-sm" id="salarySnapshotExcelBtn" type="button">تصدير Excel</button><button class="btn btn-sm" id="salarySnapshotPrintBtn" type="button">طباعة</button></div></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>الأساسي</th><th>البونص</th><th>العمولة</th><th>الإضافات</th><th>الخصومات</th><th>الصافي</th><th>إجراءات</th></tr></thead><tbody id="salarySnapshotRows"></tbody></table></div></section>
-          <section class="panel salary-payment-panel"><div class="panel-header"><h3>صرف الرواتب</h3><button class="btn btn-accent" id="salaryMarkAllPaidBtn" type="button">تسجيل صرف الجميع</button></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>صافي المستحق</th><th>حالة الدفع</th><th>تاريخ الدفع</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead><tbody id="salaryPaymentBody"></tbody></table></div></section>
+          <section class="panel salary-payment-panel"><div class="panel-header"><h3>صرف الرواتب</h3><div class="report-primary-actions"><button class="btn btn-accent" id="salaryMarkAllPaidBtn" type="button">تسجيل صرف الجميع</button><button class="btn" id="workflowArchiveBtn" data-permission="months.write" type="button" hidden>أرشفة دورة الرواتب</button></div></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>صافي المستحق</th><th>حالة الدفع</th><th>تاريخ الدفع</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead><tbody id="salaryPaymentBody"></tbody></table></div></section>
 
           <section class="report-supporting-insights" aria-labelledby="reportInsightsTitle">
             <div class="report-section-heading"><div><span class="report-eyebrow">قراءة مساندة</span><h3 id="reportInsightsTitle">المؤشرات والتحليلات</h3></div><p>تساعد على المراجعة ولا تغيّر أي قيمة في كشف الرواتب.</p></div>
@@ -1523,11 +1531,13 @@ Haba&#9;7&#9;750"></textarea>
 <script src="js/migration.js"></script>
 <script src="js/charts.js?v=7.1.0-dashboard-analytics"></script>
 <script src="js/reports.js"></script>
+<script src="js/payroll-workflow.js"></script>
 <script src="js/months.js"></script>
 <script src="js/settlements.js"></script>
 <script src="js/orders.js?v=7.0.12-orders-permissions"></script>
 <script src="js/dashboard-widgets.js"></script>
 <script src="js/salary-processing.js?v=7.1.1-monthly-report-ux-r1"></script>
+<script src="js/payroll-workflow-ui.js"></script>
 <script src="js/role-matrix.js"></script>
 <script src="js/month-management.js"></script>
 <script src="js/month-comparison.js"></script>
@@ -1540,7 +1550,7 @@ Haba&#9;7&#9;750"></textarea>
   Auth.guardPage((user, profile) => {
     document.getElementById('userAvatar').textContent = (user.email || 'A')[0].toUpperCase();
     App.init(user, profile)
-      .then(() => { DataSources.init(); RoleMatrix.init(); SalaryProcessing.init(); })
+      .then(() => { DataSources.init(); RoleMatrix.init(); PayrollWorkflowUI.init(); SalaryProcessing.init(); })
       .catch(error => { console.error('Application initialization failed:', error); Toast.show('تعذر إكمال تحميل النظام: ' + error.message, 'error'); });
   });
   UIIcons.init();

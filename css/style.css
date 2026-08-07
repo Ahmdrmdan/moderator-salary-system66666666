@@ -1670,6 +1670,421 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
 #view-dashboard .dashboard-monthly-charts .charts-grid, #view-dashboard .dashboard-operational-charts .charts-grid { margin-top: 12px; }
 @media (max-width: 1040px) { #view-dashboard .dashboard-filter-stack { grid-template-columns: 1fr; } #view-dashboard .dashboard-analytics-cards { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 @media (max-width: 600px) { #view-dashboard .dashboard-scope-panel { padding: 14px; } #view-dashboard .dashboard-filter-controls > * { flex-basis: 100%; } #view-dashboard .dashboard-filter-actions .btn { flex: 1; } #view-dashboard .dashboard-analytics-cards { grid-template-columns: 1fr; } }
+
+/* Dashboard decision journey preview — visual composition only. */
+#view-dashboard {
+  --dashboard-gap: 12px;
+  --dashboard-card-pad: 13px;
+  --dashboard-section-space: 22px;
+  --dashboard-section-after: 8px;
+  --dashboard-compact-space: 10px;
+}
+
+body:has(#view-dashboard.active) .topbar {
+  width: 100%;
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  border-color: rgba(255, 255, 255, .07);
+  box-shadow: none;
+}
+body:has(#view-dashboard.active) .topbar::after { display: none; }
+body:has(#view-dashboard.active) .topbar > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+body:has(#view-dashboard.active) .topbar .breadcrumb,
+body:has(#view-dashboard.active) .topbar h1,
+body:has(#view-dashboard.active) .topbar .subtitle { margin: 0; }
+body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
+
+#view-dashboard .dashboard-status-bar {
+  display: block;
+  min-height: 0;
+  margin: 0 0 10px;
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, .07);
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+  box-shadow: none;
+}
+#view-dashboard .dashboard-status-bar::after,
+#view-dashboard .dashboard-status-bar .dashboard-hero-orbit { display: none; }
+#view-dashboard .dashboard-status-bar .dashboard-status {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+#view-dashboard .dashboard-status-bar .dashboard-status-item,
+#view-dashboard .dashboard-status-bar .dashboard-status-item:last-child {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 10px;
+  gap: 6px;
+  border: 0;
+  border-inline-start: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 0;
+  background: transparent;
+  grid-column: auto;
+}
+#view-dashboard .dashboard-status-bar .dashboard-status-item:last-child { border-inline-start: 0; }
+#view-dashboard .dashboard-status-bar .dashboard-status-item span,
+#view-dashboard .dashboard-status-bar .dashboard-status-item strong { margin: 0; }
+
+#view-dashboard .dashboard-context-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0 0 var(--dashboard-compact-space);
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: var(--radius-card);
+  background: var(--layer-1);
+  box-shadow: none;
+}
+#view-dashboard .dashboard-context-toolbar .dashboard-scope-panel {
+  display: flex;
+  align-items: center;
+  flex: 1 1 460px;
+  min-height: 40px;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  border-inline-start: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#view-dashboard .dashboard-context-toolbar .dashboard-scope-panel:first-child { border-inline-start: 0; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-heading { margin: 0; gap: 8px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-icon { inline-size: 26px; block-size: 26px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-heading h2 { margin: 0; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-controls {
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-controls label { gap: 4px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-controls select,
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-controls input,
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-actions .btn { min-height: 34px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-status {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+
+#view-dashboard .dashboard-quick-actions {
+  margin: 0 0 18px;
+  padding: 4px 0;
+  border-width: 1px 0;
+  border-color: rgba(255, 255, 255, .07);
+  background: transparent;
+  box-shadow: none;
+}
+
+#view-dashboard .section-heading { margin: var(--dashboard-section-space) 0 var(--dashboard-section-after); }
+#view-dashboard .dashboard-quick-actions + .section-heading { margin-top: 0; }
+#view-dashboard .section-heading h2 { font-size: 16px; }
+#view-dashboard .cards-grid { gap: var(--dashboard-gap); }
+#view-dashboard .stat-card {
+  min-height: 90px;
+  padding: var(--dashboard-card-pad);
+  border-color: rgba(255, 255, 255, .055);
+  box-shadow: none;
+}
+#view-dashboard .dashboard-financial-grid .stat-card { min-height: 94px; border-color: rgba(255, 255, 255, .09); }
+#view-dashboard .cards-grid-operational .stat-card { min-height: 86px; }
+#view-dashboard .dashboard-alerts { margin-top: 0; }
+#view-dashboard .dashboard-alerts .section-heading { margin-top: var(--dashboard-section-space); }
+#view-dashboard .alert-card,
+#view-dashboard .alerts-grid > .alert-card:only-child {
+  min-height: 56px;
+  padding: 10px 12px;
+  border-color: rgba(255, 255, 255, .08);
+  box-shadow: none;
+}
+
+#view-dashboard .dashboard-analytics-section,
+#view-dashboard .dashboard-executive-section { margin-top: var(--dashboard-section-space); }
+#view-dashboard .dashboard-insights-grid,
+#view-dashboard .dashboard-operational-widgets { gap: var(--dashboard-gap); }
+#view-dashboard .dashboard-insights-panel,
+#view-dashboard .executive-widget,
+#view-dashboard #departmentBreakdownPanel {
+  border-color: rgba(255, 255, 255, .08);
+  box-shadow: none;
+}
+#view-dashboard .dashboard-insights-panel .panel-header,
+#view-dashboard .executive-widget .panel-header,
+#view-dashboard #departmentBreakdownPanel .panel-header {
+  min-height: 54px;
+  padding: 14px 16px;
+}
+#view-dashboard .dashboard-insight { padding: 10px 12px; border-color: rgba(255, 255, 255, .05); }
+
+#view-dashboard .charts-grid { gap: var(--dashboard-gap); margin-top: 14px; }
+#view-dashboard .chart-card {
+  height: 264px;
+  min-height: 264px;
+  padding: 15px;
+  border-color: rgba(255, 255, 255, .08);
+  box-shadow: none;
+}
+#view-dashboard .chart-card h3 { padding-bottom: 10px; margin-bottom: 10px; }
+#view-dashboard .chart-wrap { padding: 8px; }
+#view-dashboard #departmentBreakdownPanel { margin-top: var(--dashboard-section-space); }
+
+/* Dashboard control center preview — visual composition only.
+   The existing DOM, actions, bindings and data scopes are intentionally kept. */
+#view-dashboard {
+  --dashboard-gap: 8px;
+  --dashboard-card-pad: 10px 11px;
+  --dashboard-section-space: 24px;
+  --dashboard-section-after: 7px;
+  --dashboard-compact-space: 8px;
+}
+
+.dashboard-topbar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 14px;
+  margin: 0 0 10px;
+  border-color: rgba(255, 255, 255, .06);
+  border-radius: 10px;
+  background: rgba(18, 28, 39, .52);
+  box-shadow: none;
+}
+.dashboard-topbar::after { display: none; }
+.dashboard-topbar > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px 10px;
+  width: 100%;
+}
+.dashboard-topbar .breadcrumb,
+.dashboard-topbar h1,
+.dashboard-topbar .subtitle { margin: 0; }
+.dashboard-topbar .breadcrumb { order: 3; }
+.dashboard-topbar h1 { order: 2; }
+.dashboard-topbar .subtitle { order: 1; margin-inline-start: auto; white-space: nowrap; }
+
+#view-dashboard .dashboard-status-bar {
+  margin: 0 0 8px;
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, .055);
+  border-radius: 9px;
+  background: rgba(8, 14, 21, .34);
+  box-shadow: none;
+}
+#view-dashboard .dashboard-status-bar .dashboard-status {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  overflow-x: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+#view-dashboard .dashboard-status-bar .dashboard-status-item,
+#view-dashboard .dashboard-status-bar .dashboard-status-item:last-child {
+  display: inline-flex;
+  align-items: baseline;
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 10px;
+  gap: 6px;
+  border: 0;
+  border-inline-start: 1px solid rgba(255, 255, 255, .055);
+  border-radius: 0;
+  background: transparent;
+}
+#view-dashboard .dashboard-status-bar .dashboard-status-item:last-child { border-inline-start: 0; }
+#view-dashboard .dashboard-status-bar .dashboard-status-item span,
+#view-dashboard .dashboard-status-bar .dashboard-status-item strong { display: inline; margin: 0; }
+#view-dashboard .dashboard-status-bar .dashboard-status-item span { color: var(--ink-faint); font-size: 10px; }
+#view-dashboard .dashboard-status-bar .dashboard-status-item strong { color: var(--ink-muted); font-size: 11px; }
+
+#view-dashboard .dashboard-context-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, .065);
+  border-radius: 10px;
+  background: rgba(18, 28, 39, .62);
+  box-shadow: none;
+}
+#view-dashboard .dashboard-context-toolbar .dashboard-scope-panel {
+  display: flex;
+  align-items: center;
+  flex: 1 1 460px;
+  min-width: 0;
+  min-height: 40px;
+  gap: 8px;
+  padding: 0 10px;
+  border: 0;
+  border-inline-start: 1px solid rgba(255, 255, 255, .065);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#view-dashboard .dashboard-context-toolbar .dashboard-scope-panel:first-child { border-inline-start: 0; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-heading {
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-icon { inline-size: 23px; block-size: 23px; border-radius: 7px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-heading h2 { margin: 0; font-size: 12px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-controls { flex: 1 1 auto; flex-wrap: nowrap; gap: 6px; min-width: 0; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-controls label { min-width: 0; gap: 3px; font-size: 10px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-controls select,
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-controls input,
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-actions .btn { min-height: 32px; border-radius: 7px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-actions { gap: 5px; }
+#view-dashboard .dashboard-context-toolbar .dashboard-filter-status {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin: 0;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+#view-dashboard .section-heading {
+  min-height: 20px;
+  margin: var(--dashboard-section-space) 0 var(--dashboard-section-after);
+  padding: 0 2px;
+}
+#view-dashboard .section-heading .eyebrow { display: none; }
+#view-dashboard .section-heading h2 { color: var(--ink-muted); font-size: 14px; font-weight: 750; letter-spacing: 0; }
+#view-dashboard .section-caption { max-width: none; color: var(--ink-faint); font-size: 10px; font-weight: 600; line-height: 1.35; }
+
+#view-dashboard .cards-grid { gap: var(--dashboard-gap); }
+#view-dashboard .dashboard-financial-grid,
+#view-dashboard .cards-grid-operational,
+#view-dashboard .dashboard-analytics-cards {
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, .055);
+  border-radius: 11px;
+  background: rgba(8, 14, 21, .22);
+}
+#view-dashboard .dashboard-financial-grid { box-shadow: inset 0 1px 0 rgba(115, 167, 255, .05); }
+#view-dashboard .cards-grid-operational,
+#view-dashboard .dashboard-analytics-cards { background: rgba(255, 255, 255, .018); }
+#view-dashboard .stat-card,
+#view-dashboard .dashboard-financial-grid .stat-card,
+#view-dashboard .cards-grid-operational .stat-card {
+  min-height: 78px;
+  padding: var(--dashboard-card-pad);
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .026);
+  box-shadow: none;
+}
+#view-dashboard .dashboard-financial-grid .stat-card { min-height: 84px; background: rgba(18, 28, 39, .72); }
+#view-dashboard .dashboard-financial-grid .stat-card:last-child {
+  background: linear-gradient(135deg, rgba(115, 167, 255, .15), rgba(52, 211, 153, .065));
+  box-shadow: inset 0 0 0 1px rgba(115, 167, 255, .22);
+}
+#view-dashboard .stat-card:hover { transform: none; border-color: transparent; background: rgba(115, 167, 255, .075); }
+#view-dashboard .stat-card .stat-icon { width: 31px; height: 31px; margin: 0 0 0 9px; border-radius: 8px; font-size: 15px; }
+#view-dashboard .stat-card .stat-label { font-size: 10px; line-height: 1.35; }
+#view-dashboard .stat-card .stat-value { margin-top: 3px; }
+
+#view-dashboard .dashboard-alerts { margin-top: 0; }
+#view-dashboard .dashboard-alerts .section-heading { margin-top: var(--dashboard-section-space); }
+#view-dashboard .alerts-grid { gap: 8px; }
+#view-dashboard .alert-card,
+#view-dashboard .alerts-grid > .alert-card:only-child {
+  min-height: 52px;
+  padding: 9px 11px;
+  border-color: rgba(255, 255, 255, .055);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .018);
+  box-shadow: none;
+}
+#view-dashboard .alert-icon { flex-basis: 27px; height: 27px; border-radius: 7px; }
+#view-dashboard .alert-card strong { font-size: 11px; }
+#view-dashboard .alert-card p { margin-top: 1px; font-size: 10px; line-height: 1.45; }
+
+#view-dashboard .dashboard-quick-actions {
+  gap: 6px;
+  margin: 0 0 18px;
+  padding: 5px 0;
+  border-width: 1px 0;
+  border-color: rgba(255, 255, 255, .06);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#view-dashboard .dashboard-quick-actions::before { padding-inline: 2px 7px; font-size: 10px; }
+#view-dashboard .dashboard-quick-actions .btn { min-height: 32px; padding: 5px 10px; border-radius: 7px; font-size: 11px; }
+
+#view-dashboard .dashboard-analytics-section,
+#view-dashboard .dashboard-executive-section,
+#view-dashboard .dashboard-monthly-charts,
+#view-dashboard .dashboard-operational-charts { margin-top: var(--dashboard-section-space); }
+#view-dashboard .dashboard-insights-grid { margin-top: var(--dashboard-section-space); }
+#view-dashboard .dashboard-insights-grid,
+#view-dashboard .dashboard-operational-widgets { gap: 8px; }
+#view-dashboard .dashboard-insights-panel,
+#view-dashboard .executive-widget,
+#view-dashboard #departmentBreakdownPanel {
+  border-color: rgba(255, 255, 255, .06);
+  border-radius: 10px;
+  background: rgba(18, 28, 39, .52);
+  box-shadow: none;
+}
+#view-dashboard .dashboard-insights-panel .panel-header,
+#view-dashboard .executive-widget .panel-header,
+#view-dashboard #departmentBreakdownPanel .panel-header { min-height: 46px; padding: 10px 12px; }
+#view-dashboard .dashboard-insights-panel .panel-header h2,
+#view-dashboard .executive-widget .panel-header h2,
+#view-dashboard #departmentBreakdownPanel .panel-header h2 { font-size: 13px; }
+#view-dashboard .dashboard-insight { padding: 8px 10px; border-color: rgba(255, 255, 255, .045); background: rgba(255, 255, 255, .018); }
+
+#view-dashboard .charts-grid { gap: 10px; margin-top: 10px; }
+#view-dashboard .chart-card {
+  height: 264px;
+  min-height: 264px;
+  padding: 12px;
+  border-color: rgba(255, 255, 255, .06);
+  border-radius: 10px;
+  background: rgba(18, 28, 39, .52);
+  box-shadow: none;
+}
+#view-dashboard .chart-card h3 { padding-bottom: 8px; margin-bottom: 8px; font-size: 12px; }
+#view-dashboard .chart-wrap { padding: 6px; border-radius: 8px; background: rgba(0, 0, 0, .09); }
+#view-dashboard #departmentBreakdownPanel { margin-top: var(--dashboard-section-space); }
 .view:not(#view-dashboard) > .panel,
 .view:not(#view-dashboard) > .orders-center-header,
 .view:not(#view-dashboard) > .orders-center-tabs,
@@ -1909,4 +2324,444 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
 @media (max-width:900px) {
   #view-report .report-table-wrap,
   #view-report .salary-snapshot-dashboard .table-wrap { margin:0; }
+}
+
+/* Payroll Workflow Engine — Stage 1: view-only workflow header migration.
+   Existing report states, identifiers, and operation bindings remain untouched. */
+#view-report .report-workflow-header {
+  display:grid;
+  gap:10px;
+  padding:20px 22px 16px;
+  border:1px solid rgba(115,167,255,.20);
+  border-radius:var(--radius-dialog);
+  background:linear-gradient(120deg,rgba(115,167,255,.105),rgba(25,29,34,.96) 54%,rgba(52,211,153,.035));
+  box-shadow:var(--shadow-card);
+}
+#view-report .monthly-report-hero {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:22px;
+  align-items:center;
+  padding:0 0 14px;
+  border:0;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+#view-report .monthly-report-title h2 { font-size:24px; }
+#view-report .monthly-report-title .panel-subtitle { max-width:630px; margin-top:5px; }
+#view-report .report-status-rail { gap:8px; min-width:318px; }
+#view-report .report-status-card {
+  gap:6px;
+  padding:10px 12px;
+  border-color:rgba(255,255,255,.09);
+  border-radius:10px;
+  background:rgba(6,12,18,.24);
+}
+#view-report .report-workflow-card {
+  display:grid;
+  grid-template-columns:minmax(185px,.42fr) minmax(0,1fr);
+  gap:18px;
+  align-items:center;
+  padding:12px 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+#view-report .report-workflow-card .report-eyebrow { margin-bottom:4px; }
+#view-report .report-workflow-card p { font-size:11px; }
+#view-report .report-workflow { justify-content:space-between; gap:8px; }
+#view-report .report-workflow li { gap:6px; font-size:10px; }
+#view-report .report-workflow li span {
+  width:22px;
+  height:22px;
+  font-size:10px;
+  box-shadow:none;
+}
+#view-report .report-workflow li.is-complete { color:var(--ink-muted); }
+#view-report .report-workflow li.is-complete span { color:#cfe5ff; border-color:rgba(115,167,255,.42); background:rgba(115,167,255,.16); }
+#view-report .report-workflow li.is-current { color:var(--ink); }
+#view-report .report-workflow li.is-current span { color:var(--ink); border-color:var(--brand); background:var(--brand); box-shadow:0 0 0 3px rgba(115,167,255,.13); }
+#view-report .report-workflow li.is-pending { color:var(--ink-faint); }
+#view-report .report-workflow li.is-locked { opacity:.55; }
+#view-report #reportWorkflowCurrent { color:var(--ink); font-weight:800; }
+#view-report #reportWorkflowNext { margin-top:3px; color:var(--ink-muted); }
+#view-report .report-context-bar {
+  gap:12px;
+  padding:10px 12px;
+  border-color:rgba(255,255,255,.08);
+  border-radius:10px;
+  background:rgba(6,12,18,.18);
+}
+#view-report .report-context-primary { min-width:142px; padding-inline-end:12px; }
+#view-report .report-context-primary strong { font-size:13px; }
+#view-report .report-context-meta { gap:4px; }
+#view-report .report-context-meta span { gap:3px; padding:2px 6px; }
+
+@media (max-width:1200px) {
+  #view-report .monthly-report-hero { grid-template-columns:1fr; align-items:start; }
+  #view-report .report-status-rail { width:100%; min-width:0; max-width:520px; }
+  #view-report .report-workflow-card { grid-template-columns:1fr; gap:10px; }
+  #view-report .report-workflow { justify-content:flex-start; }
+}
+@media (max-width:900px) {
+  #view-report .report-workflow-header { gap:12px; padding:18px; }
+  #view-report .monthly-report-hero { padding-bottom:12px; }
+  #view-report .report-workflow-card { padding:0; }
+  #view-report .report-context-bar { align-items:stretch; flex-direction:column; }
+}
+
+/* Payroll Workflow Engine — Stage 2: decision summary view migration.
+   The existing dynamic financial summary remains the sole source of values. */
+#view-report .report-summary-section {
+  display:grid;
+  gap:14px;
+  padding:18px 20px 20px;
+  border-color:rgba(115,167,255,.18);
+  background:linear-gradient(135deg,rgba(115,167,255,.06),var(--layer-1) 42%);
+}
+#view-report .report-summary-section .report-section-heading {
+  align-items:center;
+  margin:0;
+  padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+#view-report .report-summary-section .report-section-heading h3 { font-size:18px; }
+#view-report .report-summary-section .report-section-heading > p { max-width:360px; }
+#view-report #reportFinancialSummary {
+  grid-template-columns:minmax(0,1.25fr) minmax(168px,.82fr) minmax(235px,1.5fr);
+  gap:10px;
+}
+#view-report .report-summary-group {
+  display:grid;
+  align-content:start;
+  min-height:112px;
+  padding:13px 14px;
+  border-color:rgba(255,255,255,.08);
+  border-radius:11px;
+  background:rgba(6,12,18,.18);
+}
+#view-report .report-summary-group h4 { margin-bottom:10px; }
+#view-report .report-summary-values { gap:9px; }
+#view-report .report-summary-earnings .report-summary-values { gap:6px; }
+#view-report .report-summary-group .cs-item { padding:3px 4px; }
+#view-report .report-summary-group .cs-value { font-size:15px; }
+#view-report .report-summary-deductions { border-color:rgba(245,158,11,.16); }
+#view-report .report-summary-net {
+  min-height:128px;
+  padding:16px 18px;
+  border-color:rgba(115,167,255,.34);
+  background:linear-gradient(135deg,rgba(115,167,255,.21),rgba(52,211,153,.085));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+#view-report .report-summary-net h4 { color:#cde0ff; }
+#view-report .report-summary-net .report-summary-values { align-content:center; height:100%; }
+#view-report .report-summary-net .cs-value { color:#e2edff; font-size:25px; letter-spacing:-.025em; }
+#view-report .report-summary-net .cs-label { color:#b5c8e6; font-size:11px; }
+
+@media (max-width:1200px) {
+  #view-report #reportFinancialSummary { grid-template-columns:minmax(0,1fr) minmax(210px,.9fr); }
+  #view-report .report-summary-earnings { grid-column:1 / -1; }
+  #view-report .report-summary-net { min-height:120px; }
+}
+@media (max-width:900px) {
+  #view-report .report-summary-section { padding:18px; }
+  #view-report .report-summary-section .report-section-heading { align-items:flex-start; flex-direction:column; }
+}
+@media (max-width:600px) {
+  #view-report #reportFinancialSummary { grid-template-columns:1fr; }
+  #view-report .report-summary-earnings { grid-column:auto; }
+  #view-report .report-summary-net { min-height:116px; }
+}
+
+/* Payroll Workflow Engine — Stage 3: review workspace view migration.
+   The rail reuses existing report status and action controls; no employee
+   exception state or row-selection state is introduced here. */
+#view-report .report-employee-section {
+  padding:0;
+  overflow:hidden;
+  border-color:rgba(115,167,255,.18);
+  background:var(--layer-1);
+}
+#view-report .report-review-workspace {
+  display:grid;
+  grid-template-columns:280px minmax(0,1fr);
+  min-height:420px;
+}
+#view-report .report-review-rail {
+  display:grid;
+  align-content:start;
+  gap:14px;
+  padding:20px;
+  border-inline-end:1px solid rgba(255,255,255,.08);
+  background:linear-gradient(180deg,rgba(115,167,255,.07),rgba(6,12,18,.10));
+}
+#view-report .report-review-rail-heading h4 {
+  margin:0;
+  color:var(--ink);
+  font-size:14px;
+  letter-spacing:-.015em;
+}
+#view-report .report-review-rail-heading p {
+  margin:5px 0 0;
+  color:var(--ink-muted);
+  font-size:11px;
+  line-height:1.55;
+}
+#view-report .report-review-rail .report-eyebrow { margin-bottom:5px; }
+#view-report .report-review-rail .report-approval-notice {
+  margin:0;
+  padding:12px;
+  border-color:rgba(245,158,11,.24);
+  border-radius:10px;
+  background:rgba(245,158,11,.065);
+  color:var(--ink-muted);
+  font-size:11px;
+  line-height:1.65;
+}
+#view-report .report-review-rail .report-approval-notice strong { color:var(--ink); }
+#view-report .report-review-rail .report-actions {
+  display:grid;
+  gap:10px;
+  margin:0;
+  padding:0;
+}
+#view-report .report-review-rail .report-primary-actions,
+#view-report .report-review-rail .report-secondary-actions {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  padding:0;
+  border:0;
+}
+#view-report .report-review-rail .report-actions .btn { justify-content:center; min-height:36px; }
+#view-report .report-review-table-area { min-width:0; padding:20px; }
+#view-report .report-review-table-area .report-table-heading { margin-bottom:14px; }
+#view-report .report-table-wrap {
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:11px;
+  background:rgba(6,12,18,.14);
+}
+#view-report #reportTable thead .report-column-groups th { height:29px; }
+#view-report #reportTable thead tr:not(.report-column-groups) th { padding-block:10px; }
+#view-report #reportTable tbody td { padding-block:12px; transition:background-color .16s ease, box-shadow .16s ease; }
+#view-report #reportTable tbody tr.clickable-row { cursor:pointer; }
+#view-report #reportTable tbody tr.clickable-row:hover td { background:rgba(115,167,255,.07); }
+#view-report #reportTable tbody tr.clickable-row:hover td:nth-child(9) { background:rgba(115,167,255,.16); }
+#view-report #reportTable tbody tr:has(td.text-danger.text-strong) td { background-color:rgba(245,158,11,.035); }
+#view-report #reportTable tbody tr:has(td.text-danger.text-strong) td:first-child {
+  box-shadow:inset 3px 0 0 rgba(245,158,11,.90);
+}
+#view-report #reportTable tbody tr:has(td.text-danger.text-strong):hover td { background-color:rgba(245,158,11,.075); }
+
+@media (max-width:1200px) {
+  #view-report .report-review-workspace { grid-template-columns:240px minmax(0,1fr); }
+  #view-report .report-review-rail { padding:18px; }
+  #view-report .report-review-table-area { padding:18px; }
+}
+@media (max-width:900px) {
+  #view-report .report-review-workspace { grid-template-columns:1fr; }
+  #view-report .report-review-rail { border:0; border-bottom:1px solid rgba(255,255,255,.08); }
+  #view-report .report-review-rail .report-primary-actions { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  #view-report .report-review-rail .report-secondary-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:600px) {
+  #view-report .report-review-rail,
+  #view-report .report-review-table-area { padding:16px; }
+  #view-report .report-review-rail .report-primary-actions,
+  #view-report .report-review-rail .report-secondary-actions { grid-template-columns:1fr; }
+  #view-report .report-table-heading .search-input { min-width:0; width:100%; }
+}
+
+/* Payroll Workflow Engine — Final UI: visual treatment for the existing
+   salary snapshot, supporting analysis, and report review dialogs only. */
+#view-report .salary-snapshot-dashboard {
+  gap:16px;
+  padding:20px;
+  border-color:rgba(115,167,255,.22);
+  background:linear-gradient(145deg,rgba(115,167,255,.055),rgba(25,29,34,.82) 36%);
+}
+#view-report .salary-snapshot-heading {
+  padding-bottom:14px;
+  border-bottom:1px solid rgba(255,255,255,.075);
+}
+#view-report .salary-snapshot-heading h3 { font-size:18px; }
+#view-report .salary-snapshot-dashboard .salary-workflow {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:10px 0 2px;
+  overflow-x:auto;
+}
+#view-report .salary-snapshot-dashboard .salary-workflow span {
+  min-width:max-content;
+  padding:6px 9px;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:8px;
+  color:var(--ink-faint);
+  font-size:10px;
+  font-weight:700;
+  background:rgba(6,12,18,.16);
+}
+#view-report .salary-snapshot-dashboard .salary-workflow span.done {
+  color:#cfe5ff;
+  border-color:rgba(115,167,255,.25);
+  background:rgba(115,167,255,.105);
+}
+#view-report .salary-snapshot-dashboard .salary-workflow span.current {
+  color:var(--ink);
+  border-color:var(--brand);
+  background:var(--brand-soft);
+  box-shadow:0 0 0 2px rgba(115,167,255,.10);
+}
+#view-report .salary-snapshot-dashboard #salaryExecutiveSummary {
+  gap:8px;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:11px;
+  background:rgba(6,12,18,.16);
+}
+#view-report .salary-snapshot-dashboard #salaryExecutiveSummary .stat-card {
+  min-height:78px;
+  padding:11px 12px;
+  border:0;
+  border-radius:8px;
+  background:rgba(255,255,255,.025);
+  box-shadow:none;
+}
+#view-report .salary-snapshot-dashboard #salaryExecutiveSummary .stat-card:last-child {
+  background:linear-gradient(135deg,rgba(115,167,255,.16),rgba(52,211,153,.065));
+  box-shadow:inset 0 0 0 1px rgba(115,167,255,.20);
+}
+#view-report .salary-review-insights { gap:12px; }
+#view-report .salary-review-insights .panel,
+#view-report .salary-snapshot-review,
+#view-report .salary-payment-panel,
+#view-report #salaryRankingPanel {
+  border-color:rgba(255,255,255,.085);
+  box-shadow:none;
+}
+#view-report .salary-review-insights .panel-header,
+#view-report .salary-snapshot-review .panel-header,
+#view-report .salary-payment-panel .panel-header,
+#view-report #salaryRankingPanel .panel-header {
+  min-height:auto;
+  padding:14px 16px;
+  border-color:rgba(255,255,255,.07);
+}
+#view-report .salary-review-insights .panel-header h3,
+#view-report .salary-snapshot-review .panel-header h3,
+#view-report .salary-payment-panel .panel-header h3,
+#view-report #salaryRankingPanel .panel-header h3 { font-size:14px; }
+#view-report #salaryDepartmentSummary {
+  display:grid;
+  gap:6px;
+  padding:8px 12px 12px;
+}
+#view-report #salaryDepartmentSummary .dashboard-insight {
+  min-height:46px;
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:8px;
+  background:rgba(6,12,18,.16);
+  transition:background-color .16s ease,border-color .16s ease;
+}
+#view-report #salaryDepartmentSummary .dashboard-insight:hover {
+  border-color:rgba(115,167,255,.22);
+  background:rgba(115,167,255,.065);
+}
+#view-report .report-supporting-insights { gap:14px; }
+#view-report .report-supporting-insights .report-section-heading {
+  margin:0;
+  padding-top:4px;
+}
+#view-report .salary-snapshot-charts {
+  gap:12px;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;
+  background:rgba(6,12,18,.12);
+}
+#view-report .salary-snapshot-charts .chart-card {
+  height:268px;
+  min-height:268px;
+  padding:14px;
+  border-color:rgba(255,255,255,.07);
+  border-radius:9px;
+  background:rgba(255,255,255,.024);
+  box-shadow:none;
+}
+#view-report .salary-snapshot-charts .chart-card h3 {
+  margin-bottom:10px;
+  padding-bottom:9px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  color:var(--ink-muted);
+  font-size:12px;
+}
+#view-report .salary-snapshot-charts .chart-card canvas { max-height:206px !important; }
+#view-report .salary-snapshot-charts .chart-card:hover { border-color:rgba(115,167,255,.18); }
+
+/* Report-owned review dialogs retain their existing contents and controls. */
+#detailsModal .modal,
+#salaryEmployeeDrawer .modal,
+#smartApprovalModal .modal,
+#closeMonthModal .modal {
+  border-color:rgba(115,167,255,.22);
+  background:var(--layer-1);
+  box-shadow:var(--shadow-float);
+}
+#detailsModal .modal-header,
+#salaryEmployeeDrawer .modal-header,
+#smartApprovalModal .modal-header,
+#closeMonthModal .modal-header {
+  padding:16px 20px;
+  border-color:rgba(255,255,255,.08);
+  background:rgba(115,167,255,.035);
+}
+#detailsModal .modal-body,
+#salaryEmployeeDrawer .modal-body,
+#smartApprovalModal .modal-body,
+#closeMonthModal .modal-body { padding:20px; }
+#detailsModal .details-grid {
+  gap:8px;
+  margin-bottom:16px;
+}
+#detailsModal .details-stat {
+  min-height:66px;
+  padding:10px;
+  border-color:rgba(255,255,255,.075);
+  border-radius:9px;
+  background:rgba(6,12,18,.16);
+}
+#detailsModal .details-stat:has(#detailsFinalSalary) {
+  border-color:rgba(115,167,255,.28);
+  background:rgba(115,167,255,.085);
+}
+#detailsModal #detailsFinalSalary { color:#dce9ff; font-size:18px; }
+#detailsModal .dist-row {
+  padding:9px 11px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:8px;
+  background:rgba(6,12,18,.14);
+}
+#salaryEmployeeDrawer .config-tabs { margin-bottom:16px; box-shadow:none; }
+
+@media (max-width:900px) {
+  #view-report .salary-snapshot-dashboard { padding:18px; }
+  #view-report .salary-review-insights { grid-template-columns:1fr; }
+  #view-report .salary-snapshot-charts { grid-template-columns:1fr; }
+  #view-report .salary-snapshot-charts .chart-card:first-child { grid-column:auto; }
+  #view-report .salary-snapshot-charts .chart-card { height:250px; min-height:250px; }
+  #view-report .salary-snapshot-charts .chart-card canvas { max-height:188px !important; }
+}
+@media (max-width:600px) {
+  #view-report .salary-snapshot-dashboard { padding:16px; }
+  #view-report .salary-snapshot-heading { padding-bottom:12px; }
+  #view-report .salary-snapshot-dashboard #salaryExecutiveSummary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #detailsModal .modal-body,
+  #salaryEmployeeDrawer .modal-body,
+  #smartApprovalModal .modal-body,
+  #closeMonthModal .modal-body { padding:16px; }
+  #detailsModal .details-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
