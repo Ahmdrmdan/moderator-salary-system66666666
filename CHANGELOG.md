@@ -7,6 +7,7 @@
 - Standardized Dashboard KPI cards into a label/value/icon hierarchy, with balanced operational and financial grids across desktop, tablet, and mobile widths.
 - Refined the Dashboard quick-action rail, section headings, alerts, insights, widgets, charts, Topbar, and Sidebar using the existing dark visual language, shared controls, and existing icon conversion.
 - Final visual review balanced the compact RTL Topbar against the Hero and makes a single alert span its row instead of leaving an unexplained empty grid area.
+- Final polish strengthens the Dashboard reading hierarchy: the Hero status pane has a visible label, the existing Calculate Report action is the clear primary control, alerts have a scan-friendly rail, and Dashboard tables/widgets use consistent row rhythm.
 - Added Dashboard visual contract coverage for the cache-busted stylesheet, responsive Hero, KPI card hierarchy, and financial KPI grid while retaining every existing binding and quick-action ID.
 
 ## Unreleased — Users lifecycle and management-layout hotfix (awaiting review)

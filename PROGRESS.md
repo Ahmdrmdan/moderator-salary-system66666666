@@ -16,6 +16,7 @@
 - Updated Topbar and Sidebar surfaces, spacing, navigation rhythm, shadows, and active state using the existing dark palette and existing icon system; no role or behavior changed.
 - Added responsive breakpoints for the Hero, status grid, KPI grids, actions, widgets, and charts. At 1280px the status summary is two rows instead of three.
 - Final visual pass anchors the compact Topbar on the RTL content edge and gives a single current-month alert the full available row, eliminating two remaining pockets of unexplained whitespace.
+- Final polish adds no feature or action: it only gives the existing Hero status pane a visible label, strengthens the existing Calculate Report button as the primary action, improves alert scanning, and aligns Dashboard KPI/widget/table padding and row rhythm.
 
 ### Verification and Firebase UAT
 
@@ -24,6 +25,7 @@
 - Published UAT at 1280×720 loaded `style.css?v=7.0.11-dashboard-ui-ux-audit-r4`; the Hero measured 218px (down from the pre-audit 252px), with five status items in two rows and three columns. The RTL Topbar aligned to the content edge at 430px wide, and the single alert used the full 946px content width at a compact 76px height.
 - All six Dashboard charts remained bounded at a 310px card / 225px wrapper / 205px canvas. Sidebar scrolling remained available (`overflow-y: auto`), all five quick-action controls remained present, and the existing Add Employee quick action opened and closed its dialog without writing data.
 - Browser logs contained no Console or Runtime errors during load, navigation, action-modal open/close, or chart rendering.
+- Final Firebase UAT loaded `style.css?v=7.0.11-dashboard-ui-ux-audit-r5`. The Hero measured 238px with a labelled three-column status pane; the primary action used its intended gradient treatment; the alert remained a compact 76px full-width row with a 3px status rail; Dashboard table headers measured 48px; and all six charts remained bounded at 310px / 225px / 205px. Console and runtime logs remained empty.
 
 ### Scope confirmation
 
