@@ -2466,3 +2466,102 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   #view-report .report-summary-earnings { grid-column:auto; }
   #view-report .report-summary-net { min-height:116px; }
 }
+
+/* Payroll Workflow Engine — Stage 3: review workspace view migration.
+   The rail reuses existing report status and action controls; no employee
+   exception state or row-selection state is introduced here. */
+#view-report .report-employee-section {
+  padding:0;
+  overflow:hidden;
+  border-color:rgba(115,167,255,.18);
+  background:var(--layer-1);
+}
+#view-report .report-review-workspace {
+  display:grid;
+  grid-template-columns:280px minmax(0,1fr);
+  min-height:420px;
+}
+#view-report .report-review-rail {
+  display:grid;
+  align-content:start;
+  gap:14px;
+  padding:20px;
+  border-inline-end:1px solid rgba(255,255,255,.08);
+  background:linear-gradient(180deg,rgba(115,167,255,.07),rgba(6,12,18,.10));
+}
+#view-report .report-review-rail-heading h4 {
+  margin:0;
+  color:var(--ink);
+  font-size:14px;
+  letter-spacing:-.015em;
+}
+#view-report .report-review-rail-heading p {
+  margin:5px 0 0;
+  color:var(--ink-muted);
+  font-size:11px;
+  line-height:1.55;
+}
+#view-report .report-review-rail .report-eyebrow { margin-bottom:5px; }
+#view-report .report-review-rail .report-approval-notice {
+  margin:0;
+  padding:12px;
+  border-color:rgba(245,158,11,.24);
+  border-radius:10px;
+  background:rgba(245,158,11,.065);
+  color:var(--ink-muted);
+  font-size:11px;
+  line-height:1.65;
+}
+#view-report .report-review-rail .report-approval-notice strong { color:var(--ink); }
+#view-report .report-review-rail .report-actions {
+  display:grid;
+  gap:10px;
+  margin:0;
+  padding:0;
+}
+#view-report .report-review-rail .report-primary-actions,
+#view-report .report-review-rail .report-secondary-actions {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+  padding:0;
+  border:0;
+}
+#view-report .report-review-rail .report-actions .btn { justify-content:center; min-height:36px; }
+#view-report .report-review-table-area { min-width:0; padding:20px; }
+#view-report .report-review-table-area .report-table-heading { margin-bottom:14px; }
+#view-report .report-table-wrap {
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:11px;
+  background:rgba(6,12,18,.14);
+}
+#view-report #reportTable thead .report-column-groups th { height:29px; }
+#view-report #reportTable thead tr:not(.report-column-groups) th { padding-block:10px; }
+#view-report #reportTable tbody td { padding-block:12px; transition:background-color .16s ease, box-shadow .16s ease; }
+#view-report #reportTable tbody tr.clickable-row { cursor:pointer; }
+#view-report #reportTable tbody tr.clickable-row:hover td { background:rgba(115,167,255,.07); }
+#view-report #reportTable tbody tr.clickable-row:hover td:nth-child(9) { background:rgba(115,167,255,.16); }
+#view-report #reportTable tbody tr:has(td.text-danger.text-strong) td { background-color:rgba(245,158,11,.035); }
+#view-report #reportTable tbody tr:has(td.text-danger.text-strong) td:first-child {
+  box-shadow:inset 3px 0 0 rgba(245,158,11,.90);
+}
+#view-report #reportTable tbody tr:has(td.text-danger.text-strong):hover td { background-color:rgba(245,158,11,.075); }
+
+@media (max-width:1200px) {
+  #view-report .report-review-workspace { grid-template-columns:240px minmax(0,1fr); }
+  #view-report .report-review-rail { padding:18px; }
+  #view-report .report-review-table-area { padding:18px; }
+}
+@media (max-width:900px) {
+  #view-report .report-review-workspace { grid-template-columns:1fr; }
+  #view-report .report-review-rail { border:0; border-bottom:1px solid rgba(255,255,255,.08); }
+  #view-report .report-review-rail .report-primary-actions { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  #view-report .report-review-rail .report-secondary-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:600px) {
+  #view-report .report-review-rail,
+  #view-report .report-review-table-area { padding:16px; }
+  #view-report .report-review-rail .report-primary-actions,
+  #view-report .report-review-rail .report-secondary-actions { grid-template-columns:1fr; }
+  #view-report .report-table-heading .search-input { min-width:0; width:100%; }
+}
