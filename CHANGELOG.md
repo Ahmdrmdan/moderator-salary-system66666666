@@ -1,12 +1,13 @@
 # Changelog
 
-## Unreleased — Final Production Audit (awaiting user review)
+## [7.0.10] — 2026-08-07 (Production release)
 
 - Completed the production-wide regression audit across Imports, Shipping, Orders, Departments, Employees, Salary, Reports, Transactions, Dashboard, and Users & Security. Every module contract suite and JavaScript syntax check passed.
 - Replaced the unavailable external Chart.js path with the pinned Chart.js 4.4.4 UMD build hosted by Firebase alongside the application. Dashboard charts no longer depend on a client-accessible CDN.
 - Aligned the Hosting root authentication router (`/`) with the current `ahmed123-95a0e` Firebase project, eliminating the retired-project session split before the Dashboard redirect.
 - Added production-configuration contract coverage for the CLI target, Dashboard client, and root Authentication router to remain on the same Firebase project.
 - Completed production UAT for the authenticated root route, Dashboard loading, first-click navigation/dialog behavior, and Console health without modifying production business data.
+- Formally approved as Production Ready; this release is tagged `v7.0.10` from `main`.
 
 ## Unreleased — Users & Security audit (closed and approved)
 

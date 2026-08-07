@@ -1,6 +1,6 @@
 # PROGRESS.md — Final Production Audit
 
-## Final Production Audit (awaiting user review)
+## Final Production Audit (closed and approved)
 
 ### Scope and outcome
 
@@ -29,6 +29,7 @@
 ### Scope confirmation
 
 - No schema migration, Firestore Rule change, role change, calculation change, report history change, or production-business-data write was made in this audit. The branch remains `feature/import-improvements` and has not been merged into `main`.
+- Final approval authorizes the release merge to `main`, the `v7.0.10` tag, and the final Firebase deployment from `main`.
 
 ## Users & Security Audit (closed and approved)
 
