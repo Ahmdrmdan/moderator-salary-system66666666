@@ -16,7 +16,7 @@ assert.match(htmlSource, /<script src="js\/vendor\/chart\.umd\.js"><\/script>/,
 assert.ok(fs.existsSync('js/vendor/chart.umd.js'), 'the Chart.js UMD build is shipped with the application');
 assert.doesNotMatch(htmlSource, /(?:cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com).*Chart\.js|chart\.js@/i,
   'dashboard does not rely on an external Chart.js CDN at runtime');
-assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.0\.11-dashboard-ui-ux-audit-r4">/,
+assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.0\.11-dashboard-ui-ux-audit-r5">/,
   'dashboard cache-busts the shared stylesheet after the UI/UX audit');
 
 // The UI audit is explicitly visual-only. These stable hooks guarantee that
@@ -29,6 +29,10 @@ assert.match(stylesSource, /#view-dashboard \.stat-card\s*\{[\s\S]*?grid-templat
   'dashboard KPI cards use a consistent visual hierarchy');
 assert.match(stylesSource, /#view-dashboard \.dashboard-financial-grid\s*\{[\s\S]*?grid-template-columns:/,
   'financial KPI layout is explicitly responsive');
+assert.match(stylesSource, /#view-dashboard #quickCalculateReportBtn\s*\{[\s\S]*?linear-gradient/,
+  'the existing primary dashboard action has a distinct visual treatment');
+assert.match(stylesSource, /#view-dashboard \.table-wrap thead th\s*\{[\s\S]*?height:\s*48px/,
+  'dashboard table headers have a consistent scan-friendly height');
 
 // Chart.js is responsive with maintainAspectRatio disabled, so the flex child
 // that owns each canvas must be able to shrink. Without this constraint, the

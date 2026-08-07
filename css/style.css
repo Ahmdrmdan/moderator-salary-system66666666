@@ -1416,3 +1416,117 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
   #view-dashboard .dashboard-status-item:last-child { grid-column: auto; }
   #view-dashboard .dashboard-quick-actions .btn { flex-basis: 100%; }
 }
+
+/* Dashboard visual review — hierarchy and scanning refinements only. */
+#view-dashboard .dashboard-hero-copy .eyebrow { margin-bottom: 8px; }
+#view-dashboard .dashboard-hero-copy h2 { margin-bottom: 4px; }
+#view-dashboard .dashboard-hero-copy p { max-width: 510px; color: #b7c1cd; }
+#view-dashboard .dashboard-hero .dashboard-status {
+  position: relative;
+  padding-top: 37px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045);
+}
+#view-dashboard .dashboard-hero .dashboard-status::before {
+  content: 'حالة الشهر';
+  position: absolute;
+  inset-inline-start: 13px;
+  inset-block-start: 11px;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .07em;
+}
+#view-dashboard .dashboard-status-item { transition: border-color .16s ease, background .16s ease; }
+#view-dashboard .dashboard-status-item:hover { border-color: rgba(115, 167, 255, .35); background: rgba(115, 167, 255, .08); }
+#view-dashboard #dashboardStatusReport { color: var(--brand); }
+
+#view-dashboard .dashboard-quick-actions {
+  justify-content: flex-start;
+  border-color: rgba(255, 255, 255, .11);
+}
+#view-dashboard .dashboard-quick-actions .btn:not(.btn-accent) {
+  color: var(--ink-muted);
+  border-color: rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .018);
+}
+#view-dashboard .dashboard-quick-actions .btn:not(.btn-accent):hover:not(:disabled) {
+  color: var(--ink);
+  border-color: rgba(115, 167, 255, .35);
+  background: rgba(115, 167, 255, .08);
+}
+#view-dashboard #quickCalculateReportBtn {
+  min-width: 136px;
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--brand), #8e7bff);
+  box-shadow: 0 8px 18px rgba(115, 167, 255, .24);
+}
+#view-dashboard #quickCalculateReportBtn:hover:not(:disabled) {
+  box-shadow: 0 10px 22px rgba(115, 167, 255, .34);
+}
+
+#view-dashboard .alert-card {
+  position: relative;
+  gap: 14px;
+  padding: 14px 17px;
+  border-color: rgba(115, 167, 255, .18);
+}
+#view-dashboard .alert-card::before {
+  content: '';
+  position: absolute;
+  inset-block: 15px;
+  inset-inline-end: 0;
+  width: 3px;
+  border-radius: 99px;
+  background: var(--brand);
+}
+#view-dashboard .alert-card .alert-icon { width: 36px; height: 36px; border-radius: 11px; }
+#view-dashboard .alert-card strong { margin-bottom: 2px; }
+#view-dashboard .alert-card p { max-width: 680px; line-height: 1.65; }
+
+#view-dashboard .stat-card { border-color: rgba(255, 255, 255, .105); }
+#view-dashboard .stat-card .stat-icon { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .09); }
+#view-dashboard .stat-card .stat-value { letter-spacing: -.035em; }
+#view-dashboard .dashboard-insights-panel,
+#view-dashboard .executive-widget { overflow: hidden; }
+#view-dashboard .dashboard-insight {
+  min-height: 64px;
+  align-items: center;
+  border-radius: 10px;
+}
+#view-dashboard .dashboard-insight-label { letter-spacing: .01em; }
+#view-dashboard .widget-ranking { padding: 4px 16px 14px; }
+#view-dashboard .widget-ranking > div {
+  min-height: 46px;
+  align-items: center;
+  padding: 11px 0;
+}
+#view-dashboard .widget-ranking > div strong { color: var(--ink); font-size: 12px; }
+#view-dashboard .widget-ranking > div span { font-size: 11px; }
+
+#view-dashboard .table-wrap {
+  overflow: auto;
+  border-color: rgba(255, 255, 255, .11);
+  background: rgba(0, 0, 0, .09);
+}
+#view-dashboard .table-wrap thead th {
+  height: 48px;
+  padding: 11px 14px;
+  color: #c5ced8;
+  background: rgba(255, 255, 255, .045);
+  font-size: 11px;
+  font-weight: 800;
+}
+#view-dashboard .table-wrap tbody td {
+  min-height: 50px;
+  padding: 13px 14px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+#view-dashboard .table-wrap tbody tr { transition: background .14s ease; }
+#view-dashboard .table-wrap tbody tr:hover { background: rgba(115, 167, 255, .085); }
+
+@media (max-width: 780px) {
+  #view-dashboard .dashboard-hero .dashboard-status { padding-top: 35px; }
+  #view-dashboard .dashboard-quick-actions .btn { min-height: 40px; }
+  #view-dashboard #quickCalculateReportBtn { min-width: 0; }
+}
