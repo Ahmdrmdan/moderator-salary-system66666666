@@ -1,6 +1,31 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
-## Salary Stabilization (awaiting user review)
+## Reports Stabilization (awaiting user review)
+
+### Root cause and minimal fix
+
+- The Report-page toolbar bypassed the shared permission metadata: a `reports.read` user could see active Calculate, Approve, and export controls even though the calculate/approve paths later rejected the action. The controls now declare their existing capabilities.
+- Excel, PDF, clipboard copy, and print did not verify `reports.export` inside the event boundary. A small caught guard now denies direct or stale events with a visible message instead of an uncaught console error.
+- Report calculation saved `monthly_reports/{monthId}` and then wrote `report_calculated` separately. The same report payload and the unchanged Audit entry now share one Firestore batch, so neither can persist without the other.
+
+### Files changed
+
+- `dashboard.html` — existing Report controls now declare their existing permissions and the App runtime is versioned.
+- `js/app.js` — protected Report exports and atomic calculation/Audit commit.
+- `tests/reports-contract.test.js` — capability, direct-guard, atomic-write, and totals-regression coverage.
+
+### Verification completed
+
+- Passed: `node --check js/app.js`, `node --check js/reports.js`, `node tests/reports-contract.test.js`, `node tests/salary-processing-contract.test.js`, `node tests/employees-contract.test.js`, `node tests/departments-contract.test.js`, `node tests/import-contract.test.js`, and `node tests/shipping-contract.test.js`; `git diff --check` passed before commit.
+- Firebase Hosting deployed to project `ahmed123-95a0e`; the published dashboard loads `js/app.js?v=7.0.15-reports-stabilization`.
+- Production UAT as `admin.login.20260807@ahmed123-95a0e.local` opened the Report view and confirmed the current permission attributes on every controlled button. The active period has no calculated report, so selecting Excel safely showed the existing no-report message without creating a report, export, audit entry, salary record, or other production data. The browser recorded zero errors and one pre-existing Chart.js warning only.
+- Restricted-role and direct-event denial are covered by the isolated Reports contract without changing any production user account or permission.
+
+### Scope confirmation
+
+- No salary formula, report calculation formula, historical report, Firestore schema, Firestore Rule, migration, or production data was changed in this stage.
+
+## Salary Stabilization (closed and approved)
 
 ### Root cause and minimal fix
 

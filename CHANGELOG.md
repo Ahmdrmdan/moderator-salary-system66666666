@@ -1,12 +1,20 @@
 # Changelog
 
-## Unreleased — Salary stabilization (awaiting review)
+## Unreleased — Reports stabilization (awaiting review)
+
+- Bound the existing Report Calculate, Approve, Excel, PDF, Copy, and Print controls to their current `reports.calculate`, `reports.approve`, and `reports.export` capabilities.
+- Added a caught internal export guard for Excel, PDF, clipboard copy, and print so direct or stale UI events show a permission message without producing an uncaught browser error.
+- Changed report calculation to commit the existing monthly-report payload and `report_calculated` Audit entry in one Firestore batch. Salary formulas, report schema, historical reports, and Firestore Rules remain unchanged.
+- Added Reports contract coverage for capability metadata, protected export actions, atomic report/audit writes, and stable report totals.
+
+## Unreleased — Salary stabilization (closed)
 
 - Corrected Salary Snapshot presentation by mapping the existing monthly-report fields (`salary`, `totalBonus`, `totalAdjustments`, `totalAdvances`, `previousDebt`, and `finalSalary`) without recalculating any payroll amount. Commission rows now present their already-stored `totalBonus` as commission when that is their existing salary type.
 - Corrected the Snapshot lifecycle label so a persisted `paid` Snapshot is displayed as `Paid` rather than `Draft`.
 - Bound Snapshot adjustment, payment, export, and print controls to the existing Salary Processing capabilities while retaining the existing internal permission checks and Firestore Rules.
 - Made approve, payment, and manual-adjustment writes atomic with their Audit entry by committing both existing document writes in one Firestore batch. No document shape, rule, migration, historical report, or salary formula changed.
 - Added Salary Processing contract coverage for current and legacy Snapshot display fields, commission presentation, stored net preservation, aggregation, lifecycle status, permission gating, and batched audit writes.
+- Formally approved and closed after the Firebase UAT; no production payroll Snapshot, payment, or adjustment was created during testing.
 
 ## Unreleased — Employees stabilization (awaiting review)
 
