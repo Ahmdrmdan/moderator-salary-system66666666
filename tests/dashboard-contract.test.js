@@ -7,6 +7,7 @@ const appSource = fs.readFileSync('js/app.js', 'utf8');
 const chartsSource = fs.readFileSync('js/charts.js', 'utf8');
 const htmlSource = fs.readFileSync('dashboard.html', 'utf8');
 const widgetsSource = fs.readFileSync('js/dashboard-widgets.js', 'utf8');
+const auditSource = fs.readFileSync('js/audit.js', 'utf8');
 const stylesSource = fs.readFileSync('css/style.css', 'utf8');
 
 // The dashboard charts are a production dependency: a stale CDN path left the
@@ -16,8 +17,30 @@ assert.match(htmlSource, /<script src="js\/vendor\/chart\.umd\.js"><\/script>/,
 assert.ok(fs.existsSync('js/vendor/chart.umd.js'), 'the Chart.js UMD build is shipped with the application');
 assert.doesNotMatch(htmlSource, /(?:cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com).*Chart\.js|chart\.js@/i,
   'dashboard does not rely on an external Chart.js CDN at runtime');
-assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.0\.11-system-ui-ux-audit-r6">/,
-  'dashboard cache-busts the shared stylesheet after the system UI/UX audit');
+assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.1\.0-dashboard-analytics-r2">/,
+  'dashboard cache-busts the shared stylesheet after the analytics release');
+assert.match(htmlSource, /id="dashboardMonthlyScopeForm"[\s\S]*?id="dashboardMonthFilter"[\s\S]*?id="dashboardDepartmentFilter"/,
+  'monthly Dashboard scope exposes independent month and department selectors');
+assert.match(htmlSource, /id="dashboardAnalyticsFilters"[\s\S]*?id="dashboardAnalyticsPeriod"[\s\S]*?id="dashboardAnalyticsFrom"[\s\S]*?id="dashboardAnalyticsTo"/,
+  'operational analytics exposes a date-period filter with custom range inputs');
+assert.match(htmlSource, /id="dashboardCurrentScopeSummary"[\s\S]*?id="dashboardAnalyticsEmpty"/,
+  'Dashboard shows both the active scopes and an operational empty state');
+assert.match(appSource, /dashboardAnalytics: \{ period: 'this_month'[\s\S]*?function getDashboardAnalyticsOrders\(\)[\s\S]*?order\.orderDate/,
+  'analytics date scope is isolated from the monthly report state and filters raw order dates');
+assert.match(appSource, /function renderDashboard\(\)[\s\S]*?renderDashboardAnalyticsCards\(analyticsOrders\)[\s\S]*?DashboardWidgets\.refresh\(\{ orders: analyticsOrders, auditLogs: state\.dashboardAnalytics\.auditLogs/,
+  'Dashboard sends the operational scope only to operational cards and widgets');
+assert.match(chartsSource, /function renderDashboardScopes\(monthlyReport, operationalOrders, options = \{\}\)/,
+  'monthly and operational charts render through explicitly separate scopes');
+assert.match(widgetsSource, /function refresh\(context = \{\}\)/,
+  'operational widgets retain their existing cache-only refresh boundary');
+assert.match(auditSource, /async function getInRange\(fromDate, toDate, limit = 50\)[\s\S]*?\.where\('at', '>=',[\s\S]*?\.where\('at', '<',[\s\S]*?\.orderBy\('at', 'desc'\)/,
+  'recent activity is read through a bounded single-field Audit date range');
+assert.match(appSource, /function scheduleDashboardAnalyticsAudit\(range\)[\s\S]*?clearTimeout\(analytics\.auditTimer\)[\s\S]*?setTimeout\([\s\S]*?220\)/,
+  'rapid filter changes debounce Audit reads instead of accumulating requests');
+assert.match(appSource, /function refreshDashboardAnalytics\(\)[\s\S]*?refreshDashboardAnalyticsBtn[\s\S]*?dashboardAnalytics\.loading = true[\s\S]*?dashboardAnalytics\.loading = false/,
+  'manual refresh exposes a bounded loading state');
+assert.match(appSource, /dashboardAnalytics\.loading = true[\s\S]*?applyDashboardAnalyticsFilters\(\{ skipAudit: true \}\)[\s\S]*?OrdersManagement\.refresh\(\)/,
+  'loading feedback is painted before the operational refresh begins');
 
 // The UI audit is explicitly visual-only. These stable hooks guarantee that
 // the existing data bindings and quick-action controls remain in place.

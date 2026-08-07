@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=7.0.11-system-ui-ux-audit-r6">
+  <link rel="stylesheet" href="css/style.css?v=7.1.0-dashboard-analytics-r2">
 </head>
 <body>
 
@@ -105,6 +105,28 @@
       </div>
       </section>
 
+      <section class="dashboard-filter-stack" aria-label="نطاقات لوحة التحكم">
+        <form class="dashboard-scope-panel dashboard-monthly-scope" id="dashboardMonthlyScopeForm">
+          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📊</span><div><span class="eyebrow">Monthly Scope</span><h2>نطاق التقرير الشهري</h2><p>يتحكم في التقرير وSnapshot الرواتب والبونص والسلف والتسويات.</p></div></div>
+          <div class="dashboard-filter-controls">
+            <label>الشهر<select id="dashboardMonthFilter" aria-label="الشهر المعروض في التقرير الشهري"></select></label>
+            <label>القسم<select id="dashboardDepartmentFilter" aria-label="القسم المعروض في التقرير الشهري"><option value="all">كل الأقسام</option></select></label>
+          </div>
+        </form>
+        <form class="dashboard-scope-panel dashboard-analytics-scope" id="dashboardAnalyticsFilters">
+          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📈</span><div><span class="eyebrow">Analytics Filters</span><h2>التحليلات التشغيلية</h2><p>تؤثر فقط في الطلبات والشحن والرسوم التشغيلية والنشاط والتنبيهات.</p></div></div>
+          <div class="dashboard-filter-controls">
+            <label>الفترة<select id="dashboardAnalyticsPeriod" aria-label="فترة التحليلات التشغيلية"><option value="today">اليوم</option><option value="yesterday">أمس</option><option value="last_7_days">آخر 7 أيام</option><option value="last_30_days">آخر 30 يوم</option><option value="this_month" selected>هذا الشهر</option><option value="last_month">الشهر الماضي</option><option value="custom">تاريخ مخصص</option></select></label>
+            <label class="dashboard-custom-date hidden" id="dashboardAnalyticsFromWrap">من<input type="date" id="dashboardAnalyticsFrom" aria-label="بداية الفترة المخصصة"></label>
+            <label class="dashboard-custom-date hidden" id="dashboardAnalyticsToWrap">إلى<input type="date" id="dashboardAnalyticsTo" aria-label="نهاية الفترة المخصصة"></label>
+            <div class="dashboard-filter-actions"><button class="btn btn-accent" type="submit" id="refreshDashboardAnalyticsBtn">↻ تحديث</button><button class="btn" type="button" id="resetDashboardAnalyticsBtn">إعادة تعيين</button></div>
+          </div>
+          <p class="dashboard-filter-status" id="dashboardAnalyticsScopeLabel" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <div class="dashboard-current-scope" id="dashboardCurrentScopeSummary" role="status" aria-live="polite"></div>
+
       <div class="dashboard-quick-actions" aria-label="إجراءات سريعة">
         <button class="btn" id="quickAddEmployeeBtn" data-permission="employees.write">➕ إضافة موظف</button>
         <button class="btn" id="quickImportOrdersBtn" data-permission="orders.import">📥 استيراد الطلبات</button>
@@ -118,7 +140,7 @@
         <div class="alerts-grid" id="dashboardAlertsGrid"><div class="alert-card alert-info"><span class="alert-icon">ℹ️</span><div><strong>حالة التقرير</strong><p>استخدم اعتماد التقرير لإجراء فحص Smart Approval قبل القفل.</p></div></div></div>
       </section>
 
-      <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">ملخص الأداء</span><h2>المؤشرات التشغيلية</h2></div><span class="section-caption">الموظفون والطلبات</span></div>
+      <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">Monthly Snapshot</span><h2>ملخص التقرير الشهري</h2></div><span class="section-caption">لا يتأثر بفترة التحليلات</span></div>
       <div class="cards-grid cards-grid-operational">
         <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="cardTotalModerators">0</div><div class="stat-label">إجمالي الموظفين</div></div>
         <div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-value" id="cardActiveEmployees">0</div><div class="stat-label">الموظفون النشطون</div></div>
@@ -139,6 +161,17 @@
         <div class="stat-card"><div class="stat-icon">📌</div><div class="stat-value" id="cardTotalCarriedDebt">0</div><div class="stat-label">ديون مرحّلة للشهر القادم</div></div>
         <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-value" id="cardTotalFinalSalaries">0</div><div class="stat-label">صافي المستحقات</div></div>
       </div>
+
+      <section class="dashboard-analytics-section" aria-label="مؤشرات التحليلات التشغيلية">
+        <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">Time-based Analytics</span><h2>مؤشرات الفترة التشغيلية</h2></div><span class="section-caption" id="dashboardAnalyticsCardsCaption">من الطلبات ضمن الفترة المحددة</span></div>
+        <div class="cards-grid dashboard-analytics-cards">
+          <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="analyticsOrdersCount">0</div><div class="stat-label">الطلبات ضمن الفترة</div></div>
+          <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-value" id="analyticsPackagesCount">0</div><div class="stat-label">الطرود ضمن الفترة</div></div>
+          <div class="stat-card"><div class="stat-icon">💳</div><div class="stat-value" id="analyticsSalesValue">0</div><div class="stat-label">المبيعات التشغيلية</div></div>
+          <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" id="analyticsDeliveredCount">0</div><div class="stat-label">تم تسليمها</div></div>
+        </div>
+        <div class="dashboard-analytics-empty hidden" id="dashboardAnalyticsEmpty" role="status"></div>
+      </section>
 
       <div class="dashboard-insights-grid">
         <div class="panel dashboard-insights-panel">
@@ -182,14 +215,16 @@
         </div>
       </div>
 
-      <div class="charts-grid">
-        <div class="chart-card"><h3>أفضل الموظفين في المبيعات</h3><div class="chart-wrap"><canvas id="chartTopSales"></canvas><div class="chart-empty" hidden></div></div></div>
+      <section class="dashboard-monthly-charts" aria-label="رسوم التقرير الشهري"><div class="section-heading"><div><span class="eyebrow">Monthly Snapshot</span><h2>رسوم التقرير الشهري</h2></div><span class="section-caption">لا تتأثر بفترة التحليلات</span></div><div class="charts-grid">
         <div class="chart-card"><h3>أفضل الموظفين في البونص</h3><div class="chart-wrap"><canvas id="chartTopBonus"></canvas><div class="chart-empty" hidden></div></div></div>
-        <div class="chart-card"><h3>توزيع الطرود</h3><div class="chart-wrap"><canvas id="chartPackagesDist"></canvas><div class="chart-empty" hidden></div></div></div>
         <div class="chart-card"><h3 id="chartSalesDistTitle">صافي الرواتب حسب القسم</h3><div class="chart-wrap"><canvas id="chartSalesDist"></canvas><div class="chart-empty" hidden></div></div></div>
         <div class="chart-card"><h3>البونص حسب القسم</h3><div class="chart-wrap"><canvas id="chartDepartmentBonus"></canvas><div class="chart-empty" hidden></div></div></div>
+      </div></section>
+      <section class="dashboard-operational-charts" aria-label="رسوم التحليلات التشغيلية"><div class="section-heading"><div><span class="eyebrow">Time-based Analytics</span><h2>رسوم الفترة التشغيلية</h2></div><span class="section-caption">تتحدث مباشرة عند تغيير الفترة</span></div><div class="charts-grid">
+        <div class="chart-card"><h3>أفضل الموظفين في المبيعات</h3><div class="chart-wrap"><canvas id="chartTopSales"></canvas><div class="chart-empty" hidden></div></div></div>
+        <div class="chart-card"><h3>توزيع الطرود</h3><div class="chart-wrap"><canvas id="chartPackagesDist"></canvas><div class="chart-empty" hidden></div></div></div>
         <div class="chart-card"><h3>الطلبات حسب القسم</h3><div class="chart-wrap"><canvas id="chartDepartmentOrders"></canvas><div class="chart-empty" hidden></div></div></div>
-      </div>
+      </div></section>
     </section>
 
     <!-- ===================== VIEW: DEPARTMENTS ===================== -->
@@ -1422,7 +1457,7 @@ Haba&#9;7&#9;750"></textarea>
 <script src="js/firebase.js?v=7.0.12-shipping"></script>
 <script src="js/utils.js?v=7.0.12-orders-excel-runtime"></script>
 <script src="js/service-common.js"></script>
-<script src="js/audit.js"></script>
+<script src="js/audit.js?v=7.1.0-dashboard-analytics"></script>
 <script src="js/auth.js?v=7.0.10-users-lifecycle-hotfix"></script>
 <script src="js/permissions.js?v=7.0.12-shipping"></script>
 <script src="js/departments.js?v=7.0.12-departments-stabilization"></script>
@@ -1430,7 +1465,7 @@ Haba&#9;7&#9;750"></textarea>
 <script src="js/data-layer.js"></script>
 <script src="js/undo.js"></script>
 <script src="js/migration.js"></script>
-<script src="js/charts.js"></script>
+<script src="js/charts.js?v=7.1.0-dashboard-analytics"></script>
 <script src="js/reports.js"></script>
 <script src="js/months.js"></script>
 <script src="js/settlements.js"></script>
@@ -1443,7 +1478,7 @@ Haba&#9;7&#9;750"></textarea>
 <script src="js/smart-approval.js"></script>
 <script src="js/user-management.js?v=7.0.18-users-security"></script>
 <script src="js/ui-icons.js"></script>
-<script src="js/app.js?v=7.0.17-dashboard-stabilization"></script>
+<script src="js/app.js?v=7.1.0-dashboard-analytics-r3"></script>
 <script src="js/data-sources.js?v=7.0.11-import"></script>
 <script>
   Auth.guardPage((user, profile) => {

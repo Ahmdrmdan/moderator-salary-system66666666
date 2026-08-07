@@ -132,6 +132,74 @@ const Charts = (() => {
     }
   }
 
+  /**
+   * Dashboard v7.1 has two explicit scopes. Payroll charts receive frozen
+   * report rows; operational charts receive raw orders already narrowed by
+   * the selected date range. Neither scope is used to derive the other.
+   */
+  function renderDashboardScopes(monthlyReport, operationalOrders, options = {}) {
+    destroyAll();
+    if (!chartLibReady()) {
+      showAllEmpty('تعذر تحميل مكتبة الرسوم البيانية.');
+      return;
+    }
+    const report = Array.isArray(monthlyReport) ? monthlyReport : [];
+    const orders = Array.isArray(operationalOrders) ? operationalOrders : [];
+    const deptTotals = Array.isArray(options.departmentTotals) ? options.departmentTotals : [];
+
+    // Monthly Snapshot charts: never date-filtered.
+    renderTopBonus(report);
+    if (options.isCompanyView && deptTotals.length > 0) {
+      renderDepartmentSalaries(deptTotals, options.colorOf);
+      renderDepartmentMetric('chartDepartmentBonus', 'departmentBonus', deptTotals,
+        'إجمالي البونص', 'totalBonus', PALETTE.greenSoft, PALETTE.green);
+    } else {
+      renderSalesDistribution(report);
+      renderDepartmentMetric('chartDepartmentBonus', 'departmentBonus', [],
+        'إجمالي البونص', 'totalBonus', PALETTE.greenSoft, PALETTE.green);
+    }
+
+    // Operational charts: date-filtered orders only.
+    renderOrderTopSales(orders);
+    renderOrderPackagesDistribution(orders);
+    renderOrderDepartmentMetric(orders);
+  }
+
+  function orderGroups(orders, idKey, nameKey) {
+    const map = new Map();
+    orders.forEach(order => {
+      const id = order[idKey] || 'unknown';
+      const row = map.get(id) || { name: order[nameKey] || 'غير محدد', orders: 0, packages: 0, sales: 0 };
+      row.orders += 1;
+      row.packages += Number(order.packages) || 0;
+      row.sales += Number(order.saleValue === undefined ? order.price : order.saleValue) || 0;
+      map.set(id, row);
+    });
+    return [...map.values()];
+  }
+
+  function renderOrderTopSales(orders) {
+    const rows = orderGroups(orders, 'moderatorId', 'moderatorName').sort((a, b) => b.sales - a.sales).slice(0, 8);
+    const ctx = setChartState('chartTopSales', rows.length ? '' : 'لا توجد طلبات ضمن الفترة المحددة.');
+    if (!ctx) return;
+    instances.topSales = new Chart(ctx, { type: 'bar', data: { labels: rows.map(row => row.name), datasets: [{ label: 'إجمالي المبيعات', data: rows.map(row => row.sales), backgroundColor: PALETTE.accentSoft, borderColor: PALETTE.accent, borderWidth: 1.5, borderRadius: 6, barThickness: 18 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: PALETTE.grid }, ticks: { color: PALETTE.text } }, y: { grid: { display: false }, ticks: { color: PALETTE.textStrong } } } } });
+  }
+
+  function renderOrderPackagesDistribution(orders) {
+    const buckets = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7': 0, '8': 0, '9': 0, '10+': 0 };
+    orders.forEach(order => { const count = Math.max(0, Math.round(Number(order.packages) || 0)); if (count) buckets[count >= 10 ? '10+' : String(count)] += 1; });
+    const ctx = setChartState('chartPackagesDist', orders.length ? '' : 'لا توجد طلبات ضمن الفترة المحددة.');
+    if (!ctx) return;
+    instances.packagesDist = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(buckets).map(key => `${key} طرد`), datasets: [{ data: Object.values(buckets), backgroundColor: BUCKET_COLORS, borderColor: '#171a21', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: PALETTE.text, boxWidth: 12, padding: 10 } } }, cutout: '62%' } });
+  }
+
+  function renderOrderDepartmentMetric(orders) {
+    const rows = orderGroups(orders, 'departmentId', 'departmentName').sort((a, b) => b.orders - a.orders);
+    const ctx = setChartState('chartDepartmentOrders', rows.length ? '' : 'لا توجد طلبات ضمن الفترة المحددة.');
+    if (!ctx) return;
+    instances.departmentOrders = new Chart(ctx, { type: 'bar', data: { labels: rows.map(row => row.name), datasets: [{ label: 'إجمالي الطلبات', data: rows.map(row => row.orders), backgroundColor: PALETTE.accentSoft, borderColor: PALETTE.accent, borderWidth: 1.5, borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: PALETTE.text } }, y: { grid: { color: PALETTE.grid }, ticks: { color: PALETTE.text } } } } });
+  }
+
   /** Swaps the fourth chart's heading to match whichever chart is drawn. */
   function setFourthChartTitle(text) {
     const el = document.getElementById('chartSalesDistTitle');
@@ -341,5 +409,5 @@ const Charts = (() => {
     });
   }
 
-  return { renderAllCharts, destroyAll };
+  return { renderAllCharts, renderDashboardScopes, destroyAll };
 })();

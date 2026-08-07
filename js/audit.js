@@ -516,6 +516,29 @@ const AuditService = (() => {
   }
 
   /**
+   * A bounded date range for Dashboard operational analytics. It reuses the
+   * existing `audit.read` path and a single-field `at` ordering, so no Rule,
+   * Schema, or composite index is required.
+   */
+  async function getInRange(fromDate, toDate, limit = 50) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate || '') || !/^\d{4}-\d{2}-\d{2}$/.test(toDate || '')) return [];
+    const [fromYear, fromMonth, fromDay] = fromDate.split('-').map(Number);
+    const [toYear, toMonth, toDay] = toDate.split('-').map(Number);
+    const from = new Date(fromYear, fromMonth - 1, fromDay);
+    const endExclusive = new Date(toYear, toMonth - 1, toDay + 1);
+    try {
+      const snap = await db.collection(COLLECTIONS.AUDIT_LOGS)
+        .where('at', '>=', firebase.firestore.Timestamp.fromDate(from))
+        .where('at', '<', firebase.firestore.Timestamp.fromDate(endExclusive))
+        .orderBy('at', 'desc').limit(limit).get();
+      return snap.docs.map(d => normalizeEntry(d.id, d.data()));
+    } catch (err) {
+      console.error('Could not read audit logs in range:', err);
+      return [];
+    }
+  }
+
+  /**
    * Entries of one severity, newest first.
    *
    * Needs a composite index on (severity, at desc) — declared in
@@ -598,6 +621,7 @@ const AuditService = (() => {
     logChange,
     // reading
     getRecent,
+    getInRange,
     getBySeverity,
     getForMonth,
     getForDocument

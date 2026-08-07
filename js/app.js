@@ -53,6 +53,10 @@ const App = (() => {
     // 'all' = Company View, or a departmentId for Department View.
     // Shared by the dashboard, the report table and every export.
     departmentFilter: 'all',
+    // Dashboard Analytics is deliberately separate from the monthly report
+    // scope. It filters only raw operational records and never reprices a
+    // frozen payroll/report row.
+    dashboardAnalytics: { period: 'this_month', from: '', to: '', auditLogs: [], loading: false, auditTimer: null, auditRequestId: 0 },
     sort: { key: 'name', dir: 'asc' },
     searchTerm: '',
     employeeSearchTerm: '',
@@ -235,6 +239,7 @@ const App = (() => {
 
     if (Permissions.can('settlements.read')) loadSettlements();
     loadDashboardStatusData();
+    applyDashboardAnalyticsFilters();
 
     // Re-offer an undo that was still live when the page reloaded. The 30s
     // window is measured from the original operation, so a refresh can't
@@ -300,6 +305,7 @@ const App = (() => {
     renderReportApprovalStatus();
     renderArchiveTable();
     renderMonthStatusUI();
+    renderDashboardScopeControls();
     MonthComparison.refreshMonths();
   }
 
@@ -310,6 +316,35 @@ const App = (() => {
     });
 
     document.getElementById('logoutBtn').addEventListener('click', () => Auth.logout());
+
+    // Dashboard scopes are read-only selectors. The monthly scope reuses the
+    // existing selected-month/department state; analytics keeps an isolated
+    // date range and therefore cannot alter reports, exports, or payroll.
+    document.getElementById('dashboardMonthlyScopeForm').addEventListener('submit', e => e.preventDefault());
+    document.getElementById('dashboardMonthFilter').addEventListener('change', async e => {
+      const monthId = e.target.value;
+      if (monthId && monthId !== state.currentMonthId) await selectMonth(monthId);
+    });
+    document.getElementById('dashboardDepartmentFilter').addEventListener('change', e => {
+      state.departmentFilter = e.target.value || 'all';
+      renderReportTable();
+      renderDashboard();
+    });
+    document.getElementById('dashboardAnalyticsPeriod').addEventListener('change', () => applyDashboardAnalyticsFilters());
+    ['dashboardAnalyticsFrom', 'dashboardAnalyticsTo'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => applyDashboardAnalyticsFilters());
+    });
+    document.getElementById('dashboardAnalyticsFilters').addEventListener('submit', async e => {
+      e.preventDefault();
+      await refreshDashboardAnalytics();
+    });
+    document.getElementById('resetDashboardAnalyticsBtn').addEventListener('click', () => {
+      const previous = state.dashboardAnalytics || {};
+      if (previous.auditTimer) clearTimeout(previous.auditTimer);
+      state.dashboardAnalytics = { period: 'this_month', from: '', to: '', auditLogs: [], loading: false, auditTimer: null, auditRequestId: (previous.auditRequestId || 0) + 1 };
+      renderDashboardAnalyticsControls();
+      applyDashboardAnalyticsFilters();
+    });
 
     // Dark mode / sidebar preference (UI-only, Local Storage is fine here)
     const collapsed = localStorage.getItem('sidebarCollapsed') === '1';
@@ -4713,6 +4748,180 @@ const App = (() => {
   }
 
   /* ============================================================
+   * DASHBOARD DATA SCOPES
+   * ------------------------------------------------------------
+   * Monthly report data and date-based operations deliberately travel on
+   * different paths. This keeps a frozen payroll snapshot truthful while
+   * allowing instant analytics over the already-authorised order cache.
+   * ============================================================ */
+
+  function localDateKey(value) {
+    if (!value) return '';
+    const direct = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+    if (direct) return direct[1];
+    const date = Utils.toDateSafe(value);
+    if (!date) return '';
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  function todayDateKey() { return localDateKey(new Date()); }
+
+  function shiftDateKey(base, days) {
+    const [year, month, day] = String(base).split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + days);
+    return localDateKey(date);
+  }
+
+  function dashboardAnalyticsRange() {
+    const analytics = state.dashboardAnalytics || {};
+    const today = todayDateKey();
+    const period = analytics.period || 'this_month';
+    if (period === 'today') return { from: today, to: today, label: 'اليوم', valid: true };
+    if (period === 'yesterday') { const yesterday = shiftDateKey(today, -1); return { from: yesterday, to: yesterday, label: 'أمس', valid: true }; }
+    if (period === 'last_7_days') return { from: shiftDateKey(today, -6), to: today, label: 'آخر 7 أيام', valid: true };
+    if (period === 'last_30_days') return { from: shiftDateKey(today, -29), to: today, label: 'آخر 30 يوم', valid: true };
+    if (period === 'last_month') {
+      const [year, month] = today.split('-').map(Number);
+      const first = new Date(year, month - 2, 1);
+      const last = new Date(year, month - 1, 0);
+      return { from: localDateKey(first), to: localDateKey(last), label: 'الشهر الماضي', valid: true };
+    }
+    if (period === 'custom') {
+      const from = localDateKey(analytics.from), to = localDateKey(analytics.to);
+      return { from, to, label: from && to ? 'فترة مخصصة' : 'حدد تاريخ البداية والنهاية', valid: Boolean(from && to && from <= to) };
+    }
+    return { from: `${today.slice(0, 8)}01`, to: today, label: 'هذا الشهر', valid: true };
+  }
+
+  function renderDashboardScopeControls() {
+    const monthSelect = document.getElementById('dashboardMonthFilter');
+    const departmentSelect = document.getElementById('dashboardDepartmentFilter');
+    if (monthSelect) {
+      const months = (Months.all ? Months.all() : []).slice().sort((a, b) => String(b.id).localeCompare(String(a.id)));
+      monthSelect.innerHTML = months.map(month => `<option value="${Utils.escapeHtml(month.id)}">${Utils.escapeHtml(Utils.monthLabelFromId(month.id))}</option>`).join('') || '<option value="">لا يوجد شهر متاح</option>';
+      monthSelect.value = months.some(month => month.id === state.currentMonthId) ? state.currentMonthId : '';
+    }
+    if (departmentSelect) {
+      const departments = Departments.all ? Departments.all() : [];
+      departmentSelect.innerHTML = '<option value="all">كل الأقسام</option>' + departments.map(d => `<option value="${Utils.escapeHtml(d.id)}">${Utils.escapeHtml(d.name)}${d.status === Departments.STATUS.ARCHIVED ? ' (مؤرشف)' : ''}</option>`).join('');
+      departmentSelect.value = state.departmentFilter === 'all' || departments.some(d => d.id === state.departmentFilter) ? state.departmentFilter : 'all';
+    }
+  }
+
+  function renderDashboardAnalyticsControls() {
+    const analytics = state.dashboardAnalytics || {};
+    const period = document.getElementById('dashboardAnalyticsPeriod');
+    const from = document.getElementById('dashboardAnalyticsFrom');
+    const to = document.getElementById('dashboardAnalyticsTo');
+    const isCustom = analytics.period === 'custom';
+    if (period) period.value = analytics.period || 'this_month';
+    if (from) from.value = analytics.from || '';
+    if (to) to.value = analytics.to || '';
+    ['dashboardAnalyticsFromWrap', 'dashboardAnalyticsToWrap'].forEach(id => document.getElementById(id)?.classList.toggle('hidden', !isCustom));
+  }
+
+  function getDashboardAnalyticsOrders() {
+    const range = dashboardAnalyticsRange();
+    if (!range.valid || typeof OrdersManagement === 'undefined') return [];
+    return OrdersManagement.getAll().filter(order => {
+      const date = localDateKey(order.orderDate);
+      return Boolean(date) && date >= range.from && date <= range.to &&
+        (state.departmentFilter === 'all' || order.departmentId === state.departmentFilter);
+    });
+  }
+
+  function renderDashboardAnalyticsCards(orders) {
+    const canReadOrders = typeof Permissions === 'undefined' || Permissions.can('orders.read');
+    const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = canReadOrders ? value : '—'; };
+    const delivered = orders.filter(order => Utils.normalizeName(order.shipmentStatus || '').includes('تسليم')).length;
+    set('analyticsOrdersCount', Utils.formatNumber(orders.length));
+    set('analyticsPackagesCount', Utils.formatNumber(orders.reduce((sum, order) => sum + (Number(order.packages) || 0), 0)));
+    set('analyticsSalesValue', Utils.formatCurrency(orders.reduce((sum, order) => sum + (Number(order.saleValue === undefined ? order.price : order.saleValue) || 0), 0)));
+    set('analyticsDeliveredCount', Utils.formatNumber(delivered));
+    const caption = document.getElementById('dashboardAnalyticsCardsCaption');
+    if (caption) caption.textContent = canReadOrders ? 'من الطلبات ضمن الفترة المحددة' : 'غير متاح حسب الصلاحيات';
+    const empty = document.getElementById('dashboardAnalyticsEmpty');
+    const range = dashboardAnalyticsRange();
+    if (empty) {
+      const shouldShow = canReadOrders && range.valid && !state.dashboardAnalytics.loading && orders.length === 0;
+      empty.classList.toggle('hidden', !shouldShow);
+      if (shouldShow) empty.textContent = 'لا توجد طلبات مؤرخة ضمن الفترة والقسم المحددين. جرّب نطاقًا آخر أو تأكد من تاريخ الطلبات المستوردة.';
+    }
+  }
+
+  function renderDashboardCurrentScopeSummary() {
+    const target = document.getElementById('dashboardCurrentScopeSummary');
+    if (!target) return;
+    const range = dashboardAnalyticsRange();
+    const department = state.departmentFilter === 'all' ? 'كل الأقسام' : Departments.nameOf(state.departmentFilter, 'القسم المحدد');
+    target.innerHTML = `<strong>النطاق الحالي:</strong>&nbsp; التقرير الشهري — ${Utils.escapeHtml(currentMonthLabel() || '—')} / ${Utils.escapeHtml(department)} &nbsp;•&nbsp; التحليلات التشغيلية — ${Utils.escapeHtml(range.label)}${range.valid ? ` (${Utils.escapeHtml(range.from)} إلى ${Utils.escapeHtml(range.to)})` : ''}`;
+  }
+
+  function applyDashboardAnalyticsFilters(options = {}) {
+    const analytics = state.dashboardAnalytics || {};
+    analytics.period = document.getElementById('dashboardAnalyticsPeriod')?.value || 'this_month';
+    analytics.from = document.getElementById('dashboardAnalyticsFrom')?.value || '';
+    analytics.to = document.getElementById('dashboardAnalyticsTo')?.value || '';
+    state.dashboardAnalytics = analytics;
+    renderDashboardAnalyticsControls();
+    const range = dashboardAnalyticsRange();
+    const status = document.getElementById('dashboardAnalyticsScopeLabel');
+    if (status) status.textContent = range.valid ? (analytics.loading ? 'جارٍ تحديث التحليلات…' : `${range.label}: ${range.from} — ${range.to}`) : 'أدخل تاريخ بداية ونهاية صحيحين.';
+    renderDashboard();
+    if (range.valid && !options.skipAudit) {
+      if (options.immediateAudit) return loadDashboardAnalyticsAudit(range);
+      scheduleDashboardAnalyticsAudit(range);
+    }
+  }
+
+  function scheduleDashboardAnalyticsAudit(range) {
+    const analytics = state.dashboardAnalytics;
+    if (analytics.auditTimer) clearTimeout(analytics.auditTimer);
+    analytics.auditTimer = setTimeout(() => {
+      analytics.auditTimer = null;
+      loadDashboardAnalyticsAudit(range);
+    }, 220);
+  }
+
+  async function loadDashboardAnalyticsAudit(range = dashboardAnalyticsRange()) {
+    if (!range.valid || !Permissions.can('audit.read') || typeof AuditService === 'undefined' || typeof AuditService.getInRange !== 'function') return;
+    const requestId = (state.dashboardAnalytics.auditRequestId || 0) + 1;
+    state.dashboardAnalytics.auditRequestId = requestId;
+    try {
+      const logs = await AuditService.getInRange(range.from, range.to, 50);
+      // Ignore an older asynchronous response after the user changed range.
+      const current = dashboardAnalyticsRange();
+      if (state.dashboardAnalytics.auditRequestId === requestId && current.from === range.from && current.to === range.to) {
+        state.dashboardAnalytics.auditLogs = logs;
+        renderDashboard();
+      }
+    } catch (err) {
+      if (state.dashboardAnalytics.auditRequestId === requestId) {
+        state.dashboardAnalytics.auditLogs = [];
+        renderDashboard();
+      }
+    }
+  }
+
+  async function refreshDashboardAnalytics() {
+    const button = document.getElementById('refreshDashboardAnalyticsBtn');
+    state.dashboardAnalytics.loading = true;
+    if (button) button.disabled = true;
+    try {
+      // Paint the loading state before the read begins, without starting a
+      // competing delayed Audit request.
+      applyDashboardAnalyticsFilters({ skipAudit: true });
+      if (typeof OrdersManagement !== 'undefined') await OrdersManagement.refresh();
+      await applyDashboardAnalyticsFilters({ immediateAudit: true });
+    } finally {
+      state.dashboardAnalytics.loading = false;
+      applyDashboardAnalyticsFilters();
+      if (button) button.disabled = false;
+    }
+  }
+
+  /* ============================================================
    * RENDERING - DASHBOARD
    * ============================================================ */
 
@@ -4721,18 +4930,23 @@ const App = (() => {
     const rows = scopedReport();
     const totals = Reports.computeTotals(rows);
     const departmentTotals = displayDepartmentTotals();
+    const analyticsOrders = getDashboardAnalyticsOrders();
     const canReadReports = typeof Permissions === 'undefined' || Permissions.can('reports.read');
+    renderDashboardScopeControls();
+    renderDashboardAnalyticsControls();
     renderScopeLabels();
+    renderDashboardCurrentScopeSummary();
     renderDashboardCards(rows, totals);
+    renderDashboardAnalyticsCards(analyticsOrders);
     renderDashboardStatus();
-    renderDashboardHighlights(rows, departmentTotals);
+    renderDashboardHighlights(analyticsOrders);
     renderDepartmentBreakdown(departmentTotals);
     // Charts are a visual extra, not core data. A drawing failure (e.g. the
     // Chart.js CDN script failing to load) must never break "Calculate" or
     // any other flow that renders the dashboard afterwards.
     try {
       if (typeof Charts !== 'undefined') {
-        Charts.renderAllCharts(canReadReports ? rows : [], {
+        Charts.renderDashboardScopes(canReadReports ? rows : [], analyticsOrders, {
           departmentTotals: canReadReports ? departmentTotals : [],
           isCompanyView: state.departmentFilter === 'all',
           colorOf: (id) => Departments.colorOf(id)
@@ -4742,11 +4956,7 @@ const App = (() => {
       console.error('تعذر رسم الرسومات البيانية:', err);
     }
     if (typeof DashboardWidgets !== 'undefined') {
-      const dashboardOrders = typeof OrdersManagement === 'undefined' ? [] : OrdersManagement.getAll().filter(order =>
-        order.monthId === state.currentMonthId &&
-        (state.departmentFilter === 'all' || order.departmentId === state.departmentFilter)
-      );
-      DashboardWidgets.refresh({ orders: dashboardOrders, auditLogs: state.auditLogs });
+      DashboardWidgets.refresh({ orders: analyticsOrders, auditLogs: state.dashboardAnalytics.auditLogs || [] });
     }
   }
 
@@ -4826,7 +5036,7 @@ const App = (() => {
       ? (latestImport ? Utils.formatDateTime(latestImport.at || latestImport.createdAt) : 'لا توجد بيانات محملة') : 'غير متاح');
   }
 
-  function renderDashboardHighlights(rows, departmentTotals) {
+  function renderDashboardHighlights(orders) {
     const employeeBox = document.getElementById('dashboardEmployeeHighlights');
     const departmentBox = document.getElementById('dashboardDepartmentHighlights');
     if (!employeeBox || !departmentBox) return;
@@ -4839,44 +5049,46 @@ const App = (() => {
         <span class="dashboard-insight-value">${Utils.escapeHtml(value)}</span>
       </div>`;
 
-    const canReadReports = typeof Permissions === 'undefined' || Permissions.can('reports.read');
-    if (!canReadReports) {
-      employeeBox.innerHTML = '<div class="empty-state">لا تملك صلاحية عرض بيانات التقرير.</div>';
-      departmentBox.innerHTML = '<div class="empty-state">لا تملك صلاحية عرض بيانات التقرير.</div>';
+    const canReadOrders = typeof Permissions === 'undefined' || Permissions.can('orders.read');
+    if (!canReadOrders) {
+      employeeBox.innerHTML = '<div class="empty-state">لا تملك صلاحية عرض بيانات الطلبات.</div>';
+      departmentBox.innerHTML = '<div class="empty-state">لا تملك صلاحية عرض بيانات الطلبات.</div>';
       return;
     }
-    if (!rows || rows.length === 0) {
-      employeeBox.innerHTML = '<div class="empty-state">احسب التقرير لعرض مؤشرات الموظفين.</div>';
-    } else {
-      const topBonus = maxBy(rows, 'totalBonus');
-      const topSales = maxBy(rows, 'totalSales');
-      const topOrders = maxBy(rows, 'ordersCount');
-      const topPackages = maxBy(rows, 'totalPackages');
-      employeeBox.innerHTML = [
-        insight('أعلى بونص', topBonus.name, Utils.formatCurrency(topBonus.totalBonus || 0)),
-        insight('أعلى مبيعات', topSales.name, Utils.formatCurrency(topSales.totalSales || 0)),
-        insight('أكثر طلبات', topOrders.name, Utils.formatNumber(topOrders.ordersCount || 0)),
-        insight('أفضل أداء (طرود)', topPackages.name, Utils.formatNumber(topPackages.totalPackages || 0))
-      ].join('');
-    }
-
-    let departments = Array.isArray(departmentTotals) ? departmentTotals : [];
-    if (state.departmentFilter !== 'all') {
-      departments = departments.filter(d => d.departmentId === state.departmentFilter);
-    }
-    if (!departments.length) {
-      departmentBox.innerHTML = '<div class="empty-state">لا توجد بيانات أقسام محسوبة لهذا الشهر.</div>';
+    const group = (key, name) => {
+      const map = new Map();
+      (orders || []).forEach(order => {
+        const id = order[key] || 'unknown';
+        const row = map.get(id) || { name: order[name] || 'غير محدد', orders: 0, packages: 0, sales: 0 };
+        row.orders += 1;
+        row.packages += Number(order.packages) || 0;
+        row.sales += Number(order.saleValue === undefined ? order.price : order.saleValue) || 0;
+        map.set(id, row);
+      });
+      return [...map.values()];
+    };
+    const employees = group('moderatorId', 'moderatorName');
+    const departments = group('departmentId', 'departmentName');
+    if (!employees.length) {
+      employeeBox.innerHTML = '<div class="empty-state">لا توجد طلبات ضمن الفترة المحددة.</div>';
+      departmentBox.innerHTML = '<div class="empty-state">لا توجد أقسام تشغيلية ضمن الفترة المحددة.</div>';
       return;
     }
-    const topDepartment = maxBy(departments, 'finalSalary');
-    const productiveDepartment = maxBy(departments, 'totalSales');
-    const costlyDepartment = maxBy(departments, 'totalAdvances');
-    const salaryDepartment = maxBy(departments, 'totalSalary');
+    const topSales = maxBy(employees, 'sales');
+    const topOrders = maxBy(employees, 'orders');
+    const topPackages = maxBy(employees, 'packages');
+    employeeBox.innerHTML = [
+      insight('أعلى مبيعات', topSales.name, Utils.formatCurrency(topSales.sales)),
+      insight('أكثر طلبات', topOrders.name, Utils.formatNumber(topOrders.orders)),
+      insight('أكثر طرود', topPackages.name, Utils.formatNumber(topPackages.packages))
+    ].join('');
+    const productiveDepartment = maxBy(departments, 'sales');
+    const topDepartmentOrders = maxBy(departments, 'orders');
+    const topDepartmentPackages = maxBy(departments, 'packages');
     departmentBox.innerHTML = [
-      insight('أعلى قسم صافيًا', topDepartment.departmentName, Utils.formatCurrency(topDepartment.finalSalary || 0)),
-      insight('الأكثر إنتاجًا', productiveDepartment.departmentName, Utils.formatCurrency(productiveDepartment.totalSales || 0)),
-      insight('أعلى خصومات/سلف', costlyDepartment.departmentName, Utils.formatCurrency(costlyDepartment.totalAdvances || 0)),
-      insight('أعلى رواتب أساسية', salaryDepartment.departmentName, Utils.formatCurrency(salaryDepartment.totalSalary || 0))
+      insight('الأكثر مبيعات', productiveDepartment.name, Utils.formatCurrency(productiveDepartment.sales)),
+      insight('الأكثر طلبات', topDepartmentOrders.name, Utils.formatNumber(topDepartmentOrders.orders)),
+      insight('الأكثر طرود', topDepartmentPackages.name, Utils.formatNumber(topDepartmentPackages.packages))
     ].join('');
   }
 
