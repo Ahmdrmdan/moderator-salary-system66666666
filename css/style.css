@@ -1197,7 +1197,7 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
   min-width: min(100%, 430px);
   min-height: 0;
   padding: 13px 18px;
-  margin-inline-start: auto;
+  margin-inline-end: auto;
   margin-bottom: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
