@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Dashboard UI / UX consistency audit (awaiting review)
+
+- Re-composed the Dashboard visually without changing its data, Firebase queries, permissions, actions, chart configuration, or calculation behavior.
+- Reworked the Hero into a responsive two-column composition: the monthly narrative and the existing status items now have clear hierarchy instead of competing in one undifferentiated band.
+- Standardized Dashboard KPI cards into a label/value/icon hierarchy, with balanced operational and financial grids across desktop, tablet, and mobile widths.
+- Refined the Dashboard quick-action rail, section headings, alerts, insights, widgets, charts, Topbar, and Sidebar using the existing dark visual language, shared controls, and existing icon conversion.
+- Added Dashboard visual contract coverage for the cache-busted stylesheet, responsive Hero, KPI card hierarchy, and financial KPI grid while retaining every existing binding and quick-action ID.
+
 ## Unreleased — Users lifecycle and management-layout hotfix (awaiting review)
 
 - Clarified the safe Firebase Authentication lifecycle: an account created in Firebase Authentication receives its `users/{uid}` document at its first application sign-in as a pending, zero-permission profile; an existing Super Admin then activates it through User Management. This preserves the current secure no-self-escalation boundary.
