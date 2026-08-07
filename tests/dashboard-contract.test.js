@@ -16,8 +16,20 @@ assert.match(htmlSource, /<script src="js\/vendor\/chart\.umd\.js"><\/script>/,
 assert.ok(fs.existsSync('js/vendor/chart.umd.js'), 'the Chart.js UMD build is shipped with the application');
 assert.doesNotMatch(htmlSource, /(?:cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com).*Chart\.js|chart\.js@/i,
   'dashboard does not rely on an external Chart.js CDN at runtime');
-assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.0\.11-system-ui-ux-audit-r6">/,
-  'dashboard cache-busts the shared stylesheet after the system UI/UX audit');
+assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.1\.0-dashboard-analytics">/,
+  'dashboard cache-busts the shared stylesheet after the analytics release');
+assert.match(htmlSource, /id="dashboardMonthlyScopeForm"[\s\S]*?id="dashboardMonthFilter"[\s\S]*?id="dashboardDepartmentFilter"/,
+  'monthly Dashboard scope exposes independent month and department selectors');
+assert.match(htmlSource, /id="dashboardAnalyticsFilters"[\s\S]*?id="dashboardAnalyticsPeriod"[\s\S]*?id="dashboardAnalyticsFrom"[\s\S]*?id="dashboardAnalyticsTo"/,
+  'operational analytics exposes a date-period filter with custom range inputs');
+assert.match(appSource, /dashboardAnalytics: \{ period: 'this_month'[\s\S]*?function getDashboardAnalyticsOrders\(\)[\s\S]*?order\.orderDate/,
+  'analytics date scope is isolated from the monthly report state and filters raw order dates');
+assert.match(appSource, /function renderDashboard\(\)[\s\S]*?renderDashboardAnalyticsCards\(analyticsOrders\)[\s\S]*?DashboardWidgets\.refresh\(\{ orders: analyticsOrders, auditLogs: state\.dashboardAnalytics\.auditLogs/,
+  'Dashboard sends the operational scope only to operational cards and widgets');
+assert.match(chartsSource, /function renderDashboardScopes\(monthlyReport, operationalOrders, options = \{\}\)/,
+  'monthly and operational charts render through explicitly separate scopes');
+assert.match(widgetsSource, /function refresh\(context = \{\}\)/,
+  'operational widgets retain their existing cache-only refresh boundary');
 
 // The UI audit is explicitly visual-only. These stable hooks guarantee that
 // the existing data bindings and quick-action controls remain in place.
