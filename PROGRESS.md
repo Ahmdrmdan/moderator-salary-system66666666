@@ -1,6 +1,6 @@
 # PROGRESS.md — Final Production Audit
 
-## System UI / UX Consistency Audit — Phase 2 (awaiting user review)
+## System UI / UX Consistency Audit — Phase 2 (closed and merged as v7.0.11)
 
 ### Visual audit and scope
 
@@ -18,7 +18,7 @@
 
 ### Scope confirmation and review status
 
-- This phase is visual-only, unmerged, and untagged pending user review. No production data was created, changed, or deleted.
+- This phase is visual-only and was merged to `main` after approval as release `v7.0.11`. No production data was created, changed, or deleted.
 - No visual issue requiring a functional change was identified. Potential future product ideas remain outside this audit and were not implemented.
 
 ## Dashboard UI / UX Consistency Audit — Phase 1 (closed and approved)

@@ -1,11 +1,11 @@
 # Changelog
 
-## Unreleased — System UI / UX consistency audit: phase 2 (awaiting review)
+## [7.0.11] — 2026-08-07 (UI / UX consistency release)
 
 - Extended the approved Dashboard design language across Departments, Employees, Orders (including Import and Shipping tabs), Months, Month Comparison, Reports and Salary views, Transactions, Settlements, Archive, Backups, Audit, Settings, and User Management.
 - Standardized visual-only layout primitives: content widths, panel surfaces, section headers, action/filter rails, buttons, visible form controls, data-table header and row rhythm, tab states, empty/drop states, and modal sizing/scrolling.
 - Added responsive behavior for wide workspaces, stacked action rails, tables, forms, tabs, and modal interiors without changing any application workflow or data.
-- Preserved every business action, Firestore access path, permission check, query, calculation, role, and JavaScript event binding. This phase contains stylesheet and cache-version changes only.
+- Preserved every business action, Firestore access path, permission check, query, calculation, role, and JavaScript event binding. This release contains stylesheet and cache-version changes only.
 
 ## Unreleased — Dashboard UI / UX consistency audit (closed and approved)
 
