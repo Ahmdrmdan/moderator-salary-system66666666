@@ -68,14 +68,13 @@
   <!-- ============================== MAIN CONTENT ============================== -->
   <main class="main-content">
 
-    <div class="topbar">
+    <div class="topbar dashboard-topbar">
       <div>
         <nav class="breadcrumb" aria-label="مسار الصفحة"><span>نظام الرواتب</span><span class="breadcrumb-separator">/</span><strong id="breadcrumbCurrent">نظرة عامة</strong></nav>
         <h1 id="pageTitle">نظرة عامة</h1>
         <div class="subtitle">
           الشهر النشط: <strong id="currentMonthLabel">-</strong>
           <span id="monthStatusBadge" class="badge badge-active">نشط</span>
-          &nbsp;•&nbsp; النطاق: <strong id="dashboardScopeLabel">كل الأقسام</strong>
         </div>
       </div>
     </div>
@@ -93,28 +92,27 @@
 
     <!-- ===================== VIEW: DASHBOARD ===================== -->
     <section class="view active" id="view-dashboard">
-      <section class="dashboard-hero" aria-label="ملخص الشهر">
-        <div class="dashboard-hero-copy"><span class="eyebrow">مساحة عمل الرواتب</span><h2>نظرة مالية وتشغيلية موحّدة</h2><p>راجع جاهزية الشهر، المؤشرات الأساسية، والتنبيهات قبل اعتماد التقرير.</p></div>
-        <div class="dashboard-hero-orbit" aria-hidden="true"></div>
-      <div class="dashboard-status" role="status" aria-live="polite">
-        <div class="dashboard-status-item"><span>الشهر الحالي</span><strong id="dashboardStatusMonth">—</strong></div>
-        <div class="dashboard-status-item"><span>حالة التقرير</span><strong id="dashboardStatusReport">غير محسوب</strong></div>
-        <div class="dashboard-status-item"><span>آخر Backup</span><strong id="dashboardStatusBackup">لم يتم التحميل</strong></div>
-        <div class="dashboard-status-item"><span>عمليات معلّقة</span><strong id="dashboardStatusPending">0</strong></div>
-        <div class="dashboard-status-item"><span>آخر استيراد</span><strong id="dashboardStatusImport">لا توجد بيانات</strong></div>
-      </div>
+      <section class="dashboard-hero dashboard-status-bar" aria-label="حالة الشهر والتقرير">
+        <div class="dashboard-status" role="status" aria-live="polite">
+          <div class="dashboard-status-item"><span>حالة التقرير</span><strong id="dashboardStatusReport">غير محسوب</strong></div>
+          <div class="dashboard-status-item"><span>الشهر الحالي</span><strong id="dashboardStatusMonth">—</strong></div>
+          <div class="dashboard-status-item"><span>القسم</span><strong id="dashboardScopeLabel">كل الأقسام</strong></div>
+          <div class="dashboard-status-item"><span>آخر استيراد</span><strong id="dashboardStatusImport">لا توجد بيانات</strong></div>
+          <div class="dashboard-status-item"><span>آخر Backup</span><strong id="dashboardStatusBackup">لم يتم التحميل</strong></div>
+          <div class="dashboard-status-item"><span>عمليات معلّقة</span><strong id="dashboardStatusPending">0</strong></div>
+        </div>
       </section>
 
-      <section class="dashboard-filter-stack" aria-label="نطاقات لوحة التحكم">
+      <section class="dashboard-filter-stack dashboard-context-toolbar" aria-label="نطاقات لوحة التحكم">
         <form class="dashboard-scope-panel dashboard-monthly-scope" id="dashboardMonthlyScopeForm">
-          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📊</span><div><span class="eyebrow">Monthly Scope</span><h2>نطاق التقرير الشهري</h2><p>يتحكم في التقرير وSnapshot الرواتب والبونص والسلف والتسويات.</p></div></div>
+          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📊</span><div><h2>نطاق التقرير الشهري</h2></div></div>
           <div class="dashboard-filter-controls">
             <label>الشهر<select id="dashboardMonthFilter" aria-label="الشهر المعروض في التقرير الشهري"></select></label>
             <label>القسم<select id="dashboardDepartmentFilter" aria-label="القسم المعروض في التقرير الشهري"><option value="all">كل الأقسام</option></select></label>
           </div>
         </form>
         <form class="dashboard-scope-panel dashboard-analytics-scope" id="dashboardAnalyticsFilters">
-          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📈</span><div><span class="eyebrow">Analytics Filters</span><h2>التحليلات التشغيلية</h2><p>تؤثر فقط في الطلبات والشحن والرسوم التشغيلية والنشاط والتنبيهات.</p></div></div>
+          <div class="dashboard-filter-heading"><span class="dashboard-filter-icon">📈</span><div><h2>التحليلات التشغيلية</h2></div></div>
           <div class="dashboard-filter-controls">
             <label>الفترة<select id="dashboardAnalyticsPeriod" aria-label="فترة التحليلات التشغيلية"><option value="today">اليوم</option><option value="yesterday">أمس</option><option value="last_7_days">آخر 7 أيام</option><option value="last_30_days">آخر 30 يوم</option><option value="this_month" selected>هذا الشهر</option><option value="last_month">الشهر الماضي</option><option value="custom">تاريخ مخصص</option></select></label>
             <label class="dashboard-custom-date hidden" id="dashboardAnalyticsFromWrap">من<input type="date" id="dashboardAnalyticsFrom" aria-label="بداية الفترة المخصصة"></label>
@@ -124,31 +122,6 @@
           <p class="dashboard-filter-status" id="dashboardAnalyticsScopeLabel" aria-live="polite"></p>
         </form>
       </section>
-
-      <div class="dashboard-current-scope" id="dashboardCurrentScopeSummary" role="status" aria-live="polite"></div>
-
-      <div class="dashboard-quick-actions" aria-label="إجراءات سريعة">
-        <button class="btn" id="quickAddEmployeeBtn" data-permission="employees.write">➕ إضافة موظف</button>
-        <button class="btn" id="quickImportOrdersBtn" data-permission="orders.import">📥 استيراد الطلبات</button>
-        <button class="btn btn-accent" id="quickCalculateReportBtn" data-permission="reports.calculate">🧮 حساب التقرير</button>
-        <button class="btn" id="quickApproveReportBtn" data-permission="reports.approve">✅ اعتماد التقرير</button>
-        <button class="btn" id="quickBackupBtn" data-permission="backups.create">📦 نسخة احتياطية</button>
-      </div>
-
-      <section class="dashboard-alerts" aria-label="تنبيهات الشهر">
-        <div class="section-heading"><div><span class="eyebrow">متابعة ذكية</span><h2>تنبيهات وإجراءات مقترحة</h2></div><span class="section-caption">تُحدّث من حالة الشهر الحالية</span></div>
-        <div class="alerts-grid" id="dashboardAlertsGrid"><div class="alert-card alert-info"><span class="alert-icon">ℹ️</span><div><strong>حالة التقرير</strong><p>استخدم اعتماد التقرير لإجراء فحص Smart Approval قبل القفل.</p></div></div></div>
-      </section>
-
-      <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">Monthly Snapshot</span><h2>ملخص التقرير الشهري</h2></div><span class="section-caption">لا يتأثر بفترة التحليلات</span></div>
-      <div class="cards-grid cards-grid-operational">
-        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="cardTotalModerators">0</div><div class="stat-label">إجمالي الموظفين</div></div>
-        <div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-value" id="cardActiveEmployees">0</div><div class="stat-label">الموظفون النشطون</div></div>
-        <div class="stat-card"><div class="stat-icon">🏢</div><div class="stat-value" id="cardTotalDepartments">0</div><div class="stat-label">الأقسام النشطة</div></div>
-        <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value" id="cardTotalHours">0</div><div class="stat-label">إجمالي ساعات العمل</div></div>
-        <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="cardTotalOrders">0</div><div class="stat-label">إجمالي الطلبات</div></div>
-        <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-value" id="cardTotalPackages">0</div><div class="stat-label">إجمالي الطرود</div></div>
-      </div>
 
       <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">الذمة المالية</span><h2>المؤشرات المالية</h2></div><span class="section-caption">القيم المسجلة في التقرير</span></div>
       <div class="cards-grid dashboard-financial-grid">
@@ -160,6 +133,29 @@
         <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-value" id="cardTransactionCount">0</div><div class="stat-label">عدد السلف والتسويات</div></div>
         <div class="stat-card"><div class="stat-icon">📌</div><div class="stat-value" id="cardTotalCarriedDebt">0</div><div class="stat-label">ديون مرحّلة للشهر القادم</div></div>
         <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-value" id="cardTotalFinalSalaries">0</div><div class="stat-label">صافي المستحقات</div></div>
+      </div>
+
+      <div class="section-heading dashboard-metrics-heading"><div><span class="eyebrow">Monthly Snapshot</span><h2>ملخص التقرير الشهري</h2></div><span class="section-caption">لا يتأثر بفترة التحليلات</span></div>
+      <div class="cards-grid cards-grid-operational">
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value" id="cardTotalModerators">0</div><div class="stat-label">إجمالي الموظفين</div></div>
+        <div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-value" id="cardActiveEmployees">0</div><div class="stat-label">الموظفون النشطون</div></div>
+        <div class="stat-card"><div class="stat-icon">🏢</div><div class="stat-value" id="cardTotalDepartments">0</div><div class="stat-label">الأقسام النشطة</div></div>
+        <div class="stat-card"><div class="stat-icon">⏱️</div><div class="stat-value" id="cardTotalHours">0</div><div class="stat-label">إجمالي ساعات العمل</div></div>
+        <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-value" id="cardTotalOrders">0</div><div class="stat-label">إجمالي الطلبات</div></div>
+        <div class="stat-card"><div class="stat-icon">🧾</div><div class="stat-value" id="cardTotalPackages">0</div><div class="stat-label">إجمالي الطرود</div></div>
+      </div>
+
+      <section class="dashboard-alerts" aria-label="تنبيهات الشهر">
+        <div class="section-heading"><div><span class="eyebrow">متابعة ذكية</span><h2>تنبيهات وإجراءات مقترحة</h2></div><span class="section-caption">تُحدّث من حالة الشهر الحالية</span></div>
+        <div class="alerts-grid" id="dashboardAlertsGrid"><div class="alert-card alert-info"><span class="alert-icon">ℹ️</span><div><strong>حالة التقرير</strong><p>استخدم اعتماد التقرير لإجراء فحص Smart Approval قبل القفل.</p></div></div></div>
+      </section>
+
+      <div class="dashboard-quick-actions" aria-label="إجراءات سريعة">
+        <button class="btn" id="quickAddEmployeeBtn" data-permission="employees.write">➕ إضافة موظف</button>
+        <button class="btn" id="quickImportOrdersBtn" data-permission="orders.import">📥 استيراد الطلبات</button>
+        <button class="btn btn-accent" id="quickCalculateReportBtn" data-permission="reports.calculate">🧮 حساب التقرير</button>
+        <button class="btn" id="quickApproveReportBtn" data-permission="reports.approve">✅ اعتماد التقرير</button>
+        <button class="btn" id="quickBackupBtn" data-permission="backups.create">📦 نسخة احتياطية</button>
       </div>
 
       <section class="dashboard-analytics-section" aria-label="مؤشرات التحليلات التشغيلية">
