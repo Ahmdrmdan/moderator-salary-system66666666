@@ -2404,6 +2404,9 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   #view-report .report-status-rail { width:100%; min-width:0; max-width:520px; }
   #view-report .report-workflow-card { grid-template-columns:1fr; gap:10px; }
   #view-report .report-workflow { justify-content:flex-start; }
+  /* Tables and the workflow retain their own deliberate horizontal scrollers.
+     Do not let their intrinsic width make the application shell scroll. */
+  #view-report .monthly-report-shell { overflow-x:clip; }
 }
 @media (max-width:900px) {
   #view-report .report-workflow-header { gap:12px; padding:18px; }
