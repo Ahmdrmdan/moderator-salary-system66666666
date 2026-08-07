@@ -6,6 +6,7 @@
 - Reworked the Hero into a responsive two-column composition: the monthly narrative and the existing status items now have clear hierarchy instead of competing in one undifferentiated band.
 - Standardized Dashboard KPI cards into a label/value/icon hierarchy, with balanced operational and financial grids across desktop, tablet, and mobile widths.
 - Refined the Dashboard quick-action rail, section headings, alerts, insights, widgets, charts, Topbar, and Sidebar using the existing dark visual language, shared controls, and existing icon conversion.
+- Final visual review balanced the compact RTL Topbar against the Hero and makes a single alert span its row instead of leaving an unexplained empty grid area.
 - Added Dashboard visual contract coverage for the cache-busted stylesheet, responsive Hero, KPI card hierarchy, and financial KPI grid while retaining every existing binding and quick-action ID.
 
 ## Unreleased — Users lifecycle and management-layout hotfix (awaiting review)
