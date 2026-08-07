@@ -1,6 +1,6 @@
 # PROGRESS.md — Final Production Audit
 
-## Monthly Report 2.0 UI / UX — awaiting review
+## Monthly Report 2.0 UI / UX — approved for v7.2.0
 
 ### Scope and visual implementation
 
@@ -20,7 +20,8 @@
 ### Scope confirmation and review status
 
 - No Business Logic, salary formula, report/Snapshot calculation, Firestore Schema, Rule, query, permission, role, or production business data changed.
-- This branch is deployed for review only. It has not been merged to `main` and no release tag has been created.
+- Removed the report-only calculation-explanation card after review approval. The table now leads directly into the independent Salary Snapshot surface when one exists.
+- This branch is ready for merge and release as `v7.2.0`.
 
 ## Dashboard Analytics Filters — v7.1.0 (closed and merged)
 

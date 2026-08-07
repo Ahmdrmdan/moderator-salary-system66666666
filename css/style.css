@@ -1241,8 +1241,6 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
 #reportTable .report-decision-column,#reportTable tbody td:nth-child(9),#reportTable tfoot td:nth-child(9) { background:rgba(115,167,255,.07); color:var(--ink); font-weight:800; }
 #reportTable tbody tr:hover td:nth-child(9) { background:rgba(115,167,255,.14); }
 #reportTable td { white-space:nowrap; font-variant-numeric:tabular-nums; }
-.report-method-note { margin:0; color:var(--ink-muted); font-size:12px; line-height:1.85; }
-.report-method-note strong { color:var(--ink); }
 .salary-snapshot-dashboard { display:grid; gap:18px; margin:0; padding:20px; border:1px solid rgba(115,167,255,.22); border-radius:var(--radius-card); background:rgba(25,29,34,.72); }
 .salary-snapshot-dashboard.hidden { display:none; }
 .salary-snapshot-heading { margin-bottom:0; }
@@ -1907,7 +1905,6 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
 #view-report .salary-snapshot-dashboard { margin-bottom:16px; }
 #view-report .report-table-wrap,
 #view-report .salary-snapshot-dashboard .table-wrap { margin:0; }
-#view-report .report-method-note { margin:0; }
 #view-report .salary-snapshot-dashboard .panel-header { min-height:auto; }
 @media (max-width:900px) {
   #view-report .report-table-wrap,

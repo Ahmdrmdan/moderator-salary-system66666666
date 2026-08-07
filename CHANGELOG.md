@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — Monthly Report 2.0 UI / UX
+## [7.2.0] — 2026-08-07 (Monthly Report 2.0 UI / UX)
 
 - Reorganized the existing monthly-report screen into a clear Arabic review workflow: calculate, review, approve the report, approve the independent Salary Snapshot, then record payment. All existing controls, IDs, permissions, calculations, Firestore reads/writes, and Snapshot behavior remain unchanged.
 - Added a visual context strip for the current report scope and the already-stored last calculation/approval/update timestamps. The export indicator is explicitly session-local because the current schema has no persisted export timestamp.
@@ -8,6 +8,7 @@
 - Moved the existing Salary Snapshot into its own clearly labelled review area after the report table, retaining every Snapshot table, payment control, chart, and audit interaction without changing its data or lifecycle.
 - Localized the remaining visible Salary Snapshot status, empty-state, action, and drawer labels into Arabic without changing stored status values or audit semantics.
 - Added a versioned stylesheet/runtime reference so published clients cannot combine this visual layout with cached assets, and updated visual contract expectations accordingly.
+- Removed the non-interactive salary-calculation explanation card from the Report view so the review flow stays focused on decision data; no calculation, record, or control changed.
 
 ## [7.1.0] — 2026-08-07 (Dashboard Analytics Filters)
 
