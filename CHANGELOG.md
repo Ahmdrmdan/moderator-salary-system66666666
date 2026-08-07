@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased — System UI / UX consistency audit: phase 2 (awaiting review)
+
+- Extended the approved Dashboard design language across Departments, Employees, Orders (including Import and Shipping tabs), Months, Month Comparison, Reports and Salary views, Transactions, Settlements, Archive, Backups, Audit, Settings, and User Management.
+- Standardized visual-only layout primitives: content widths, panel surfaces, section headers, action/filter rails, buttons, visible form controls, data-table header and row rhythm, tab states, empty/drop states, and modal sizing/scrolling.
+- Added responsive behavior for wide workspaces, stacked action rails, tables, forms, tabs, and modal interiors without changing any application workflow or data.
+- Preserved every business action, Firestore access path, permission check, query, calculation, role, and JavaScript event binding. This phase contains stylesheet and cache-version changes only.
+
+## Unreleased — Dashboard UI / UX consistency audit (closed and approved)
+
+- Re-composed the Dashboard visually without changing its data, Firebase queries, permissions, actions, chart configuration, or calculation behavior.
+- Reworked the Hero into a responsive two-column composition: the monthly narrative and the existing status items now have clear hierarchy instead of competing in one undifferentiated band.
+- Standardized Dashboard KPI cards into a label/value/icon hierarchy, with balanced operational and financial grids across desktop, tablet, and mobile widths.
+- Refined the Dashboard quick-action rail, section headings, alerts, insights, widgets, charts, Topbar, and Sidebar using the existing dark visual language, shared controls, and existing icon conversion.
+- Final visual review balanced the compact RTL Topbar against the Hero and makes a single alert span its row instead of leaving an unexplained empty grid area.
+- Final polish strengthens the Dashboard reading hierarchy: the Hero status pane has a visible label, the existing Calculate Report action is the clear primary control, alerts have a scan-friendly rail, and Dashboard tables/widgets use consistent row rhythm.
+- Added Dashboard visual contract coverage for the cache-busted stylesheet, responsive Hero, KPI card hierarchy, and financial KPI grid while retaining every existing binding and quick-action ID.
+
 ## Unreleased — Users lifecycle and management-layout hotfix (awaiting review)
 
 - Clarified the safe Firebase Authentication lifecycle: an account created in Firebase Authentication receives its `users/{uid}` document at its first application sign-in as a pending, zero-permission profile; an existing Super Admin then activates it through User Management. This preserves the current secure no-self-escalation boundary.

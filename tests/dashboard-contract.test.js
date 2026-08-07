@@ -16,8 +16,23 @@ assert.match(htmlSource, /<script src="js\/vendor\/chart\.umd\.js"><\/script>/,
 assert.ok(fs.existsSync('js/vendor/chart.umd.js'), 'the Chart.js UMD build is shipped with the application');
 assert.doesNotMatch(htmlSource, /(?:cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com).*Chart\.js|chart\.js@/i,
   'dashboard does not rely on an external Chart.js CDN at runtime');
-assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.0\.10-users-layout-hotfix">/,
-  'dashboard cache-busts the shared layout stylesheet after the latest production hotfix');
+assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.0\.11-system-ui-ux-audit-r6">/,
+  'dashboard cache-busts the shared stylesheet after the system UI/UX audit');
+
+// The UI audit is explicitly visual-only. These stable hooks guarantee that
+// the existing data bindings and quick-action controls remain in place.
+assert.match(htmlSource, /class="cards-grid dashboard-financial-grid">/,
+  'financial KPI cards retain their existing bindings in a visual-only grid');
+assert.match(stylesSource, /#view-dashboard \.dashboard-hero\s*\{[\s\S]*?grid-template-columns:/,
+  'dashboard hero has a responsive visual composition');
+assert.match(stylesSource, /#view-dashboard \.stat-card\s*\{[\s\S]*?grid-template-areas:/,
+  'dashboard KPI cards use a consistent visual hierarchy');
+assert.match(stylesSource, /#view-dashboard \.dashboard-financial-grid\s*\{[\s\S]*?grid-template-columns:/,
+  'financial KPI layout is explicitly responsive');
+assert.match(stylesSource, /#view-dashboard #quickCalculateReportBtn\s*\{[\s\S]*?linear-gradient/,
+  'the existing primary dashboard action has a distinct visual treatment');
+assert.match(stylesSource, /#view-dashboard \.table-wrap thead th\s*\{[\s\S]*?height:\s*48px/,
+  'dashboard table headers have a consistent scan-friendly height');
 
 // Chart.js is responsive with maintainAspectRatio disabled, so the flex child
 // that owns each canvas must be able to shrink. Without this constraint, the

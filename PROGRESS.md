@@ -1,5 +1,57 @@
 # PROGRESS.md — Final Production Audit
 
+## System UI / UX Consistency Audit — Phase 2 (awaiting user review)
+
+### Visual audit and scope
+
+- Audited the remaining application views one by one: Departments, Employees, Orders, Import, Shipping Updates, Months, Month Comparison, Reports, Salary, Transactions, Settlements, Archive, Backups, Audit, Settings, and Users.
+- Root cause: shared components had accumulated page-local spacing, panel, toolbar, form, table, and modal treatments. This produced visual drift even though the underlying workflows were stable.
+- Applied a stylesheet-only shared component layer scoped away from the already-approved Dashboard. It aligns content width, spacing cadence, panel borders/radii, header bands, action rows, buttons, inputs, table density/hover, tabs, state surfaces, and dialog constraints while retaining the existing dark identity.
+- No markup behavior, JavaScript operation, Firestore access, query, permission, data model, calculation, report, or business record was changed.
+
+### Verification and Firebase UAT
+
+- Full regression passed: Dashboard, Departments, Employees, Import, Shipping normalization/matching, production configuration, Reports, Salary Processing, Transactions, and Users & Security contract suites; `git diff --check` also passed.
+- Firebase Hosting deployed successfully from `feature/dashboard-ui-ux-audit` to project `ahmed123-95a0e`.
+- Published UAT navigated every audited view from the live sidebar, opened and closed the existing Department dialog, and switched the existing Orders Import tab without writing data. Each audited view rendered normally with no horizontal overflow.
+- Published component inspection confirmed the shared 12px panel surface, 10px controls, 48px table headers where present, and a scrollable 14px-radius modal with a constrained height. Browser Console and runtime logs remained empty.
+
+### Scope confirmation and review status
+
+- This phase is visual-only, unmerged, and untagged pending user review. No production data was created, changed, or deleted.
+- No visual issue requiring a functional change was identified. Potential future product ideas remain outside this audit and were not implemented.
+
+## Dashboard UI / UX Consistency Audit — Phase 1 (closed and approved)
+
+### Visual root causes
+
+- The Dashboard accumulated several visual override layers. Its Hero, status strip, quick-action rail, and KPI groups followed separate spacing and card rules, so the page lacked a clear visual hierarchy despite functioning correctly.
+- The five existing month-status items were rendered in a single unstructured band. At common desktop widths this competed with the Hero copy; at narrower widths it could require three rows and create excess whitespace.
+- KPI cards inherited generic auto-fit behavior despite two distinct data sets (six operational and eight financial metrics), producing uneven density and inconsistent label/value/icon reading order.
+- The existing Topbar and Sidebar worked correctly but did not visually anchor the Dashboard content as one workspace at the same quality level as the reference.
+
+### Visual-only implementation
+
+- Kept every dashboard ID, data binding, Canvas, button, permission attribute, query, and event handler intact. The only markup classification added is `dashboard-financial-grid` to give the already-existing financial cards a stable visual grid.
+- Introduced a scoped Dashboard composition: Hero copy and status overview, compact action rail, consistent section headings, KPI hierarchy, card rhythm, chart surfaces, tables, insights, and operational widgets.
+- Updated Topbar and Sidebar surfaces, spacing, navigation rhythm, shadows, and active state using the existing dark palette and existing icon system; no role or behavior changed.
+- Added responsive breakpoints for the Hero, status grid, KPI grids, actions, widgets, and charts. At 1280px the status summary is two rows instead of three.
+- Final visual pass anchors the compact Topbar on the RTL content edge and gives a single current-month alert the full available row, eliminating two remaining pockets of unexplained whitespace.
+- Final polish adds no feature or action: it only gives the existing Hero status pane a visible label, strengthens the existing Calculate Report button as the primary action, improves alert scanning, and aligns Dashboard KPI/widget/table padding and row rhythm.
+
+### Verification and Firebase UAT
+
+- Local regression passed: `node tests/dashboard-contract.test.js`, `node --check js/app.js`, `node --check js/charts.js`, and `git diff --check`.
+- Firebase Hosting deployed successfully from `feature/dashboard-ui-ux-audit` to project `ahmed123-95a0e`.
+- Published UAT at 1280×720 loaded `style.css?v=7.0.11-dashboard-ui-ux-audit-r4`; the Hero measured 218px (down from the pre-audit 252px), with five status items in two rows and three columns. The RTL Topbar aligned to the content edge at 430px wide, and the single alert used the full 946px content width at a compact 76px height.
+- All six Dashboard charts remained bounded at a 310px card / 225px wrapper / 205px canvas. Sidebar scrolling remained available (`overflow-y: auto`), all five quick-action controls remained present, and the existing Add Employee quick action opened and closed its dialog without writing data.
+- Browser logs contained no Console or Runtime errors during load, navigation, action-modal open/close, or chart rendering.
+- Final Firebase UAT loaded `style.css?v=7.0.11-dashboard-ui-ux-audit-r5`. The Hero measured 238px with a labelled three-column status pane; the primary action used its intended gradient treatment; the alert remained a compact 76px full-width row with a 3px status rail; Dashboard table headers measured 48px; and all six charts remained bounded at 310px / 225px / 205px. Console and runtime logs remained empty.
+
+### Scope confirmation
+
+- This phase is visual-only and remains unmerged and untagged pending user review. No Firestore document, Authentication account, permission, report, salary, calculation, query, chart dataset, or production business record was changed.
+
 ## Users Lifecycle and Management Layout Hotfix (awaiting user review)
 
 ### Root causes and limited fixes
