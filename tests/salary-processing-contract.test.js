@@ -60,8 +60,8 @@ assert.match(source, /commitWithAudit\(batch=>\{[\s\S]*?batch\.set/, 'approval w
 assert.match(source, /commitWithAudit\(batch=>[\s\S]*?batch\.update/, 'adjustment and payment writes use a batch');
 assert.match(source, /PayrollWorkflow\.metadata\(PayrollWorkflow\.STATE\.READY_FOR_PAYMENT\)[\s\S]*?MONTHLY_REPORTS[\s\S]*?MONTHLY_SUMMARIES/,
   'approved snapshots mirror only existing workflow metadata for resume');
-assert.match(source, /const workflowRoot=\$\('reportWorkspaceManager'\)[\s\S]*?salaryMarkAllPaidBtn[\s\S]*?\[data-pay\]/,
-  'payment controls use stable delegated events after Workspace remounts');
+assert.match(source, /const workflowRoot=\$\('reportWorkspaceManager'\)[\s\S]*?salarySnapshotApproveBtn[\s\S]*?salaryMarkAllPaidBtn[\s\S]*?\[data-pay\]/,
+  'Snapshot approval and payment controls use stable delegated events after Workspace remounts');
 assert.match(source, /AuditService\.appendToBatch\(batch,audit\)/, 'the audit entry shares the financial write batch');
 assert.match(source, /status==='paid'\?'تم الصرف'/, 'paid snapshots have a distinct visible Arabic status');
 assert.match(source, /Permissions\.can\('salary_processing\.write'\)/, 'Snapshot adjustment controls use the existing write capability');

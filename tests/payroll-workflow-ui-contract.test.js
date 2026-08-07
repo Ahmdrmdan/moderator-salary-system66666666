@@ -60,9 +60,12 @@ assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.PAID), 'archive',
   'paid payroll exposes the existing archive action workspace');
 
 const dashboard = fs.readFileSync('dashboard.html', 'utf8');
-for (const state of Object.values(Workflow.STATE)) {
-  assert.match(dashboard, new RegExp(`data-workflow-state="${state}"`), `header includes ${state}`);
-}
+['calculation', 'review', 'approval', 'payroll', 'payment', 'archive'].forEach(stage => {
+  assert.match(dashboard, new RegExp(`data-workflow-stage="${stage}"`), `header includes ${stage} Timeline node`);
+});
+['calculator', 'search-check', 'badge-check', 'file-text', 'wallet-cards', 'archive'].forEach(icon => {
+  assert.match(dashboard, new RegExp(`data-lucide="${icon}"`), `Timeline uses the shared Lucide ${icon} icon`);
+});
 assert.match(dashboard, /id="reportStateWorkspace"/,
   'the state-driven action workspace preserves the existing action identifiers');
 assert.match(dashboard, /id="reportWorkspaceManager"/,
@@ -79,12 +82,14 @@ assert.match(dashboard, /data-workspace-slot="approval-decision"/,
   'the Decision Summary can move into the approval workspace without duplicating its data');
 assert.match(dashboard, /id="reportApprovalAck"/,
   'approval confirmation remains an inline report control, not a dialog-only acknowledgement');
-assert.match(dashboard, /id="reportPreviousStageBtn"/,
-  'the report retains a formal previous-stage control inside the workflow header');
+assert.doesNotMatch(dashboard, /id="reportPreviousStageBtn"/,
+  'the standalone previous-stage control is removed from the header');
 assert.match(uiSource, /function mountWorkspaceSurfaces\(workspace\)/,
   'Workspace Manager mounts existing surfaces into the active workspace');
-assert.match(uiSource, /function renderPreviousStage\(state\)/,
-  'the previous-stage control reflects the persisted workflow state');
+assert.match(uiSource, /function renderHeaderSteps\(state\)[\s\S]*?PayrollWorkflow\.previousState\(state\)[\s\S]*?workflowPrevious/,
+  'only a permitted previous Timeline stage triggers the persisted previous-stage transition');
+assert.match(uiSource, /reportWorkflowSteps[\s\S]*?report-workflow-step\[data-workflow-previous="true"\]/,
+  'the Timeline owns the previous-stage event instead of a standalone button');
 assert.match(uiSource, /SalaryProcessing\.getPaymentSummary\(\)/,
   'Payment Workspace derives its counters from the persisted payroll snapshot');
 assert.doesNotMatch(uiSource, /element\.hidden\s*=/,

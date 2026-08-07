@@ -33,13 +33,24 @@
     // also opened Firestore and enabled persistence immediately before the
     // dashboard opened it again, which could leave a fresh dashboard waiting
     // on Firestore initialization. Keep this document auth-only.
-    firebase.initializeApp({
+    const productionFirebaseConfig = {
       apiKey: 'AIzaSyATJ2LZPKvuBs5QRoKltf8aTRUvIr7gtC0',
       authDomain: 'ahmed123-95a0e.firebaseapp.com',
       projectId: 'ahmed123-95a0e',
       appId: '1:185531326850:web:de360bc1d60bc013be6f9b'
-    });
+    };
+    const uatFirebaseConfig = {
+      apiKey: 'AIzaSyC_Q6lIEotujGBvFQoUQxntQ3QSAC8v--U',
+      authDomain: 'ahmed123-95a0e-uat.firebaseapp.com',
+      projectId: 'ahmed123-95a0e-uat',
+      appId: '1:45101979532:web:ce9fc762d21d344c92a8a9'
+    };
+    const isUatHost = window.location.hostname.includes('ahmed123-95a0e-uat');
+    firebase.initializeApp(isUatHost ? uatFirebaseConfig : productionFirebaseConfig);
     const rootAuth = firebase.auth();
+    if (['127.0.0.1', 'localhost'].includes(window.location.hostname)) {
+      rootAuth.useEmulator('http://127.0.0.1:9099', { disableWarnings: true });
+    }
 
     // Route to the dashboard if already authenticated, otherwise to login.
     rootAuth.onAuthStateChanged((user) => {

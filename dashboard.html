@@ -468,17 +468,13 @@ Haba&#9;7&#9;750"></textarea>
 
           <section class="report-workflow-card" aria-labelledby="reportWorkflowTitle">
             <div><span class="report-eyebrow" id="reportWorkflowTitle">مسار المراجعة والاعتماد</span><p id="reportWorkflowCurrent">الحالة الحالية: مسودة</p><p id="reportWorkflowNext">الخطوة التالية: حساب التقرير</p></div>
-            <button class="btn btn-sm" id="reportPreviousStageBtn" type="button" hidden>◀ المرحلة السابقة</button>
             <ol class="report-workflow" id="reportWorkflowSteps">
-              <li data-workflow-state="draft"><span>1</span>مسودة</li>
-              <li data-workflow-state="calculated"><span>2</span>تم الحساب</li>
-              <li data-workflow-state="in_review"><span>3</span>قيد المراجعة</li>
-              <li data-workflow-state="approved"><span>4</span>تم الاعتماد</li>
-              <li data-workflow-state="salary_snapshot_created"><span>5</span>تم إنشاء الكشف</li>
-              <li data-workflow-state="ready_for_payment"><span>6</span>جاهز للصرف</li>
-              <li data-workflow-state="paid"><span>7</span>تم الصرف</li>
-              <li data-workflow-state="archived"><span>8</span>مؤرشف</li>
-              <li data-workflow-state="reopened"><span>9</span>أُعيد فتحه</li>
+              <li data-workflow-stage="calculation"><button type="button" class="report-workflow-step" data-workflow-step="calculation" title="حساب التقرير الشهري"><i class="report-workflow-icon" data-lucide="calculator" aria-hidden="true"></i><span class="report-workflow-label">الحساب</span></button></li>
+              <li data-workflow-stage="review"><button type="button" class="report-workflow-step" data-workflow-step="review" title="مراجعة بيانات التقرير والاستثناءات"><i class="report-workflow-icon" data-lucide="search-check" aria-hidden="true"></i><span class="report-workflow-label">المراجعة</span></button></li>
+              <li data-workflow-stage="approval"><button type="button" class="report-workflow-step" data-workflow-step="approval" title="فحوصات الجاهزية وقرار اعتماد التقرير"><i class="report-workflow-icon" data-lucide="badge-check" aria-hidden="true"></i><span class="report-workflow-label">الاعتماد</span></button></li>
+              <li data-workflow-stage="payroll"><button type="button" class="report-workflow-step" data-workflow-step="payroll" title="إنشاء ومراجعة كشف الرواتب"><i class="report-workflow-icon" data-lucide="file-text" aria-hidden="true"></i><span class="report-workflow-label">كشف الرواتب</span></button></li>
+              <li data-workflow-stage="payment"><button type="button" class="report-workflow-step" data-workflow-step="payment" title="متابعة وتسجيل عمليات الصرف"><i class="report-workflow-icon" data-lucide="wallet-cards" aria-hidden="true"></i><span class="report-workflow-label">الصرف</span></button></li>
+              <li data-workflow-stage="archive"><button type="button" class="report-workflow-step" data-workflow-step="archive" title="أرشفة دورة الرواتب النهائية"><i class="report-workflow-icon" data-lucide="archive" aria-hidden="true"></i><span class="report-workflow-label">الأرشفة</span></button></li>
             </ol>
           </section>
 

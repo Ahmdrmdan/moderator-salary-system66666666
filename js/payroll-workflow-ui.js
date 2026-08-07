@@ -23,6 +23,18 @@ const PayrollWorkflowUI = (() => {
     PayrollWorkflow.STATE.REOPENED
   ];
 
+  // The header deliberately represents the six operational screens rather
+  // than every persisted engine value. The engine state remains unchanged;
+  // this is only a readable Timeline projection for the report workspace.
+  const HEADER_STAGES = Object.freeze([
+    { id: 'calculation', states: [PayrollWorkflow.STATE.DRAFT, PayrollWorkflow.STATE.REOPENED], label: 'الحساب', tooltip: 'حساب التقرير الشهري' },
+    { id: 'review', states: [PayrollWorkflow.STATE.CALCULATED], label: 'المراجعة', tooltip: 'مراجعة بيانات التقرير والاستثناءات' },
+    { id: 'approval', states: [PayrollWorkflow.STATE.IN_REVIEW], label: 'الاعتماد', tooltip: 'فحوصات الجاهزية وقرار اعتماد التقرير' },
+    { id: 'payroll', states: [PayrollWorkflow.STATE.APPROVED, PayrollWorkflow.STATE.SALARY_SNAPSHOT_CREATED], label: 'كشف الرواتب', tooltip: 'إنشاء ومراجعة كشف الرواتب' },
+    { id: 'payment', states: [PayrollWorkflow.STATE.READY_FOR_PAYMENT, PayrollWorkflow.STATE.PAID], label: 'الصرف', tooltip: 'متابعة وتسجيل عمليات الصرف' },
+    { id: 'archive', states: [PayrollWorkflow.STATE.ARCHIVED], label: 'الأرشفة', tooltip: 'أرشفة دورة الرواتب النهائية' }
+  ]);
+
   // The engine owns the lifecycle. This map owns only which existing report
   // surface is relevant to that lifecycle state; it creates no transition,
   // query, or financial data.
@@ -92,7 +104,11 @@ const PayrollWorkflowUI = (() => {
     if (!manager) return;
 
     manager.dataset.activeWorkspace = workspace;
-    manager.querySelectorAll('[data-workspace]').forEach(root => {
+    // Only the manager's direct children are workspace screens.  The salary
+    // snapshot is mounted *inside* the active screen and carries its own
+    // workspace marker for presentation; treating that nested surface as a
+    // screen leaves it inert after a state transition and blocks its actions.
+    Array.from(manager.children).filter(root => root.hasAttribute('data-workspace')).forEach(root => {
       const active = root.dataset.workspace === workspace;
       root.classList.toggle('is-active', active);
       root.setAttribute('aria-hidden', String(!active));
@@ -117,6 +133,10 @@ const PayrollWorkflowUI = (() => {
     if (snapshot && [WORKSPACE.PAYROLL, WORKSPACE.PAYMENT, WORKSPACE.ARCHIVE].includes(workspace)) {
       mount('salarySnapshotDashboard', slot(`${workspace}-snapshot`));
       snapshot.dataset.workspace = workspace;
+      // The snapshot is content of the active workspace, not a workspace
+      // root. Ensure a preceding transition cannot leave its controls inert.
+      snapshot.removeAttribute('inert');
+      snapshot.setAttribute('aria-hidden', 'false');
       snapshot.querySelectorAll('[data-snapshot-stage]').forEach(element => {
         const supported = (element.dataset.snapshotStage || '').split(/\s+/);
         const active = supported.includes(workspace);
@@ -269,20 +289,37 @@ const PayrollWorkflowUI = (() => {
     if (title) button.title = title;
   }
 
+  function headerStageFor(state) {
+    return HEADER_STAGES.find(stage => stage.states.includes(state)) || HEADER_STAGES[0];
+  }
+
   function renderHeaderSteps(state) {
-    const currentIndex = STEP_ORDER.indexOf(state);
-    document.querySelectorAll('#reportWorkflowSteps [data-workflow-state]').forEach((item, index) => {
-      const stepState = item.dataset.workflowState;
-      const reopened = state === PayrollWorkflow.STATE.REOPENED;
-      const complete = reopened
-        ? [PayrollWorkflow.STATE.CALCULATED, PayrollWorkflow.STATE.IN_REVIEW, PayrollWorkflow.STATE.APPROVED].includes(stepState)
-        : currentIndex >= 0 && index < currentIndex;
-      const current = stepState === state;
+    const currentStage = headerStageFor(state);
+    const currentIndex = HEADER_STAGES.indexOf(currentStage);
+    const previousState = PayrollWorkflow.previousState ? PayrollWorkflow.previousState(state) : null;
+    const previousStage = previousState ? headerStageFor(previousState) : null;
+    document.querySelectorAll('#reportWorkflowSteps [data-workflow-stage]').forEach((item, index) => {
+      const stage = HEADER_STAGES.find(candidate => candidate.id === item.dataset.workflowStage);
+      const current = !!stage && stage.id === currentStage.id;
+      const complete = index < currentIndex;
+      const returnAllowed = !!stage && !!previousStage && stage.id === previousStage.id;
+      const button = item.querySelector('.report-workflow-step');
       item.classList.toggle('is-complete', complete);
       item.classList.toggle('is-current', current);
       item.classList.toggle('is-pending', !complete && !current);
-      item.classList.toggle('is-locked', !complete && !current && index > currentIndex && !reopened);
-      item.toggleAttribute('aria-current', current);
+      item.classList.toggle('is-locked', !complete && !current && index > currentIndex);
+      item.classList.toggle('is-returnable', returnAllowed);
+      item.title = returnAllowed
+        ? `العودة رسميًا إلى مرحلة ${stage.label}`
+        : (stage ? stage.tooltip : '');
+      if (button) {
+        button.disabled = !returnAllowed;
+        button.dataset.workflowPrevious = String(returnAllowed);
+        button.setAttribute('aria-current', current ? 'step' : 'false');
+        button.setAttribute('aria-label', returnAllowed
+          ? `العودة إلى المرحلة السابقة: ${stage.label}`
+          : (stage ? stage.tooltip : ''));
+      }
     });
   }
 
@@ -383,25 +420,6 @@ const PayrollWorkflowUI = (() => {
     }
   }
 
-  function renderPreviousStage(state) {
-    const button = $('reportPreviousStageBtn');
-    if (!button) return;
-    const archived = state === PayrollWorkflow.STATE.ARCHIVED;
-    const available = [PayrollWorkflow.STATE.CALCULATED, PayrollWorkflow.STATE.IN_REVIEW, PayrollWorkflow.STATE.APPROVED].includes(state);
-    button.hidden = archived || state === PayrollWorkflow.STATE.DRAFT;
-    button.disabled = !available;
-    if (state === PayrollWorkflow.STATE.APPROVED) {
-      button.textContent = '◀ إعادة فتح للمراجعة';
-      button.title = available ? 'إعادة فتح التقرير رسميًا قبل إنشاء كشف الرواتب.' : '';
-    } else if ([PayrollWorkflow.STATE.READY_FOR_PAYMENT, PayrollWorkflow.STATE.PAID].includes(state)) {
-      button.textContent = '◀ المرحلة السابقة غير متاحة';
-      button.title = 'لا يمكن الرجوع بعد إنشاء كشف الرواتب أو بدء الصرف دون المساس بسجل الصرف المحفوظ.';
-    } else {
-      button.textContent = '◀ المرحلة السابقة';
-      button.title = available ? 'إرجاع حالة Workflow إلى المرحلة السابقة.' : '';
-    }
-  }
-
   function render(input = {}) {
     const context = currentContext(input);
     const state = PayrollWorkflow.derive(context.month, context.snapshot);
@@ -427,7 +445,6 @@ const PayrollWorkflowUI = (() => {
     renderTimeline(state);
     renderMessages(state, context);
     renderActions(state, context);
-    renderPreviousStage(state);
     ['smartApprovalModal', 'closeMonthModal'].forEach(id => {
       const dialog = $(id);
       if (dialog) dialog.dataset.workflowState = state;
@@ -463,8 +480,10 @@ const PayrollWorkflowUI = (() => {
     if (archiveButton) archiveButton.addEventListener('click', archiveCurrentCycle);
     const approvalAcknowledgement = $('reportApprovalAck');
     if (approvalAcknowledgement) approvalAcknowledgement.addEventListener('change', () => render());
-    const previousStageButton = $('reportPreviousStageBtn');
-    if (previousStageButton) previousStageButton.addEventListener('click', () => {
+    const workflowSteps = $('reportWorkflowSteps');
+    if (workflowSteps) workflowSteps.addEventListener('click', event => {
+      const previousStep = event.target.closest('.report-workflow-step[data-workflow-previous="true"]');
+      if (!previousStep) return;
       if (typeof App === 'undefined' || !App.returnToPreviousWorkflowStage) return;
       App.returnToPreviousWorkflowStage().catch(err => Toast.show(err.message || 'تعذر الرجوع إلى المرحلة السابقة.', 'error'));
     });

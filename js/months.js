@@ -1058,13 +1058,16 @@ const Months = (() => {
     const monthRef = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(monthId);
     const summaryRef = db.collection(COLLECTIONS.MONTHLY_SUMMARIES).doc(monthId);
     const salaryRef = db.collection('salary_processing').doc(monthId);
-    await db.runTransaction(async transaction => {
+    return db.runTransaction(async transaction => {
       const [snap, salarySnap] = await Promise.all([
         transaction.get(monthRef), transaction.get(salaryRef)
       ]);
       if (!snap.exists) throw new Error('الشهر غير موجود');
       const data = snap.data() || {};
-      if (data.archived === true) throw new Error('الشهر مؤرشف بالفعل');
+      // Firestore may retry a transaction after an ambiguous network result.
+      // If the original commit reached the server, the retry sees the archived
+      // document. Treat that exact outcome as a completed idempotent result.
+      if (data.archived === true) return { archived: true, alreadyArchived: true };
       const salarySnapshot = salarySnap.exists ? (salarySnap.data() || {}) : null;
       if (data.status === STATUS.LOCKED) {
         // A closed report enters the formal archive only after every salary
@@ -1093,6 +1096,7 @@ const Months = (() => {
           workflowState: data.status === STATUS.LOCKED ? PayrollWorkflow.STATE.ARCHIVED : null
         }
       });
+      return { archived: true, alreadyArchived: false };
     });
   }
 

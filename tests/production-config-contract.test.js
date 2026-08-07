@@ -18,5 +18,13 @@ assert.match(rootRouterSource, new RegExp(`authDomain:\\s*'${projectId}\\.fireba
   'the Hosting root auth router uses the matching production Auth domain');
 assert.doesNotMatch(rootRouterSource, /moderator-salary9/,
   'the root router does not revive the retired Firebase project session');
+assert.match(firebaseConfigSource, /useLocalFirebaseEmulators[\s\S]*?\['127\.0\.0\.1', 'localhost'\]/,
+  'the local UAT emulator guard is explicit and limited to localhost hosts');
+assert.match(firebaseConfigSource, /auth\.useEmulator\('http:\/\/127\.0\.0\.1:9099'/,
+  'local UAT routes Authentication to the local emulator');
+assert.match(firebaseConfigSource, /db\.useEmulator\('127\.0\.0\.1', 8080\)/,
+  'local UAT routes Firestore to the local emulator');
+assert.match(rootRouterSource, /rootAuth\.useEmulator\('http:\/\/127\.0\.0\.1:9099'/,
+  'the root auth router follows the same localhost-only UAT boundary');
 
 console.log('production configuration contract tests passed');

@@ -19,7 +19,7 @@
 // 1) Your Firebase project configuration.
 //    Firebase Console -> Project Settings -> General -> Your apps -> Web app
 // -----------------------------------------------------------------------
-const firebaseConfig = {
+const productionFirebaseConfig = {
   apiKey: "AIzaSyATJ2LZPKvuBs5QRoKltf8aTRUvIr7gtC0",
   authDomain: "ahmed123-95a0e.firebaseapp.com",
   projectId: "ahmed123-95a0e",
@@ -27,6 +27,23 @@ const firebaseConfig = {
   messagingSenderId: "185531326850",
   appId: "1:185531326850:web:de360bc1d60bc013be6f9b"
 };
+
+// The UAT Hosting site is intentionally isolated from production. The
+// deployment command selects the Hosting project; this host check makes the
+// browser select the matching Auth and Firestore project as well. Every
+// production host continues to use the original configuration above.
+const uatFirebaseConfig = {
+  apiKey: "AIzaSyC_Q6lIEotujGBvFQoUQxntQ3QSAC8v--U",
+  authDomain: "ahmed123-95a0e-uat.firebaseapp.com",
+  projectId: "ahmed123-95a0e-uat",
+  storageBucket: "ahmed123-95a0e-uat.firebasestorage.app",
+  messagingSenderId: "45101979532",
+  appId: "1:45101979532:web:ce9fc762d21d344c92a8a9"
+};
+
+const isUatHost = typeof window !== 'undefined' &&
+  window.location.hostname.includes('ahmed123-95a0e-uat');
+const firebaseConfig = isUatHost ? uatFirebaseConfig : productionFirebaseConfig;
 
 // -----------------------------------------------------------------------
 // 2) Initialize Firebase (compat SDK loaded from CDN in the HTML files)
@@ -36,6 +53,16 @@ firebase.initializeApp(firebaseConfig);
 // Shared references used across the whole application
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Local UAT must exercise the same Firestore rules without ever pointing a
+// development server at production data. Production and Hosting Preview hosts
+// do not satisfy this guard and retain their configured cloud backends.
+const useLocalFirebaseEmulators = typeof window !== 'undefined' &&
+  ['127.0.0.1', 'localhost'].includes(window.location.hostname);
+if (useLocalFirebaseEmulators) {
+  auth.useEmulator('http://127.0.0.1:9099', { disableWarnings: true });
+  db.useEmulator('127.0.0.1', 8080);
+}
 
 // Use Firestore's default in-memory cache. The optional multi-tab IndexedDB
 // persistence path could hold a newly opened dashboard before its first live
