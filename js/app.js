@@ -156,12 +156,19 @@ const App = (() => {
     // Departments so a newly created month can snapshot their bonus rules.
     Months.onChange(onMonthsChanged);
 
-    try {
-      const activeMonthId = await Months.init();
-      await selectMonth(activeMonthId);
-    } catch (err) {
-      console.error('Months init failed:', err);
-      Toast.show('تعذر تحديد الشهر النشط: ' + err.message, 'error');
+    // A dashboard-only role (for example Shipping or Data Entry) has no
+    // right to read monthly reports. Do not turn that expected restriction
+    // into a rejected Firestore request during dashboard bootstrap.
+    const canReadMonths = ['months.read', 'reports.read', 'archive.read', 'comparison.read', 'backups.create', 'backups.restore']
+      .some(permission => Permissions.can(permission));
+    if (canReadMonths) {
+      try {
+        const activeMonthId = await Months.init();
+        await selectMonth(activeMonthId);
+      } catch (err) {
+        console.error('Months init failed:', err);
+        Toast.show('تعذر تحديد الشهر النشط: ' + err.message, 'error');
+      }
     }
 
     OrdersManagement.init({
@@ -226,7 +233,7 @@ const App = (() => {
     MonthComparison.init();
     SmartApproval.init();
 
-    loadSettlements();
+    if (Permissions.can('settlements.read')) loadSettlements();
     loadDashboardStatusData();
 
     // Re-offer an undo that was still live when the page reloaded. The 30s
@@ -263,16 +270,24 @@ const App = (() => {
    * recurring reads just to paint the status strip.
    */
   async function loadDashboardStatusData() {
+    const canReadBackups = Permissions.can('backups.read');
+    const canReadAudit = Permissions.can('audit.read');
     try {
       const [backups, auditLogs] = await Promise.all([
-        BackupService.listBackups(1),
-        AuditService.getRecent(20)
+        canReadBackups ? BackupService.listBackups(1) : Promise.resolve([]),
+        canReadAudit ? AuditService.getRecent(20) : Promise.resolve([])
       ]);
-      if (backups.length > 0) state.backups = backups;
-      if (auditLogs.length > 0) state.auditLogs = auditLogs;
-      renderDashboardStatus();
+      state.backups = backups;
+      state.auditLogs = auditLogs;
+      // The operational widgets consume the same audit cache. Re-rendering
+      // after the asynchronous status read prevents a permanently stale
+      // "recent activity" card without widening the data scope.
+      renderDashboard();
     } catch (err) {
-      console.warn('Dashboard status data could not be loaded:', err.message);
+      // This is a background, optional dashboard read. Keep the dashboard
+      // usable and avoid a console error; direct views retain their existing
+      // explicit error handling when the user opens them.
+      renderDashboardStatus();
     }
   }
 
@@ -308,25 +323,35 @@ const App = (() => {
     // close-month workflow (snapshot, backup, summary, lock, next month).
     document.getElementById('approveReportBtn').addEventListener('click', openSmartApproval);
     document.getElementById('quickAddEmployeeBtn').addEventListener('click', () => {
-      switchView('moderators');
-      openEmployeeModal();
+      runDashboardQuickAction('employees.write', () => {
+        switchView('moderators');
+        openEmployeeModal();
+      });
     });
     document.getElementById('quickImportOrdersBtn').addEventListener('click', () => {
-      switchView('orders');
-      document.querySelector('[data-orders-tab="import"]')?.click();
-      document.getElementById('excelFileInput').focus();
+      runDashboardQuickAction('orders.import', () => {
+        switchView('orders');
+        document.querySelector('[data-orders-tab="import"]')?.click();
+        document.getElementById('excelFileInput').focus();
+      });
     });
     document.getElementById('quickCalculateReportBtn').addEventListener('click', () => {
-      switchView('report');
-      calculateReport();
+      runDashboardQuickAction('reports.calculate', async () => {
+        switchView('report');
+        await calculateReport();
+      });
     });
     document.getElementById('quickApproveReportBtn').addEventListener('click', () => {
-      switchView('report');
-      openSmartApproval();
+      runDashboardQuickAction('reports.approve', async () => {
+        switchView('report');
+        await openSmartApproval();
+      });
     });
     document.getElementById('quickBackupBtn').addEventListener('click', () => {
-      switchView('backups');
-      onCreateManualBackup();
+      runDashboardQuickAction('backups.create', async () => {
+        switchView('backups');
+        await onCreateManualBackup();
+      });
     });
 
     // Backups view
@@ -535,6 +560,21 @@ const App = (() => {
     document.getElementById('addCompanySalesTier').addEventListener('click', () => { state.settings.salesBonusRules.push({ from: 0, to: 0, bonus: 0 }); renderCompanySalesRules(); });
 
     bindModalDismissal();
+  }
+
+  /**
+   * Dashboard quick actions are a convenience surface, not an authorization
+   * boundary. Keep their direct-event path aligned with the existing module
+   * guards so a stale or programmatically dispatched click becomes a clear
+   * user message instead of an unhandled console rejection.
+   */
+  async function runDashboardQuickAction(permission, action) {
+    try {
+      Permissions.require(permission);
+      await action();
+    } catch (err) {
+      Toast.show(err.message || 'تعذر تنفيذ هذه العملية.', 'error');
+    }
   }
 
   /**
@@ -904,13 +944,15 @@ const App = (() => {
     }
 
     // Every control that mutates the selected month.
-    const writeControls = [
-      'calculateBtn',
-      'importTextBtn', 'excelFileInput'
-    ];
+    const writeControls = ['calculateBtn', 'importTextBtn', 'excelFileInput'];
     writeControls.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.disabled = readOnly;
+      if (!el) return;
+      // Permission UI is applied before the month status becomes available.
+      // Retain the existing reports.calculate decision when a month refreshes
+      // so report readers never regain a calculation control they cannot use.
+      const lacksPermission = id === 'calculateBtn' && !Permissions.can('reports.calculate');
+      el.disabled = readOnly || lacksPermission;
     });
 
     // Transaction fields have their own capability gate. This prevents the
