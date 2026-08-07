@@ -34,10 +34,10 @@
     // dashboard opened it again, which could leave a fresh dashboard waiting
     // on Firestore initialization. Keep this document auth-only.
     firebase.initializeApp({
-      apiKey: 'AIzaSyBt_5dwDBgyiHAj5OsnAA1fwHXQ2sd3-tk',
-      authDomain: 'moderator-salary9.firebaseapp.com',
-      projectId: 'moderator-salary9',
-      appId: '1:604946335764:web:2b8b640d8af215c59abf01'
+      apiKey: 'AIzaSyATJ2LZPKvuBs5QRoKltf8aTRUvIr7gtC0',
+      authDomain: 'ahmed123-95a0e.firebaseapp.com',
+      projectId: 'ahmed123-95a0e',
+      appId: '1:185531326850:web:de360bc1d60bc013be6f9b'
     });
     const rootAuth = firebase.auth();
 
@@ -45,7 +45,7 @@
     rootAuth.onAuthStateChanged((user) => {
       // Keep the dashboard document in step with its cache-revalidated scripts
       // after a Hosting deployment.
-      window.location.replace(user ? 'dashboard.html?v=2-orders' : 'login.html');
+      window.location.replace(user ? 'dashboard.html?v=7.0.19-final-audit' : 'login.html');
     });
   </script>
 </body>
