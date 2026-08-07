@@ -17,8 +17,8 @@ assert.match(htmlSource, /<script src="js\/vendor\/chart\.umd\.js"><\/script>/,
 assert.ok(fs.existsSync('js/vendor/chart.umd.js'), 'the Chart.js UMD build is shipped with the application');
 assert.doesNotMatch(htmlSource, /(?:cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com).*Chart\.js|chart\.js@/i,
   'dashboard does not rely on an external Chart.js CDN at runtime');
-assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.1\.1-monthly-report-ux-r1">/,
-  'dashboard cache-busts the shared stylesheet after the monthly-report visual release');
+assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=1\.0\.0-responsive-fix">/,
+  'dashboard cache-busts the shared stylesheet after the responsive report fix');
 assert.match(htmlSource, /id="dashboardMonthlyScopeForm"[\s\S]*?id="dashboardMonthFilter"[\s\S]*?id="dashboardDepartmentFilter"/,
   'monthly Dashboard scope exposes independent month and department selectors');
 assert.match(htmlSource, /id="dashboardAnalyticsFilters"[\s\S]*?id="dashboardAnalyticsPeriod"[\s\S]*?id="dashboardAnalyticsFrom"[\s\S]*?id="dashboardAnalyticsTo"/,
