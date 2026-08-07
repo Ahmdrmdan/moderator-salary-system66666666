@@ -395,7 +395,7 @@ Haba&#9;7&#9;750"></textarea>
         <div class="table-wrap">
           <table class="months-table">
             <thead><tr>
-              <th>الشهر</th><th>الحالة</th><th>الطلبات</th><th>الموظفون</th><th>إجمالي المبيعات</th><th>إجمالي الرواتب</th><th>إجمالي البونص</th><th>تاريخ الإنشاء</th><th>آخر تعديل</th><th>القفل</th><th>الأرشفة</th><th>إجراءات</th>
+              <th>الشهر</th><th>المرحلة الحالية</th><th>حالة التقرير</th><th>آخر خطوة مكتملة</th><th>الإجراء التالي</th><th>التقدم</th><th>الطلبات</th><th>الموظفون</th><th>إجمالي المبيعات</th><th>إجمالي الرواتب</th><th>إجمالي البونص</th><th>تاريخ الإنشاء</th><th>آخر تعديل</th><th>القفل</th><th>الأرشفة</th><th>إجراءات</th>
             </tr></thead>
             <tbody id="monthsTableBody"></tbody>
           </table>
@@ -468,6 +468,7 @@ Haba&#9;7&#9;750"></textarea>
 
           <section class="report-workflow-card" aria-labelledby="reportWorkflowTitle">
             <div><span class="report-eyebrow" id="reportWorkflowTitle">مسار المراجعة والاعتماد</span><p id="reportWorkflowCurrent">الحالة الحالية: مسودة</p><p id="reportWorkflowNext">الخطوة التالية: حساب التقرير</p></div>
+            <button class="btn btn-sm" id="reportPreviousStageBtn" type="button" hidden>◀ المرحلة السابقة</button>
             <ol class="report-workflow" id="reportWorkflowSteps">
               <li data-workflow-state="draft"><span>1</span>مسودة</li>
               <li data-workflow-state="calculated"><span>2</span>تم الحساب</li>

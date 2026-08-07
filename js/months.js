@@ -1013,6 +1013,41 @@ const Months = (() => {
     return { monthId, wasLocked };
   }
 
+  /**
+   * Returns an open report to its immediately preceding workflow state.
+   * It changes lifecycle metadata only; report rows, totals, snapshots and
+   * financial writes remain untouched. A locked approved report continues to
+   * use the established reopen service because its status must be unlocked
+   * under the existing Rules contract.
+   */
+  async function returnWorkflowToPrevious(monthId) {
+    if (!Utils.isValidMonthId(monthId)) throw new Error('صيغة الشهر غير صحيحة');
+    const monthRef = db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(monthId);
+    const summaryRef = db.collection(COLLECTIONS.MONTHLY_SUMMARIES).doc(monthId);
+    const snap = await monthRef.get();
+    if (!snap.exists) throw new Error('الشهر غير موجود');
+    const month = snap.data() || {};
+    const current = PayrollWorkflow.derive(month);
+    if (current === PayrollWorkflow.STATE.APPROVED) return reopenMonth(monthId, 'payroll_workflow.returned');
+    const previous = PayrollWorkflow.previousState(current);
+    if (!previous || month.archived === true) throw new Error('لا توجد مرحلة سابقة آمنة لهذه الدورة.');
+    PayrollWorkflow.assertTransition(current, previous, { month, report: month.report });
+    const metadata = PayrollWorkflow.metadata(previous);
+    const batch = db.batch();
+    batch.set(monthRef, metadata, { merge: true });
+    batch.set(summaryRef, metadata, { merge: true });
+    AuditService.appendToBatch(batch, {
+      action: 'payroll_workflow.returned', entity: 'monthly_reports', operation: AuditService.OPERATION.UPDATE,
+      documentId: monthId, documentLabel: month.monthLabel || Utils.monthLabelFromId(monthId), monthId,
+      severity: AuditService.SEVERITY.WARNING, details: { from: current, to: previous }
+    });
+    await batch.commit();
+    const indexed = state.byId.get(monthId);
+    if (indexed) indexed.workflowState = previous;
+    notify();
+    return previous;
+  }
+
   /** Marks an open administrative month, or a fully paid locked payroll,
    * as archived. Archived months remain visible and readable but cannot
    * receive imports or other edits. */
@@ -1726,6 +1761,7 @@ const Months = (() => {
     // lifecycle
     closeMonth,
     reopenMonth,
+    returnWorkflowToPrevious,
     archiveMonth,
     restoreArchivedMonth,
     deleteEmptyMonth,

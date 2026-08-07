@@ -176,17 +176,17 @@ const PayrollWorkflowUI = (() => {
   function renderPaymentWorkspace(context) {
     const root = $('reportPaymentSummary');
     if (!root) return;
-    const payments = (context.snapshot && context.snapshot.employeePayments) || {};
-    const rows = (context.snapshot && context.snapshot.report) || [];
-    const paid = rows.filter(row => payments[row.moderatorId] && payments[row.moderatorId].status === 'paid').length;
-    const remaining = Math.max(rows.length - paid, 0);
-    root.innerHTML = `<div><span>تم صرفهم</span><strong>${paid}</strong></div><div><span>المتبقي</span><strong>${remaining}</strong></div><div><span>حالة الكشف</span><strong>${context.snapshot && context.snapshot.status === 'paid' ? 'مكتمل الصرف' : 'جاهز للصرف'}</strong></div>`;
+    const payment = typeof SalaryProcessing !== 'undefined' && SalaryProcessing.getPaymentSummary
+      ? SalaryProcessing.getPaymentSummary() : { employees: 0, paidEmployees: 0, remainingEmployees: 0, totalNet: 0, paidAmount: 0, remainingAmount: 0, progress: 0 };
+    root.innerHTML = `<div><span>عدد الموظفين</span><strong>${payment.employees}</strong></div><div><span>تم صرفهم</span><strong>${payment.paidEmployees}</strong></div><div><span>المتبقون</span><strong>${payment.remainingEmployees}</strong></div><div><span>إجمالي المصروف</span><strong>${formatMoney(payment.paidAmount)}</strong></div><div><span>المتبقي</span><strong>${formatMoney(payment.remainingAmount)}</strong></div><div><span>إجمالي كشف الرواتب</span><strong>${formatMoney(payment.totalNet)}</strong></div><div class="report-payment-progress"><span>تقدم الصرف</span><strong>${payment.progress}%</strong><i><b style="width:${payment.progress}%"></b></i></div>`;
   }
 
   function renderArchiveWorkspace(context) {
     const root = $('reportArchiveSummary');
     if (!root) return;
-    root.innerHTML = `<div><span>حالة الشهر</span><strong>${label(PayrollWorkflow.derive(context.month, context.snapshot))}</strong></div><div><span>تاريخ الإغلاق</span><strong>${formatDateTime(context.month && (context.month.archivedAt || context.month.closedAt))}</strong></div><div><span>Snapshot النهائية</span><strong>${context.snapshot ? 'متاحة للعرض والتدقيق' : 'غير متاحة'}</strong></div>`;
+    const month = context.month || {};
+    const snapshot = context.snapshot || {};
+    root.innerHTML = `<div><span>حالة الشهر</span><strong>${label(PayrollWorkflow.derive(month, snapshot))}</strong></div><div><span>تاريخ الإغلاق</span><strong>${formatDateTime(month.closedAt)}</strong></div><div><span>تم الإغلاق بواسطة</span><strong>${month.closedBy || '—'}</strong></div><div><span>وقت الأرشفة</span><strong>${formatDateTime(month.archivedAt)}</strong></div><div><span>تمت الأرشفة بواسطة</span><strong>${month.archivedBy || '—'}</strong></div><div><span>Snapshot النهائية</span><strong>${snapshot.approvedAt ? `محفوظة منذ ${formatDateTime(snapshot.approvedAt)}` : (snapshot ? 'متاحة للعرض والتدقيق' : 'غير متاحة')}</strong></div>`;
   }
 
   function renderWorkspace(state, context) {
@@ -307,6 +307,20 @@ const PayrollWorkflowUI = (() => {
       ? `الخطوة التالية: ${label(nextState)}`
       : 'هذه الدورة مكتملة ومحفوظة في الأرشيف.';
 
+    // The financial amounts stay immutable; only the decision context changes
+    // while payments are recorded. This keeps the primary summary useful
+    // without introducing a second calculation path.
+    const decisionState = $('reportDecisionState');
+    if (decisionState && [PayrollWorkflow.STATE.READY_FOR_PAYMENT, PayrollWorkflow.STATE.PAID].includes(state)) {
+      const payment = typeof SalaryProcessing !== 'undefined' && SalaryProcessing.getPaymentSummary
+        ? SalaryProcessing.getPaymentSummary() : null;
+      if (payment) {
+        decisionState.textContent = state === PayrollWorkflow.STATE.PAID
+          ? `اكتمل صرف ${payment.paidEmployees} موظفًا بقيمة ${formatMoney(payment.paidAmount)}.`
+          : `تم صرف ${payment.paidEmployees} من ${payment.employees} موظفًا؛ المتبقي ${payment.remainingEmployees}.`;
+      }
+    }
+
     const notice = $('reportApprovalNotice');
     if (notice) {
       const messages = {
@@ -369,6 +383,25 @@ const PayrollWorkflowUI = (() => {
     }
   }
 
+  function renderPreviousStage(state) {
+    const button = $('reportPreviousStageBtn');
+    if (!button) return;
+    const archived = state === PayrollWorkflow.STATE.ARCHIVED;
+    const available = [PayrollWorkflow.STATE.CALCULATED, PayrollWorkflow.STATE.IN_REVIEW, PayrollWorkflow.STATE.APPROVED].includes(state);
+    button.hidden = archived || state === PayrollWorkflow.STATE.DRAFT;
+    button.disabled = !available;
+    if (state === PayrollWorkflow.STATE.APPROVED) {
+      button.textContent = '◀ إعادة فتح للمراجعة';
+      button.title = available ? 'إعادة فتح التقرير رسميًا قبل إنشاء كشف الرواتب.' : '';
+    } else if ([PayrollWorkflow.STATE.READY_FOR_PAYMENT, PayrollWorkflow.STATE.PAID].includes(state)) {
+      button.textContent = '◀ المرحلة السابقة غير متاحة';
+      button.title = 'لا يمكن الرجوع بعد إنشاء كشف الرواتب أو بدء الصرف دون المساس بسجل الصرف المحفوظ.';
+    } else {
+      button.textContent = '◀ المرحلة السابقة';
+      button.title = available ? 'إرجاع حالة Workflow إلى المرحلة السابقة.' : '';
+    }
+  }
+
   function render(input = {}) {
     const context = currentContext(input);
     const state = PayrollWorkflow.derive(context.month, context.snapshot);
@@ -394,6 +427,7 @@ const PayrollWorkflowUI = (() => {
     renderTimeline(state);
     renderMessages(state, context);
     renderActions(state, context);
+    renderPreviousStage(state);
     ['smartApprovalModal', 'closeMonthModal'].forEach(id => {
       const dialog = $(id);
       if (dialog) dialog.dataset.workflowState = state;
@@ -429,6 +463,11 @@ const PayrollWorkflowUI = (() => {
     if (archiveButton) archiveButton.addEventListener('click', archiveCurrentCycle);
     const approvalAcknowledgement = $('reportApprovalAck');
     if (approvalAcknowledgement) approvalAcknowledgement.addEventListener('change', () => render());
+    const previousStageButton = $('reportPreviousStageBtn');
+    if (previousStageButton) previousStageButton.addEventListener('click', () => {
+      if (typeof App === 'undefined' || !App.returnToPreviousWorkflowStage) return;
+      App.returnToPreviousWorkflowStage().catch(err => Toast.show(err.message || 'تعذر الرجوع إلى المرحلة السابقة.', 'error'));
+    });
     render();
   }
 

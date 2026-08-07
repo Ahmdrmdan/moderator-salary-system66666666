@@ -24,6 +24,23 @@ const MonthManagement = (() => {
     return '<span class="badge badge-open">مفتوح</span>';
   }
 
+  const WORKFLOW_ORDER = ['draft', 'calculated', 'in_review', 'approved', 'salary_snapshot_created', 'ready_for_payment', 'paid', 'archived'];
+
+  function workflowState(month) {
+    return typeof PayrollWorkflow !== 'undefined' ? PayrollWorkflow.derive(month || {}) : 'draft';
+  }
+
+  function workflowDetails(month) {
+    const stateName = workflowState(month);
+    const index = WORKFLOW_ORDER.indexOf(stateName);
+    const label = typeof PayrollWorkflow !== 'undefined' ? (PayrollWorkflow.LABEL[stateName] || 'مسودة') : 'مسودة';
+    const nextStates = typeof PayrollWorkflow !== 'undefined' ? (PayrollWorkflow.TRANSITIONS[stateName] || []) : [];
+    const next = nextStates.find(candidate => candidate !== stateName) || null;
+    const last = stateName === 'reopened' ? 'أُعيد فتحه' : (index > 0 ? (PayrollWorkflow.LABEL[WORKFLOW_ORDER[index - 1]] || '—') : 'لم تبدأ الدورة');
+    const progress = stateName === 'reopened' ? 12 : Math.max(0, Math.round((Math.max(index, 0) / (WORKFLOW_ORDER.length - 1)) * 100));
+    return { stateName, label, last, next: next ? (PayrollWorkflow.LABEL[next] || '—') : 'لا توجد خطوة لاحقة', progress };
+  }
+
   function renderOverview() {
     const all = Months.all();
     const activeId = Months.activeMonthId();
@@ -45,7 +62,7 @@ const MonthManagement = (() => {
     const active = month.id === Months.activeMonthId();
     const disabled = state.busy ? 'disabled' : '';
     const buttons = [
-      `<button class="btn-icon" ${disabled} data-month-action="activate" data-month-id="${Utils.escapeHtml(month.id)}" title="جعل الشهر نشطًا">▶</button>`
+      `<button class="btn-icon" ${disabled} data-month-action="open" data-month-id="${Utils.escapeHtml(month.id)}" title="فتح آخر مرحلة من دورة الرواتب">▶</button>`
     ];
 
     if (month.archived) {
@@ -81,7 +98,7 @@ const MonthManagement = (() => {
     const activeId = Months.activeMonthId();
     const rows = Months.all();
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="12" class="empty-state">لا توجد شهور مسجلة بعد</td></tr>';
+      body.innerHTML = '<tr><td colspan="16" class="empty-state">لا توجد شهور مسجلة بعد</td></tr>';
       return;
     }
     body.innerHTML = rows.map(month => {
@@ -92,9 +109,14 @@ const MonthManagement = (() => {
         month.archived ? 'row-archived' : ''
       ].filter(Boolean).join(' ');
       const orderCount = month.orderCount === null || month.orderCount === undefined ? '—' : Utils.formatNumber(month.orderCount);
+      const workflow = workflowDetails(month);
       return `<tr class="${classes}">
         <td><strong>${Utils.escapeHtml(month.label)}</strong>${month.id === activeId ? '<div class="text-muted-inline">نشط</div>' : ''}</td>
+        <td><span class="badge badge-workflow">${Utils.escapeHtml(workflow.label)}</span></td>
         <td>${statusBadge(month)}</td>
+        <td>${Utils.escapeHtml(workflow.last)}</td>
+        <td>${Utils.escapeHtml(workflow.next)}</td>
+        <td><div class="month-workflow-progress" aria-label="تقدم دورة الرواتب ${workflow.progress}%"><span>${workflow.progress}%</span><i><b style="width:${workflow.progress}%"></b></i></div></td>
         <td>${orderCount}</td>
         <td>${month.employeeCount === null || month.employeeCount === undefined ? '—' : Utils.formatNumber(month.employeeCount)}</td>
         <td>${Utils.formatCurrency(t.totalSales || 0)}</td>
@@ -214,10 +236,14 @@ const MonthManagement = (() => {
       const month = Months.byId(monthId);
       if (!month) return;
       const action = button.dataset.monthAction;
-      const permission = action === 'approve' ? 'reports.approve' : (['reset', 'delete'].includes(action) ? 'months.destructive' : 'months.write');
+      const permission = action === 'open' ? 'reports.read' : (action === 'approve' ? 'reports.approve' : (['reset', 'delete'].includes(action) ? 'months.destructive' : 'months.write'));
       try { Permissions.require(permission); } catch (err) { Toast.show(err.message, 'error'); return; }
 
-      if (action === 'activate') {
+      if (action === 'open') {
+        perform('جاري فتح دورة الرواتب...', async () => {
+          await state.callbacks.open(monthId);
+        });
+      } else if (action === 'activate') {
         perform('جاري تفعيل الشهر...', async () => {
           await state.callbacks.activate(monthId);
           Toast.show(`تم تفعيل ${month.label}`, 'success');

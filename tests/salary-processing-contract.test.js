@@ -6,8 +6,8 @@ const vm = require('vm');
 
 const source = fs.readFileSync('js/salary-processing.js', 'utf8');
 const instrumented = source.replace(
-  'return{init,load,isInitialized:()=>initialized,getSnapshot:()=>snapshot};',
-  'globalThis.__salaryTest={financial,aggregate};return{init,load,isInitialized:()=>initialized,getSnapshot:()=>snapshot};'
+  'return{init,load,isInitialized:()=>initialized,getSnapshot:()=>snapshot,getPaymentSummary:paymentSummary};',
+  'globalThis.__salaryTest={financial,aggregate,paymentSummary};return{init,load,isInitialized:()=>initialized,getSnapshot:()=>snapshot,getPaymentSummary:paymentSummary};'
 );
 assert.notStrictEqual(instrumented, source, 'test instrumentation must expose Salary display helpers');
 
@@ -20,7 +20,7 @@ const context = {
 context.globalThis = context;
 vm.runInNewContext(instrumented, context, { filename: 'salary-processing.js' });
 
-const { financial, aggregate } = context.__salaryTest;
+const { financial, aggregate, paymentSummary } = context.__salaryTest;
 
 const currentRow = {
   moderatorId: 'employee-1', departmentName: 'Operations', salaryType: 'hourly',
@@ -55,8 +55,13 @@ assert.strictEqual(totals.deductions, 375);
 assert.strictEqual(totals.commission, 175);
 assert.strictEqual(totals.net, 2160);
 
-assert.match(source, /commitWithAudit\(batch=>batch\.set/, 'approval writes the snapshot through a batch');
+assert.strictEqual(typeof paymentSummary, 'function', 'payment workspace reads the immutable snapshot through a display helper');
+assert.match(source, /commitWithAudit\(batch=>\{[\s\S]*?batch\.set/, 'approval writes the snapshot through a batch');
 assert.match(source, /commitWithAudit\(batch=>[\s\S]*?batch\.update/, 'adjustment and payment writes use a batch');
+assert.match(source, /PayrollWorkflow\.metadata\(PayrollWorkflow\.STATE\.READY_FOR_PAYMENT\)[\s\S]*?MONTHLY_REPORTS[\s\S]*?MONTHLY_SUMMARIES/,
+  'approved snapshots mirror only existing workflow metadata for resume');
+assert.match(source, /const workflowRoot=\$\('reportWorkspaceManager'\)[\s\S]*?salaryMarkAllPaidBtn[\s\S]*?\[data-pay\]/,
+  'payment controls use stable delegated events after Workspace remounts');
 assert.match(source, /AuditService\.appendToBatch\(batch,audit\)/, 'the audit entry shares the financial write batch');
 assert.match(source, /status==='paid'\?'تم الصرف'/, 'paid snapshots have a distinct visible Arabic status');
 assert.match(source, /Permissions\.can\('salary_processing\.write'\)/, 'Snapshot adjustment controls use the existing write capability');

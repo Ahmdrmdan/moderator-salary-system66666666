@@ -79,8 +79,14 @@ assert.match(dashboard, /data-workspace-slot="approval-decision"/,
   'the Decision Summary can move into the approval workspace without duplicating its data');
 assert.match(dashboard, /id="reportApprovalAck"/,
   'approval confirmation remains an inline report control, not a dialog-only acknowledgement');
+assert.match(dashboard, /id="reportPreviousStageBtn"/,
+  'the report retains a formal previous-stage control inside the workflow header');
 assert.match(uiSource, /function mountWorkspaceSurfaces\(workspace\)/,
   'Workspace Manager mounts existing surfaces into the active workspace');
+assert.match(uiSource, /function renderPreviousStage\(state\)/,
+  'the previous-stage control reflects the persisted workflow state');
+assert.match(uiSource, /SalaryProcessing\.getPaymentSummary\(\)/,
+  'Payment Workspace derives its counters from the persisted payroll snapshot');
 assert.doesNotMatch(uiSource, /element\.hidden\s*=/,
   'Workspace visibility is not implemented as a simple hidden flag toggle');
 ['calculateBtn', 'approveReportBtn', 'salarySnapshotApproveBtn', 'salaryMarkAllPaidBtn', 'workflowArchiveBtn'].forEach(id => {
@@ -100,5 +106,7 @@ assert.match(salarySource, /batch\.set\(db\.collection\(COLLECTIONS\.MONTHLY_SUM
   'final payment mirrors only workflow metadata to the existing month summary');
 assert.match(rulesSource, /function isPaidWorkflowWrite\(\)/,
   'Firestore Rules constrain the locked-month payment state mirror');
+assert.match(rulesSource, /function isReadyForPaymentWorkflowWrite\(\)/,
+  'Firestore Rules narrowly permit the approved Snapshot state mirror');
 
 console.log('payroll workflow UI contract tests passed');

@@ -190,6 +190,14 @@ const App = (() => {
     });
 
     MonthManagement.init({
+      open: async (monthId) => {
+        await selectMonth(monthId);
+        switchView('report');
+        if (typeof PayrollWorkflowUI !== 'undefined') PayrollWorkflowUI.render({
+          month: Months.byId(monthId) || {},
+          report: state.currentReport
+        });
+      },
       create: async (monthId) => {
         const created = await Months.ensureMonthExists(monthId, {
           bonusRules: state.settings.bonusRules,
@@ -1344,6 +1352,27 @@ const App = (() => {
       return;
     }
     await completeMonthApproval(assessment, { stayInReport: true });
+  }
+
+  async function returnToPreviousWorkflowStage() {
+    const monthId = state.currentMonthId;
+    const month = monthId ? Months.byId(monthId) : null;
+    if (!month) throw new Error('لا يوجد شهر محدد للرجوع داخل دورة الرواتب.');
+    const current = PayrollWorkflow.derive(month, typeof SalaryProcessing !== 'undefined' && SalaryProcessing.getSnapshot ? SalaryProcessing.getSnapshot() : null);
+    if (current === PayrollWorkflow.STATE.ARCHIVED ||
+        [PayrollWorkflow.STATE.READY_FOR_PAYMENT, PayrollWorkflow.STATE.PAID].includes(current)) {
+      throw new Error('لا يمكن الرجوع بعد إنشاء كشف الرواتب أو بدء الصرف دون المساس بسجل الصرف المحفوظ.');
+    }
+    const permission = current === PayrollWorkflow.STATE.APPROVED ? 'months.write' : 'reports.calculate';
+    Permissions.require(permission);
+    await Months.returnWorkflowToPrevious(monthId);
+    if (current === PayrollWorkflow.STATE.APPROVED) {
+      await Months.setActiveMonthId(monthId, { reason: 'workflow_previous_stage' });
+    }
+    await selectMonth(monthId);
+    if (typeof PayrollWorkflowUI !== 'undefined') PayrollWorkflowUI.render({
+      month: Months.byId(monthId) || {}, report: state.currentReport
+    });
   }
 
   /**
@@ -5486,7 +5515,7 @@ const App = (() => {
     return { monthId: state.currentMonthId, rows, totals: Reports.computeTotals(rows) };
   }
 
-  return { init, teardown, syncGoogleSource, findSimilarGoogleOrders, getSalaryProcessingContext, getSelectedMonthId: () => state.currentMonthId };
+  return { init, teardown, syncGoogleSource, findSimilarGoogleOrders, getSalaryProcessingContext, getSelectedMonthId: () => state.currentMonthId, returnToPreviousWorkflowStage };
 })();
 
 /* ============================================================

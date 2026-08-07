@@ -19,6 +19,12 @@ assert.strictEqual(Workflow.derive({ status: 'locked', archived: true }, { statu
   'archive metadata remains the terminal state');
 assert.strictEqual(Workflow.derive({ status: 'locked' }, { status: 'approved' }), Workflow.STATE.READY_FOR_PAYMENT,
   'existing approved salary snapshot derives as ready for payment');
+assert.strictEqual(Workflow.previousState(Workflow.STATE.IN_REVIEW), Workflow.STATE.CALCULATED,
+  'the review stage has an explicit safe previous transition');
+assert.strictEqual(Workflow.previousState(Workflow.STATE.CALCULATED), Workflow.STATE.DRAFT,
+  'the calculated stage can formally return to calculation');
+assert.strictEqual(Workflow.previousState(Workflow.STATE.READY_FOR_PAYMENT), null,
+  'payment stages do not expose an unsafe metadata-only reversal');
 
 const calculatedContext = {
   month: { status: 'open', report: [{ moderatorId: 'm1', name: 'A', departmentId: 'd1' }], totals: {} },

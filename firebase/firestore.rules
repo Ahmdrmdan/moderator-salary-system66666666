@@ -340,6 +340,19 @@ service cloud.firestore {
           getAfter(/databases/$(database)/documents/salary_processing/$(monthId)).data.status == 'paid';
       }
 
+      // Creating the payroll Snapshot is the one allowed pre-payment
+      // lifecycle update on a locked month. It writes only the existing
+      // workflow metadata and must be paired with the approved Snapshot in
+      // the same batch, so Month Management can resume the payment stage.
+      function isReadyForPaymentWorkflowWrite() {
+        return thisMonthIsLocked() && !thisMonthIsArchived() &&
+          request.resource.data.workflowState == 'ready_for_payment' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'workflowState', 'workflowVersion', 'workflowUpdatedAt', 'workflowUpdatedBy'
+          ]) &&
+          getAfter(/databases/$(database)/documents/salary_processing/$(monthId)).data.status == 'approved';
+      }
+
       function isArchiveRestoreWrite() {
         return !thisMonthIsLocked() && thisMonthIsArchived() &&
           request.resource.data.archived == false &&
@@ -357,6 +370,7 @@ service cloud.firestore {
       allow update: if (hasAnyPermission(['reports.calculate', 'reports.approve', 'months.write', 'months.destructive']) &&
         ((!thisMonthIsLocked() && !thisMonthIsArchived()) || isClosingWrite() ||
           isReopeningWrite() || isArchiveWrite() || isPaidArchiveWrite() || isArchiveRestoreWrite())) ||
+        (hasAnyPermission(['salary_processing.approve']) && isReadyForPaymentWorkflowWrite()) ||
         (hasAnyPermission(['salary_processing.pay']) && isPaidWorkflowWrite());
       // A month can be deleted only when the app marked it empty at creation
       // and the client transaction independently verified no order batches.
@@ -448,6 +462,12 @@ service cloud.firestore {
           (hasAnyPermission(['salary_processing.pay']) && monthLocked(monthId) &&
             exists(/databases/$(database)/documents/monthly_reports/$(monthId)) &&
             getAfter(/databases/$(database)/documents/monthly_reports/$(monthId)).data.workflowState == 'paid' &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'workflowState', 'workflowVersion', 'workflowUpdatedAt', 'workflowUpdatedBy'
+            ])) ||
+          (hasAnyPermission(['salary_processing.approve']) && monthLocked(monthId) &&
+            exists(/databases/$(database)/documents/monthly_reports/$(monthId)) &&
+            getAfter(/databases/$(database)/documents/monthly_reports/$(monthId)).data.workflowState == 'ready_for_payment' &&
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'workflowState', 'workflowVersion', 'workflowUpdatedAt', 'workflowUpdatedBy'
             ])));

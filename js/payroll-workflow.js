@@ -58,7 +58,7 @@ const PayrollWorkflow = (() => {
   const TRANSITIONS = Object.freeze({
     [STATE.DRAFT]: [STATE.CALCULATED],
     [STATE.REOPENED]: [STATE.CALCULATED],
-    [STATE.CALCULATED]: [STATE.CALCULATED, STATE.IN_REVIEW],
+    [STATE.CALCULATED]: [STATE.DRAFT, STATE.CALCULATED, STATE.IN_REVIEW],
     [STATE.IN_REVIEW]: [STATE.CALCULATED, STATE.APPROVED],
     // Existing administration already supports reopening an approved month.
     // Retaining that path keeps legacy month management compatible while the
@@ -87,6 +87,14 @@ const PayrollWorkflow = (() => {
   });
 
   function isState(value) { return Object.values(STATE).includes(value); }
+  function previousState(state) {
+    const previous = {
+      [STATE.CALCULATED]: STATE.DRAFT,
+      [STATE.IN_REVIEW]: STATE.CALCULATED,
+      [STATE.APPROVED]: STATE.REOPENED
+    };
+    return previous[state] || null;
+  }
   function hasReport(month) {
     return Array.isArray(month && month.report) && month.report.length > 0;
   }
@@ -213,5 +221,5 @@ const PayrollWorkflow = (() => {
   }
 
   return { STATE, ACTION, ACTION_PERMISSION, ACTION_TARGET, TRANSITIONS, LABEL,
-    isState, derive, requiredErrors, assertTransition, assertAction, availableActions, metadata };
+    isState, previousState, derive, requiredErrors, assertTransition, assertAction, availableActions, metadata };
 })();

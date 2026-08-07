@@ -2664,6 +2664,13 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
 #view-report .workspace-executive-card strong,
 #view-report .report-payment-summary strong,
 #view-report .report-archive-summary strong { color:var(--ink); font-size:20px; }
+#view-report .report-payment-summary .report-payment-progress { grid-column:1 / -1; min-height:auto; grid-template-columns:1fr auto; align-items:center; }
+#view-report .report-payment-progress i { grid-column:1 / -1; display:block; height:6px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.08); }
+#view-report .report-payment-progress b { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--brand),#34d399); transition:width .22s ease; }
+.badge-workflow { color:#cfe5ff; border:1px solid rgba(115,167,255,.24); background:rgba(115,167,255,.1); }
+.month-workflow-progress { display:grid; grid-template-columns:auto minmax(58px,1fr); align-items:center; gap:7px; min-width:112px; color:var(--ink-muted); font-size:11px; direction:ltr; }
+.month-workflow-progress i { display:block; height:5px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.08); }
+.month-workflow-progress b { display:block; height:100%; border-radius:inherit; background:var(--brand); }
 #view-report .workspace-executive-card small { color:var(--ink-faint); font-size:10px; }
 #view-report .report-approval-checklist { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
 #view-report .workspace-checklist-group { padding:13px 14px; border:1px solid rgba(255,255,255,.07); border-radius:10px; background:rgba(255,255,255,.02); }
