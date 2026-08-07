@@ -16,6 +16,8 @@ assert.match(htmlSource, /<script src="js\/vendor\/chart\.umd\.js"><\/script>/,
 assert.ok(fs.existsSync('js/vendor/chart.umd.js'), 'the Chart.js UMD build is shipped with the application');
 assert.doesNotMatch(htmlSource, /(?:cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com).*Chart\.js|chart\.js@/i,
   'dashboard does not rely on an external Chart.js CDN at runtime');
+assert.match(htmlSource, /<link rel="stylesheet" href="css\/style\.css\?v=7\.0\.10-chart-height-hotfix">/,
+  'dashboard cache-busts the chart layout stylesheet after the production hotfix');
 
 // Chart.js is responsive with maintainAspectRatio disabled, so the flex child
 // that owns each canvas must be able to shrink. Without this constraint, the
