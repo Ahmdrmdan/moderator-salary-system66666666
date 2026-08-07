@@ -361,7 +361,8 @@ body.sidebar-collapsed .user-info-text { display: none; }
   display: flex; flex-direction: column;
 }
 .chart-card h3 { font-size: 14px; margin: 0 0 12px; color: var(--text-secondary); }
-.chart-card .chart-wrap { flex: 1; position: relative; }
+.chart-card .chart-wrap { flex: 1 1 0; min-height: 0; position: relative; overflow: hidden; }
+.chart-card .chart-wrap canvas { width: 100% !important; height: 100% !important; }
 .chart-empty { min-height: 100%; display: grid; place-items: center; padding: 16px; color: var(--ink-muted); text-align: center; font-size: 13px; }
 
 /* ---- Generic panel ---- */

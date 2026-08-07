@@ -4,8 +4,10 @@ const assert = require('assert');
 const fs = require('fs');
 
 const appSource = fs.readFileSync('js/app.js', 'utf8');
+const chartsSource = fs.readFileSync('js/charts.js', 'utf8');
 const htmlSource = fs.readFileSync('dashboard.html', 'utf8');
 const widgetsSource = fs.readFileSync('js/dashboard-widgets.js', 'utf8');
+const stylesSource = fs.readFileSync('css/style.css', 'utf8');
 
 // The dashboard charts are a production dependency: a stale CDN path left the
 // widgets in their fallback state despite the rest of the dashboard loading.
@@ -14,6 +16,16 @@ assert.match(htmlSource, /<script src="js\/vendor\/chart\.umd\.js"><\/script>/,
 assert.ok(fs.existsSync('js/vendor/chart.umd.js'), 'the Chart.js UMD build is shipped with the application');
 assert.doesNotMatch(htmlSource, /(?:cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com).*Chart\.js|chart\.js@/i,
   'dashboard does not rely on an external Chart.js CDN at runtime');
+
+// Chart.js is responsive with maintainAspectRatio disabled, so the flex child
+// that owns each canvas must be able to shrink. Without this constraint, the
+// canvas ResizeObserver can grow its own parent indefinitely.
+assert.match(stylesSource, /\.chart-card \.chart-wrap\s*\{[^}]*flex:\s*1 1 0;[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/,
+  'chart wrappers have a bounded, shrinkable flex height');
+assert.match(stylesSource, /\.chart-card \.chart-wrap canvas\s*\{\s*width:\s*100% !important;\s*height:\s*100% !important;/,
+  'chart canvases fill the bounded wrapper instead of defining its height');
+assert.match(chartsSource, /function renderAllCharts\(report, options = \{\}\) \{[\s\S]*?destroyAll\(\);[\s\S]*?renderTopSales\(rows\);/,
+  'each dashboard render destroys prior chart instances before creating replacements');
 
 // Dashboard-only roles must not make reads that Firestore correctly denies.
 assert.match(appSource, /const canReadMonths = \['months\.read', 'reports\.read', 'archive\.read', 'comparison\.read', 'backups\.create', 'backups\.restore'\][\s\S]*?\.some\(permission => Permissions\.can\(permission\)\);/,
