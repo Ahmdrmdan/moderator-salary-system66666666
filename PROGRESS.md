@@ -1,6 +1,6 @@
 # PROGRESS.md — Final Production Audit
 
-## Dashboard Analytics Filters — v7.1 (awaiting user review)
+## Dashboard Analytics Filters — v7.1.0 (approved and ready for merge)
 
 ### Approved architecture and implementation
 
@@ -16,6 +16,14 @@
 - Firebase Hosting deployed successfully from `feature/dashboard-analytics-filters` to project `ahmed123-95a0e`.
 - Published UAT confirmed both scope panels, real department options, all six chart canvases divided into three monthly and three operational charts, custom date visibility, custom range application, Last 7 Days application, direct Reset to This Month, and the Update action without a page reload.
 - Browser Console and runtime logs remained empty during Dashboard load and all tested filter interactions. No production business, payroll, report, user, or audit data was written during UAT.
+- Final UAT verified that selecting Last 30 Days remains intact after navigation to Orders and back, the top summary shows the selected monthly and analytics scopes, manual Refresh displays `جارٍ تحديث التحليلات…` while disabled, and the Dashboard returns to its stable state with three monthly and three operational chart canvases.
+
+### Final review additions
+
+- Filter state persists in the existing application memory while navigating Dashboard views; it is intentionally not persisted beyond a browser session.
+- A compact scope summary prevents ambiguity about which controls affect the monthly Snapshot and which affect operational data.
+- An explicit operational empty state explains when no dated orders match the range and department.
+- Audit range reads are debounced by 220ms during rapid filter changes, and a request sequence ignores stale asynchronous responses. Manual refresh paints its loading state before the read starts.
 
 ### Scope confirmation
 
