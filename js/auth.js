@@ -97,8 +97,9 @@ const Auth = (() => {
     if (!next.status) next.status = 'active';
     if (!next.permissionOverrides) next.permissionOverrides = { allow: [], deny: [] };
     if (!Array.isArray(next.permissions) && typeof Permissions !== 'undefined') next.permissions = Permissions.effective(next.systemRole || next.role, next.permissionOverrides);
-    const changed = next.role !== profile.role || next.systemRole !== profile.systemRole || next.status !== profile.status || !profile.permissionOverrides || !Array.isArray(profile.permissions);
-    if (changed) await db.collection(COLLECTIONS.USERS).doc(user.uid).update({ role: next.role, systemRole: next.systemRole || null, status: next.status, permissionOverrides: next.permissionOverrides, permissions: next.permissions, migratedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    // Legacy profiles are normalized in memory. Sign-in never depends on a
+    // client-side role migration, which also keeps user-managed fields under
+    // the Super Admin boundary enforced by Firestore Rules.
     return next;
   }
 
@@ -155,7 +156,6 @@ const Auth = (() => {
       }
       try {
         const profile = await ensureUserDoc(user);
-        await db.collection(COLLECTIONS.USERS).doc(user.uid).set({ lastActivityAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
         Permissions.setProfile(profile);
         if ((profile.status || 'active') !== 'active' || !Permissions.can('dashboard.read')) {
           document.body.innerHTML = `
@@ -170,6 +170,7 @@ const Auth = (() => {
             </div>`;
           return;
         }
+        await db.collection(COLLECTIONS.USERS).doc(user.uid).set({ lastActivityAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
         onReady(user, profile);
       } catch (err) {
         console.error('Auth guard error:', err);

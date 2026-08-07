@@ -17,9 +17,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAdmin() {
+    // Profiles written before status was introduced remain active for
+    // backward compatibility. An explicit inactive state is an authorization
+    // boundary even for direct SDK or REST requests.
+    function hasActiveProfile() {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (!get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAll(['status']) ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active');
+    }
+
+    function isAdmin() {
+      return hasActiveProfile() &&
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin');
     }
@@ -29,8 +38,7 @@ service cloud.firestore {
     // their former full access until an administrator explicitly reassigns
     // them, which makes the migration non-breaking.
     function hasAnyPermission(required) {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      return hasActiveProfile() &&
         (isAdmin() ||
           (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAll(['permissions']) &&
            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions is list &&
@@ -42,11 +50,50 @@ service cloud.firestore {
     // `systemRole` makes the automatic migration compatible with old Admin
     // profiles without changing their physical role field.
     function isSuperAdmin() {
-      return isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      return hasActiveProfile() &&
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin' ||
          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAll(['systemRole']) &&
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.systemRole == 'super_admin'));
+    }
+
+    // A public Auth registration can create only an inert pending profile.
+    function isSafePendingRegistration() {
+      return request.resource.data.role == 'pending' &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.keys().hasAll(['permissions']) &&
+        request.resource.data.permissions is list &&
+        request.resource.data.permissions.size() == 0;
+    }
+
+    // The first-account exception remains atomic with its bootstrap marker.
+    function isBootstrapProfile() {
+      return request.resource.data.role == 'admin' &&
+        request.resource.data.status == 'active' &&
+        request.resource.data.keys().hasAll(['permissions']) &&
+        request.resource.data.permissions is list &&
+        request.resource.data.permissions.hasAny(['*']) &&
+        !exists(/databases/$(database)/documents/settings/adminBootstrap) &&
+        existsAfter(/databases/$(database)/documents/settings/adminBootstrap) &&
+        getAfter(/databases/$(database)/documents/settings/adminBootstrap).data.claimedBy == request.auth.uid;
+    }
+
+    // Normal users can record only their own session timestamps. Every role,
+    // status, override, and stored-permission mutation remains Super Admin-only.
+    function isOwnActivityUpdate(userId) {
+      return isSignedIn() && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['lastLoginAt', 'lastActivityAt']);
+    }
+
+    // Preserve self Login/Logout accountability without opening Audit writes.
+    function isOwnSessionAudit() {
+      return hasActiveProfile() &&
+        request.resource.data.keys().hasAll(['action', 'entity', 'operation', 'documentId', 'userId']) &&
+        (request.resource.data.action == 'auth.login' || request.resource.data.action == 'auth.logout') &&
+        request.resource.data.entity == 'users' &&
+        request.resource.data.operation == 'update' &&
+        request.resource.data.documentId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
     }
 
     // -------------------------------------------------------------------
@@ -135,11 +182,10 @@ service cloud.firestore {
       allow read: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin() || hasAnyPermission(['backups.create', 'backups.restore']));
       allow create: if isSignedIn() && request.auth.uid == userId &&
         (
-          request.resource.data.role == 'pending' ||
-          ((request.resource.data.role == 'admin' || request.resource.data.role == 'super_admin') &&
-           !exists(/databases/$(database)/documents/settings/adminBootstrap))
+          isSafePendingRegistration() || isBootstrapProfile()
         );
-      allow update, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || isOwnActivityUpdate(userId);
+      allow delete: if isSuperAdmin();
     }
 
     // Role definitions can change the rights of many accounts at once.
@@ -159,7 +205,11 @@ service cloud.firestore {
     match /settings/adminBootstrap {
       allow read: if isSignedIn();
       allow create: if isSignedIn() &&
-        !exists(/databases/$(database)/documents/settings/adminBootstrap);
+        !exists(/databases/$(database)/documents/settings/adminBootstrap) &&
+        request.resource.data.claimedBy == request.auth.uid &&
+        existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
       allow update, delete: if isAdmin();
     }
 
@@ -407,7 +457,7 @@ service cloud.firestore {
     // that guarantee: the entry, once written, cannot be removed afterwards.
     match /audit_logs/{logId} {
       allow read: if hasAnyPermission(['audit.read', 'backups.create', 'backups.restore']);
-      allow create: if hasAnyPermission(['employees.write','employees.delete','departments.write','orders.write','orders.import','shipping.import','months.write','months.destructive','reports.calculate','reports.approve','transactions.write','salary_processing.write','salary_processing.approve','salary_processing.pay','salary_processing.export','settlements.write','backups.create','backups.restore','settings.write','users.manage']);
+      allow create: if isOwnSessionAudit() || hasAnyPermission(['employees.write','employees.delete','departments.write','orders.write','orders.import','shipping.import','months.write','months.destructive','reports.calculate','reports.approve','transactions.write','salary_processing.write','salary_processing.approve','salary_processing.pay','salary_processing.export','settlements.write','backups.create','backups.restore','settings.write','users.manage']);
       allow update, delete: if false;
     }
 

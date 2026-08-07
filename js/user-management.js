@@ -4,6 +4,8 @@ const UserManagement = (() => {
   let users = [], search = '', statusFilter = 'all', initialized = false;
   // Central presentation catalogue. Stored permission keys remain unchanged.
   const PERMISSION_GROUPS = [
+    { label: 'لوحة التحكم والأقسام', icon: 'layout-dashboard', items: [['dashboard.read','عرض لوحة التحكم'],['departments.read','عرض الأقسام'],['departments.write','إدارة الأقسام']] },
+    { label: 'صلاحيات تشغيلية موجودة', icon: 'shield-check', items: [['shipping.import','تحديثات الشحن'],['salary_processing.read','عرض معالجة الرواتب'],['salary_processing.write','تعديل معالجة الرواتب'],['salary_processing.approve','اعتماد معالجة الرواتب'],['salary_processing.pay','صرف الرواتب'],['salary_processing.export','تصدير معالجة الرواتب'],['roles.manage','إدارة الأدوار']] },
     { label: 'الموظفون', icon: 'users', items: [['employees.read','عرض الموظفين'],['employees.write','إدارة الموظفين'],['employees.delete','حذف الموظفين']] },
     { label: 'الطلبات', icon: 'receipt-text', items: [['orders.read','عرض الطلبات'],['orders.import','استيراد الطلبات'],['orders.write','إدارة الطلبات']] },
     { label: 'الشهور', icon: 'calendar-days', items: [['months.read','عرض الشهور'],['months.write','إدارة الشهور'],['months.destructive','إفراغ أو حذف شهر']] },
