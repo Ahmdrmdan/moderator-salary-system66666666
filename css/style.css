@@ -1193,8 +1193,11 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
   position: relative;
   display: flex;
   align-items: end;
-  min-height: 88px;
-  padding: 18px 20px;
+  width: fit-content;
+  min-width: min(100%, 430px);
+  min-height: 0;
+  padding: 13px 18px;
+  margin-inline-start: auto;
   margin-bottom: 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius-card);
@@ -1293,6 +1296,11 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
   background: var(--layer-1);
   box-shadow: var(--shadow-card);
 }
+#view-dashboard .alerts-grid > .alert-card:only-child {
+  grid-column: 1 / -1;
+  min-height: 76px;
+  align-items: center;
+}
 #view-dashboard .alert-card strong { font-size: 13px; }
 #view-dashboard .alert-card p { font-size: 11px; }
 
@@ -1390,7 +1398,7 @@ input,select,textarea,.field input,.field select,.field textarea,.search-input {
   #view-dashboard .dashboard-operational-widgets { grid-template-columns: 1fr; }
 }
 @media (max-width: 780px) {
-  .topbar { min-height: auto; padding: 15px 16px; margin-bottom: 16px; }
+  .topbar { width: 100%; min-height: auto; padding: 15px 16px; margin-bottom: 16px; }
   .topbar h1 { font-size: 21px; }
   #view-dashboard .dashboard-hero { min-height: auto; padding: 20px; gap: 18px; }
   #view-dashboard .dashboard-hero .dashboard-status { grid-template-columns: repeat(2, minmax(0, 1fr)); }
