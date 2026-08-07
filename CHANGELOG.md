@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Salary stabilization (awaiting review)
+
+- Corrected Salary Snapshot presentation by mapping the existing monthly-report fields (`salary`, `totalBonus`, `totalAdjustments`, `totalAdvances`, `previousDebt`, and `finalSalary`) without recalculating any payroll amount. Commission rows now present their already-stored `totalBonus` as commission when that is their existing salary type.
+- Corrected the Snapshot lifecycle label so a persisted `paid` Snapshot is displayed as `Paid` rather than `Draft`.
+- Bound Snapshot adjustment, payment, export, and print controls to the existing Salary Processing capabilities while retaining the existing internal permission checks and Firestore Rules.
+- Made approve, payment, and manual-adjustment writes atomic with their Audit entry by committing both existing document writes in one Firestore batch. No document shape, rule, migration, historical report, or salary formula changed.
+- Added Salary Processing contract coverage for current and legacy Snapshot display fields, commission presentation, stored net preservation, aggregation, lifecycle status, permission gating, and batched audit writes.
+
 ## Unreleased — Employees stabilization (awaiting review)
 
 - Restricted the Employees UI by capability: adding, editing, inline fixed-salary editing, and reactivation require `employees.write`; permanent deletion requires `employees.delete`. The Firestore Rules and DataLayer checks remain the authoritative write boundaries.

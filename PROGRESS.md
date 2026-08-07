@@ -1,5 +1,31 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
+## Salary Stabilization (awaiting user review)
+
+### Root cause and minimal fix
+
+- Salary Processing was reading legacy Snapshot fields for additions and deductions while current monthly reports persist `totalAdjustments`, `totalAdvances`, and `previousDebt`. Commission report rows persist the amount in `totalBonus`, but the Snapshot view read only an absent commission field. A display-only adapter now maps both stored formats and uses the stored final/net amount without changing its calculation.
+- The `paid` Snapshot status was rendered as `Draft` in the lifecycle badge. It now renders as `Paid`.
+- Salary adjustment, payment, export, and print controls were visible before checking the existing Salary Processing capabilities. Rendering now follows `salary_processing.write`, `.pay`, and `.export`; the internal permission guards and Firestore Rules remain unchanged.
+- Approve, payment, and manual-adjustment writes recorded their audit event separately after the financial write. They now use one existing-schema Firestore batch, so a Snapshot write and its Audit entry either both commit or neither does.
+
+### Files changed
+
+- `dashboard.html` — versioned the deployed Salary Processing runtime asset.
+- `js/salary-processing.js` — display-field compatibility, `paid` label, permission-aware controls, and atomic existing-schema Snapshot/Audit writes.
+- `tests/salary-processing-contract.test.js` — current/legacy display, commission, permission, status, aggregation, and atomic-write contract coverage.
+
+### Verification completed
+
+- Passed: `node --check js/salary-processing.js`, `node tests/salary-processing-contract.test.js`, `node tests/employees-contract.test.js`, `node tests/departments-contract.test.js`, `node tests/import-contract.test.js`, and `node tests/shipping-contract.test.js`; `git diff --check` also passed before commit.
+- Deployed Firebase Hosting to project `ahmed123-95a0e`. The published dashboard loads `js/salary-processing.js?v=7.0.14-salary-stabilization`.
+- Production UAT as `admin.login.20260807@ahmed123-95a0e.local` opened the Firebase-hosted Salary Processing Center for the active July 2026 period. The current state correctly displayed `Draft` because no Snapshot exists for that period; no approval, payment, adjustment, or Snapshot was created in production. The administrator's existing permitted controls render, and the browser recorded zero errors and one pre-existing Chart.js warning only.
+- Paid-state and restricted-capability behavior are covered by the isolated contract test, so no production salary record or user permission was changed merely to exercise those cases.
+
+### Scope confirmation
+
+- No salary formula, salary calculation, historical report, Firestore schema, Firestore Rule, migration, report, or production data was changed in this stage.
+
 ## Employees Stabilization (awaiting user review)
 
 ### Root cause and minimal fix
