@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased — Dashboard UI / UX consistency audit (awaiting review)
+## Unreleased — System UI / UX consistency audit: phase 2 (awaiting review)
+
+- Extended the approved Dashboard design language across Departments, Employees, Orders (including Import and Shipping tabs), Months, Month Comparison, Reports and Salary views, Transactions, Settlements, Archive, Backups, Audit, Settings, and User Management.
+- Standardized visual-only layout primitives: content widths, panel surfaces, section headers, action/filter rails, buttons, visible form controls, data-table header and row rhythm, tab states, empty/drop states, and modal sizing/scrolling.
+- Added responsive behavior for wide workspaces, stacked action rails, tables, forms, tabs, and modal interiors without changing any application workflow or data.
+- Preserved every business action, Firestore access path, permission check, query, calculation, role, and JavaScript event binding. This phase contains stylesheet and cache-version changes only.
+
+## Unreleased — Dashboard UI / UX consistency audit (closed and approved)
 
 - Re-composed the Dashboard visually without changing its data, Firebase queries, permissions, actions, chart configuration, or calculation behavior.
 - Reworked the Hero into a responsive two-column composition: the monthly narrative and the existing status items now have clear hierarchy instead of competing in one undifferentiated band.
