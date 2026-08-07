@@ -23,8 +23,67 @@ const PayrollWorkflowUI = (() => {
     PayrollWorkflow.STATE.REOPENED
   ];
 
+  // The engine owns the lifecycle. This map owns only which existing report
+  // surface is relevant to that lifecycle state; it creates no transition,
+  // query, or financial data.
+  const WORKSPACE = Object.freeze({
+    CALCULATION: 'calculation',
+    REVIEW: 'review',
+    APPROVAL: 'approval',
+    PAYROLL: 'payroll',
+    PAYMENT: 'payment',
+    ARCHIVE: 'archive'
+  });
+
   const $ = id => document.getElementById(id);
   const label = state => PayrollWorkflow.LABEL[state] || 'غير معروف';
+
+  function workspaceFor(state) {
+    if ([PayrollWorkflow.STATE.DRAFT, PayrollWorkflow.STATE.REOPENED].includes(state)) return WORKSPACE.CALCULATION;
+    if ([PayrollWorkflow.STATE.CALCULATED, PayrollWorkflow.STATE.IN_REVIEW].includes(state)) return WORKSPACE.REVIEW;
+    if (state === PayrollWorkflow.STATE.APPROVED) return WORKSPACE.APPROVAL;
+    if (state === PayrollWorkflow.STATE.SALARY_SNAPSHOT_CREATED) return WORKSPACE.PAYROLL;
+    if (state === PayrollWorkflow.STATE.READY_FOR_PAYMENT) return WORKSPACE.PAYMENT;
+    return WORKSPACE.ARCHIVE;
+  }
+
+  function workspaceCopy(workspace) {
+    const copy = {
+      [WORKSPACE.CALCULATION]: ['مرحلة الحساب', 'حساب التقرير الشهري', 'استخدم أدوات الحساب لإعداد بيانات التقرير للشهر المحدد.'],
+      [WORKSPACE.REVIEW]: ['مرحلة المراجعة', 'مراجعة التقرير والاستثناءات', 'راجع المستحقات والاستثناءات قبل اتخاذ قرار الاعتماد.'],
+      [WORKSPACE.APPROVAL]: ['مرحلة الاعتماد', 'اعتماد التقرير الشهري', 'اكتملت المراجعة؛ نفّذ اعتماد التقرير لفتح مسار كشف الرواتب.'],
+      [WORKSPACE.PAYROLL]: ['مرحلة كشف الرواتب', 'مراجعة كشف الرواتب', 'راجع كشف الرواتب المستقل قبل انتقاله إلى الصرف.'],
+      [WORKSPACE.PAYMENT]: ['مرحلة الصرف', 'صرف الرواتب', 'سجّل الصرف من كشف الرواتب الحالي حتى تكتمل الدورة.'],
+      [WORKSPACE.ARCHIVE]: ['مرحلة الأرشفة', 'أرشفة دورة الرواتب', 'اكتمل الصرف؛ تبقى الأرشفة آخر إجراء يحفظ الدورة للعرض والتدقيق.']
+    };
+    return copy[workspace] || copy[WORKSPACE.CALCULATION];
+  }
+
+  function renderWorkspace(state) {
+    const workspace = workspaceFor(state);
+    const reportView = $('view-report');
+    if (reportView) {
+      reportView.dataset.workflowWorkspace = workspace;
+      reportView.querySelectorAll('[data-workflow-workspace]').forEach(element => {
+        const supported = (element.dataset.workflowWorkspace || '').split(/\s+/);
+        element.hidden = !supported.includes(workspace);
+      });
+    }
+
+    const [eyebrow, title, description] = workspaceCopy(workspace);
+    const workspaceRoot = $('reportStateWorkspace');
+    if (workspaceRoot) workspaceRoot.dataset.workflowWorkspace = workspace;
+    const eyebrowNode = $('reportWorkspaceEyebrow');
+    const titleNode = $('reportWorkspaceTitle');
+    const descriptionNode = $('reportWorkspaceDescription');
+    if (eyebrowNode) eyebrowNode.textContent = eyebrow;
+    if (titleNode) titleNode.textContent = title;
+    if (descriptionNode) descriptionNode.textContent = description;
+
+    const summary = $('reportDecisionSummary');
+    if (summary) summary.dataset.workflowWorkspace = workspace;
+    return workspace;
+  }
 
   function currentContext(input = {}) {
     const monthId = input.monthId || (typeof App !== 'undefined' && App.getSelectedMonthId
@@ -112,9 +171,17 @@ const PayrollWorkflowUI = (() => {
       : 'هذه الدورة مكتملة ومحفوظة في الأرشيف.';
 
     const decision = $('reportDecisionState');
-    if (decision) decision.textContent = state === PayrollWorkflow.STATE.DRAFT
-      ? 'احسب التقرير أولًا لتظهر قيم القرار الشهرية.'
-      : `منطقة القرار مرتبطة بحالة الدورة الحالية: ${label(state)}.`;
+    if (decision) {
+      const decisionMessages = {
+        [WORKSPACE.CALCULATION]: 'تظهر قيم القرار بعد إكمال حساب التقرير الشهري.',
+        [WORKSPACE.REVIEW]: 'تدعم هذه القيم قرار المراجعة والاعتماد قبل إنشاء كشف الرواتب.',
+        [WORKSPACE.APPROVAL]: 'هذه هي القيم المعتمدة لاتخاذ قرار إغلاق التقرير الشهري.',
+        [WORKSPACE.PAYROLL]: 'هذه القيم هي مرجع مراجعة كشف الرواتب المستقل.',
+        [WORKSPACE.PAYMENT]: 'هذه القيم مرجع الصرف ولا يعاد حسابها أثناء الدفع.',
+        [WORKSPACE.ARCHIVE]: 'هذه القيم محفوظة للدورة الحالية وللعرض والتدقيق فقط.'
+      };
+      decision.textContent = decisionMessages[workspaceFor(state)];
+    }
 
     const notice = $('reportApprovalNotice');
     if (notice) {
@@ -140,7 +207,8 @@ const PayrollWorkflowUI = (() => {
     const canPay = canAction(PayrollWorkflow.ACTION.PAY, context);
     const canArchive = canAction(PayrollWorkflow.ACTION.ARCHIVE, context);
 
-    setAction('calculateBtn', true, canCalculate, canCalculate ? 'حساب التقرير' : 'الحالة الحالية لا تسمح بالحساب.');
+    setAction('calculateBtn', [WORKSPACE.CALCULATION, WORKSPACE.REVIEW].includes(workspaceFor(state)), canCalculate,
+      canCalculate ? 'حساب التقرير' : 'الحالة الحالية لا تسمح بالحساب.');
     setAction('approveReportBtn',
       [PayrollWorkflow.STATE.CALCULATED, PayrollWorkflow.STATE.IN_REVIEW].includes(state),
       canReview,
@@ -174,6 +242,7 @@ const PayrollWorkflowUI = (() => {
     }
 
     renderHeaderSteps(state);
+    renderWorkspace(state);
     renderTimeline(state);
     renderMessages(state);
     renderActions(state, context);
@@ -213,5 +282,5 @@ const PayrollWorkflowUI = (() => {
     render();
   }
 
-  return { init, render, canAction };
+  return { init, render, canAction, workspaceFor };
 })();

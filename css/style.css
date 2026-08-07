@@ -2579,6 +2579,31 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
 
 /* Payroll Workflow Engine — Final UI: visual treatment for the existing
    salary snapshot, supporting analysis, and report review dialogs only. */
+#view-report [data-workflow-workspace][hidden] { display:none !important; }
+#view-report .report-state-workspace {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:16px;
+  margin-bottom:16px;
+  padding:16px 20px;
+  border:1px solid rgba(115,167,255,.16);
+  border-radius:var(--radius-card);
+  background:linear-gradient(100deg,rgba(115,167,255,.07),rgba(25,29,34,.78) 58%);
+}
+#view-report .report-state-workspace-heading h3 { margin:0; color:var(--ink); font-size:16px; }
+#view-report .report-state-workspace-heading p { margin:5px 0 0; color:var(--ink-muted); font-size:12px; }
+#view-report .report-state-workspace .report-actions { margin:0; padding:0; border:0; background:transparent; }
+#view-report[data-workflow-workspace="calculation"] #reportDecisionSummary { border-color:rgba(115,167,255,.15); }
+#view-report[data-workflow-workspace="review"] #reportDecisionSummary { border-color:rgba(245,158,11,.22); }
+#view-report[data-workflow-workspace="approval"] #reportDecisionSummary { border-color:rgba(115,167,255,.28); }
+#view-report[data-workflow-workspace="payment"] #reportDecisionSummary { border-color:rgba(52,211,153,.24); }
+#view-report[data-workflow-workspace="archive"] #reportDecisionSummary { opacity:.9; }
+#view-report[data-workflow-workspace="approval"] .report-state-workspace,
+#view-report[data-workflow-workspace="payroll"] .report-state-workspace,
+#view-report[data-workflow-workspace="payment"] .report-state-workspace,
+#view-report[data-workflow-workspace="archive"] .report-state-workspace { grid-template-columns:1fr; }
+
 #view-report .salary-snapshot-dashboard {
   gap:16px;
   padding:20px;
@@ -2751,6 +2776,7 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
 #salaryEmployeeDrawer .config-tabs { margin-bottom:16px; box-shadow:none; }
 
 @media (max-width:900px) {
+  #view-report .report-state-workspace { grid-template-columns:1fr; padding:16px 18px; }
   #view-report .salary-snapshot-dashboard { padding:18px; }
   #view-report .salary-review-insights { grid-template-columns:1fr; }
   #view-report .salary-snapshot-charts { grid-template-columns:1fr; }
@@ -2759,6 +2785,7 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   #view-report .salary-snapshot-charts .chart-card canvas { max-height:188px !important; }
 }
 @media (max-width:600px) {
+  #view-report .report-state-workspace { padding:14px 16px; }
   #view-report .salary-snapshot-dashboard { padding:16px; }
   #view-report .salary-snapshot-heading { padding-bottom:12px; }
   #view-report .salary-snapshot-dashboard #salaryExecutiveSummary { grid-template-columns:repeat(2,minmax(0,1fr)); }
