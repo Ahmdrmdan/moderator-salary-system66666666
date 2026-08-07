@@ -467,13 +467,17 @@ Haba&#9;7&#9;750"></textarea>
           </header>
 
           <section class="report-workflow-card" aria-labelledby="reportWorkflowTitle">
-            <div><span class="report-eyebrow" id="reportWorkflowTitle">مسار المراجعة والاعتماد</span><p>يبقى التقرير الشهري وكشف الرواتب مسارين مستقلين بوضوح.</p></div>
-            <ol class="report-workflow">
-              <li><span>1</span>حساب التقرير</li>
-              <li><span>2</span>مراجعة المستحقات</li>
-              <li><span>3</span>اعتماد التقرير</li>
-              <li><span>4</span>اعتماد كشف الرواتب</li>
-              <li><span>5</span>صرف الرواتب</li>
+            <div><span class="report-eyebrow" id="reportWorkflowTitle">مسار المراجعة والاعتماد</span><p id="reportWorkflowCurrent">الحالة الحالية: مسودة</p><p id="reportWorkflowNext">الخطوة التالية: حساب التقرير</p></div>
+            <ol class="report-workflow" id="reportWorkflowSteps">
+              <li data-workflow-state="draft"><span>1</span>مسودة</li>
+              <li data-workflow-state="calculated"><span>2</span>تم الحساب</li>
+              <li data-workflow-state="in_review"><span>3</span>قيد المراجعة</li>
+              <li data-workflow-state="approved"><span>4</span>تم الاعتماد</li>
+              <li data-workflow-state="salary_snapshot_created"><span>5</span>تم إنشاء الكشف</li>
+              <li data-workflow-state="ready_for_payment"><span>6</span>جاهز للصرف</li>
+              <li data-workflow-state="paid"><span>7</span>تم الصرف</li>
+              <li data-workflow-state="archived"><span>8</span>مؤرشف</li>
+              <li data-workflow-state="reopened"><span>9</span>أُعيد فتحه</li>
             </ol>
           </section>
 
@@ -489,7 +493,7 @@ Haba&#9;7&#9;750"></textarea>
         </section>
 
         <section class="report-summary-section" aria-labelledby="reportSummaryTitle">
-          <div class="report-section-heading"><div><span class="report-eyebrow">نظرة مالية</span><h3 id="reportSummaryTitle">ملخص المراجعة</h3></div><p>المبالغ المعروضة هي نفس القيم المحسوبة والمحفوظه للتقرير الحالي.</p></div>
+          <div class="report-section-heading"><div><span class="report-eyebrow">نظرة مالية</span><h3 id="reportSummaryTitle">ملخص المراجعة</h3></div><p id="reportDecisionState">المبالغ المعروضة هي نفس القيم المحسوبة والمحفوظه للتقرير الحالي.</p></div>
           <div class="close-summary" id="reportFinancialSummary" aria-live="polite"></div>
         </section>
 
@@ -556,7 +560,7 @@ Haba&#9;7&#9;750"></textarea>
           </div>
 
           <section class="panel salary-snapshot-review"><div class="panel-header"><h3>مراجعة كشف الرواتب</h3><div><button class="btn btn-sm" id="salarySnapshotExcelBtn" type="button">تصدير Excel</button><button class="btn btn-sm" id="salarySnapshotPrintBtn" type="button">طباعة</button></div></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>الأساسي</th><th>البونص</th><th>العمولة</th><th>الإضافات</th><th>الخصومات</th><th>الصافي</th><th>إجراءات</th></tr></thead><tbody id="salarySnapshotRows"></tbody></table></div></section>
-          <section class="panel salary-payment-panel"><div class="panel-header"><h3>صرف الرواتب</h3><button class="btn btn-accent" id="salaryMarkAllPaidBtn" type="button">تسجيل صرف الجميع</button></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>صافي المستحق</th><th>حالة الدفع</th><th>تاريخ الدفع</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead><tbody id="salaryPaymentBody"></tbody></table></div></section>
+          <section class="panel salary-payment-panel"><div class="panel-header"><h3>صرف الرواتب</h3><div class="report-primary-actions"><button class="btn btn-accent" id="salaryMarkAllPaidBtn" type="button">تسجيل صرف الجميع</button><button class="btn" id="workflowArchiveBtn" data-permission="months.write" type="button" hidden>أرشفة دورة الرواتب</button></div></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>صافي المستحق</th><th>حالة الدفع</th><th>تاريخ الدفع</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead><tbody id="salaryPaymentBody"></tbody></table></div></section>
 
           <section class="report-supporting-insights" aria-labelledby="reportInsightsTitle">
             <div class="report-section-heading"><div><span class="report-eyebrow">قراءة مساندة</span><h3 id="reportInsightsTitle">المؤشرات والتحليلات</h3></div><p>تساعد على المراجعة ولا تغيّر أي قيمة في كشف الرواتب.</p></div>
@@ -1533,6 +1537,7 @@ Haba&#9;7&#9;750"></textarea>
 <script src="js/orders.js?v=7.0.12-orders-permissions"></script>
 <script src="js/dashboard-widgets.js"></script>
 <script src="js/salary-processing.js?v=7.1.1-monthly-report-ux-r1"></script>
+<script src="js/payroll-workflow-ui.js"></script>
 <script src="js/role-matrix.js"></script>
 <script src="js/month-management.js"></script>
 <script src="js/month-comparison.js"></script>
@@ -1545,7 +1550,7 @@ Haba&#9;7&#9;750"></textarea>
   Auth.guardPage((user, profile) => {
     document.getElementById('userAvatar').textContent = (user.email || 'A')[0].toUpperCase();
     App.init(user, profile)
-      .then(() => { DataSources.init(); RoleMatrix.init(); SalaryProcessing.init(); })
+      .then(() => { DataSources.init(); RoleMatrix.init(); PayrollWorkflowUI.init(); SalaryProcessing.init(); })
       .catch(error => { console.error('Application initialization failed:', error); Toast.show('تعذر إكمال تحميل النظام: ' + error.message, 'error'); });
   });
   UIIcons.init();

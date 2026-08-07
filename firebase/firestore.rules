@@ -327,6 +327,19 @@ service cloud.firestore {
           get(/databases/$(database)/documents/salary_processing/$(monthId)).data.status == 'paid';
       }
 
+      // The final payment batch mirrors its state to the locked month and
+      // lightweight summary. It is metadata-only and must be paired with a
+      // Salary Processing document that is paid in the same request.
+      function isPaidWorkflowWrite() {
+        return thisMonthIsLocked() && !thisMonthIsArchived() &&
+          request.resource.data.workflowState == 'paid' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'workflowState', 'workflowVersion', 'workflowUpdatedAt', 'workflowUpdatedBy'
+          ]) &&
+          exists(/databases/$(database)/documents/salary_processing/$(monthId)) &&
+          getAfter(/databases/$(database)/documents/salary_processing/$(monthId)).data.status == 'paid';
+      }
+
       function isArchiveRestoreWrite() {
         return !thisMonthIsLocked() && thisMonthIsArchived() &&
           request.resource.data.archived == false &&
@@ -341,9 +354,10 @@ service cloud.firestore {
 
       allow read: if hasAnyPermission(['reports.read', 'months.read', 'archive.read', 'comparison.read', 'backups.create', 'backups.restore']);
       allow create: if hasAnyPermission(['reports.calculate', 'months.write']);
-      allow update: if hasAnyPermission(['reports.calculate', 'reports.approve', 'months.write', 'months.destructive']) &&
+      allow update: if (hasAnyPermission(['reports.calculate', 'reports.approve', 'months.write', 'months.destructive']) &&
         ((!thisMonthIsLocked() && !thisMonthIsArchived()) || isClosingWrite() ||
-          isReopeningWrite() || isArchiveWrite() || isPaidArchiveWrite() || isArchiveRestoreWrite());
+          isReopeningWrite() || isArchiveWrite() || isPaidArchiveWrite() || isArchiveRestoreWrite())) ||
+        (hasAnyPermission(['salary_processing.pay']) && isPaidWorkflowWrite());
       // A month can be deleted only when the app marked it empty at creation
       // and the client transaction independently verified no order batches.
       allow delete: if hasAnyPermission(['months.destructive']) && !thisMonthIsLocked() &&
@@ -430,6 +444,12 @@ service cloud.firestore {
             request.resource.data.diff(resource.data).affectedKeys().hasOnly([
               'archived', 'archivedAt', 'archivedBy', 'workflowState',
               'workflowVersion', 'workflowUpdatedAt', 'workflowUpdatedBy'
+            ])) ||
+          (hasAnyPermission(['salary_processing.pay']) && monthLocked(monthId) &&
+            exists(/databases/$(database)/documents/monthly_reports/$(monthId)) &&
+            getAfter(/databases/$(database)/documents/monthly_reports/$(monthId)).data.workflowState == 'paid' &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'workflowState', 'workflowVersion', 'workflowUpdatedAt', 'workflowUpdatedBy'
             ])));
       allow delete: if hasAnyPermission(['months.destructive']) &&
         exists(/databases/$(database)/documents/monthly_reports/$(monthId)) &&

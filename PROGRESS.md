@@ -1,5 +1,23 @@
 # PROGRESS.md — Final Production Audit
 
+## Payroll Workflow UI Integration — phase 2 complete, awaiting review
+
+### UI binding scope
+
+- Added a view-only workflow adapter (`js/payroll-workflow-ui.js`) that reads `PayrollWorkflow` and the already-loaded Month/Snapshot state. It adds no Firestore query, calculation, Repository call, or lifecycle rule of its own.
+- The approved Workflow Header now renders all nine states, marks completed/current/pending steps, and states the current stage and next permitted stage. The Decision Summary and Review Rail show the same state, while the Salary timeline uses the same source of truth.
+- Existing controls are shown or disabled by their existing permission and valid state. Smart Approval and close dialogs remain the existing dialogs; their visible guidance now follows the active workflow state. The existing paid archive is exposed only after fully paid status.
+
+### Direct integration fix
+
+- During integration, the paid state was found to exist only on `salary_processing/{monthId}`, while Archive reads `monthly_summaries/{monthId}`. Final payment now mirrors only workflow metadata to the month and summary in its existing atomic Batch. Firestore Rules permit exactly that metadata-only mirror only when the same batch leaves the Snapshot `paid`.
+- The Archive reopen action now uses the existing `months.write` capability and the workflow transition check rather than a hard-coded `admin` role name. A paid report therefore cannot be reopened or recalculated against its immutable paid Snapshot.
+
+### Verification
+
+- Passed 12 contract suites: Dashboard, Departments, Employees, Import, Payroll Workflow Engine, Payroll Workflow UI, Production Configuration, Reports, Salary Processing, Shipping, Transactions, and Users & Security; `git diff --check` and JavaScript syntax checks also passed.
+- No Merge, Push, Deploy, or Tag was performed. Firebase Emulator execution remains unavailable locally because Java is not installed on PATH; no production data or Firebase deployment was touched.
+
 ## Payroll Workflow Engine — phase 1 complete, awaiting review
 
 ### Scope

@@ -73,7 +73,7 @@ const SalaryProcessing = (() => {
     const body=$('salaryRankingBody'),head=$('salaryRankingValueHeader'); if(!body||!head)return; head.textContent=config.label;
     body.innerHTML=sorted.length?sorted.map((row,index)=>`<tr data-details="${Utils.escapeHtml(employeeId(row))}" tabindex="0"><td>${index+1}</td><td>${Utils.escapeHtml(name(row))}</td><td>${Utils.escapeHtml(row.departmentName||row.departmentId||'—')}</td><td>${Utils.escapeHtml(row.salaryType||'—')}</td><td>${config.currency?money(value(row)):value(row)}</td></tr>`).join(''):'<tr><td colspan="5"><div class="widget-empty">لا توجد بيانات متاحة بعد</div></td></tr>';
   }  function render(){
-    const panel=$('salarySnapshotDashboard');if(!snapshot){panel.classList.add('hidden');return;}
+    const panel=$('salarySnapshotDashboard');if(!snapshot){panel.classList.add('hidden');if(typeof PayrollWorkflowUI!=='undefined')PayrollWorkflowUI.render({month:Months.byId(periodId)||{},snapshot:null});return;}
     const rows=snapshot.report||[],payments=snapshot.employeePayments||{},manual=snapshot.employeeManualEntries||{},a=aggregate(rows,manual);
     const canWrite=Permissions.can('salary_processing.write'),canPay=Permissions.can('salary_processing.pay'),canExport=Permissions.can('salary_processing.export');
     panel.classList.remove('hidden');renderSnapshotCharts(rows,a);renderRanking(rows,manual);
@@ -87,6 +87,7 @@ const SalaryProcessing = (() => {
     const markAll=$('salaryMarkAllPaidBtn'),excel=$('salarySnapshotExcelBtn'),print=$('salarySnapshotPrintBtn');
     if(markAll){markAll.hidden=!canPay||snapshot.status!=='approved';markAll.disabled=!canPay||snapshot.status!=='approved';}
     [excel,print].forEach(button=>{if(button){button.hidden=!canExport;button.disabled=!canExport;}});
+    if(typeof PayrollWorkflowUI!=='undefined')PayrollWorkflowUI.render({month:Months.byId(periodId)||{},snapshot,report:rows});
   }
   async function load(){
     if(!Permissions.can('salary_processing.read')){snapshot=null;render();return;}
@@ -141,7 +142,18 @@ const SalaryProcessing = (() => {
       PayrollWorkflow.assertAction(PayrollWorkflow.ACTION.PAY,{month:Months.byId(periodId)||{},salarySnapshot:{...snapshot,employeePayments:payments}});
     }
     const workflow=all?PayrollWorkflow.metadata(PayrollWorkflow.STATE.PAID):{};
-    await commitWithAudit(batch=>batch.update(ref,{employeePayments:payments,status:all?'paid':'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp(),...workflow}),{action:'salary_processing.paid',entity:'salary_processing',operation:AuditService.OPERATION.UPDATE,documentId:periodId,documentLabel:`Payroll ${periodId}`,monthId:periodId,severity:AuditService.SEVERITY.INFO,details:{period:periodId,status:all?'paid':'approved',workflowState:all?PayrollWorkflow.STATE.PAID:PayrollWorkflow.STATE.READY_FOR_PAYMENT,paidEmployeeIds:ids}});
+    await commitWithAudit(batch=>{
+      batch.update(ref,{employeePayments:payments,status:all?'paid':'approved',updatedAt:firebase.firestore.FieldValue.serverTimestamp(),...workflow});
+      // The paid marker is lifecycle metadata only. Keeping it in the month
+      // and its summary inside the same batch lets every existing read-only
+      // surface (including Archive) disable reopening a paid report without
+      // introducing a second query or touching financial data.
+      if(all){
+        const monthWorkflow=PayrollWorkflow.metadata(PayrollWorkflow.STATE.PAID);
+        batch.set(db.collection(COLLECTIONS.MONTHLY_REPORTS).doc(periodId),monthWorkflow,{merge:true});
+        batch.set(db.collection(COLLECTIONS.MONTHLY_SUMMARIES).doc(periodId),monthWorkflow,{merge:true});
+      }
+    },{action:'salary_processing.paid',entity:'salary_processing',operation:AuditService.OPERATION.UPDATE,documentId:periodId,documentLabel:`Payroll ${periodId}`,monthId:periodId,severity:AuditService.SEVERITY.INFO,details:{period:periodId,status:all?'paid':'approved',workflowState:all?PayrollWorkflow.STATE.PAID:PayrollWorkflow.STATE.READY_FOR_PAYMENT,paidEmployeeIds:ids}});
     await load();
   }
   async function adjust(id){
@@ -166,5 +178,5 @@ const SalaryProcessing = (() => {
   }
   let initialized=false;
   function init(){if(initialized)return;initialized=true;$('salaryExecutiveSummary').addEventListener('click',e=>{const b=e.target.closest('[data-salary-drill]');if(b)drillKpi(b.dataset.salaryDrill);});$('salaryDepartmentSummary').addEventListener('click',e=>{const b=e.target.closest('[data-salary-department]');if(b)drillDepartment(b.dataset.salaryDepartment);});$('salaryRankingBody').addEventListener('click',e=>{const row=e.target.closest('[data-details]');if(row)details(row.dataset.details);});['salaryRankingMetric','salaryRankingDirection'].forEach(id=>$(id).addEventListener('change',()=>{if(snapshot)renderRanking(snapshot.report||[],snapshot.employeeManualEntries||{});}));$('salarySnapshotApproveBtn').addEventListener('click',()=>approve().catch(e=>Toast.show('تعذر الاعتماد: '+e.message,'error')));$('salaryMarkAllPaidBtn').addEventListener('click',()=>pay((snapshot?.report||[]).map(employeeId)).catch(e=>Toast.show('تعذر تسجيل الدفع: '+e.message,'error')));$('salaryPaymentBody').addEventListener('click',e=>{const b=e.target.closest('[data-pay]');if(b)pay([b.dataset.pay]).catch(err=>Toast.show('تعذر تسجيل الدفع: '+err.message,'error'));});$('salarySnapshotRows').addEventListener('click',e=>{const b=e.target.closest('[data-adjust]');if(b)adjust(b.dataset.adjust).catch(err=>Toast.show('تعذر التعديل: '+err.message,'error'));const d=e.target.closest('[data-details]');if(d)details(d.dataset.details);});$('salaryDrawerCloseBtn').addEventListener('click',()=>$('salaryEmployeeDrawer').classList.remove('open'));$('salaryDrawerTabs').addEventListener('click',e=>{const b=e.target.closest('[data-salary-tab]');if(b&&drawerId)details(drawerId,b.dataset.salaryTab);});$('salarySnapshotExcelBtn').addEventListener('click',()=>{try{exportSnapshot();}catch(err){Toast.show('تعذر التصدير: '+err.message,'error');}});$('salarySnapshotPrintBtn').addEventListener('click',()=>{try{Permissions.require('salary_processing.export');window.print();}catch(err){Toast.show('تعذر الطباعة: '+err.message,'error');}});load().catch(()=>{});}
-  return{init,load,isInitialized:()=>initialized};
+  return{init,load,isInitialized:()=>initialized,getSnapshot:()=>snapshot};
 })();

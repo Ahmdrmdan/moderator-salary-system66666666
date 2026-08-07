@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — Payroll Workflow UI Integration (phase 2)
+
+- Connected the approved Monthly Report workflow header, decision-summary state, review guidance, Salary Snapshot timeline, and existing action controls to the Payroll Workflow Engine state rather than static report/snapshot labels.
+- The available action now follows both the current lifecycle state and existing permission: calculate, readiness review/approval, Salary Snapshot creation, payment, and the existing archive operation. Archive reopening now uses `months.write` instead of a role-name check and is hidden once the lifecycle no longer permits it.
+- Final payment now mirrors only the `paid` workflow metadata to the existing month document and monthly summary in the same batch as the existing Salary Snapshot payment/audit write. This prevents a paid report from being presented as reopenable in archive views; no amount, employee payment, report row, or calculation changed.
+
 ## Unreleased — Payroll Workflow Engine (phase 1)
 
 - Added a backward-compatible monthly payroll state machine: Draft, Calculated, In Review, Approved, Salary Snapshot Created, Ready for Payment, Paid, Archived, and Reopened. Legacy reports and Salary Snapshots derive their state from existing `status`, report, and archive fields, so no migration or historical data rewrite is required.

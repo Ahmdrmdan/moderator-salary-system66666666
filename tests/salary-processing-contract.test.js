@@ -6,8 +6,8 @@ const vm = require('vm');
 
 const source = fs.readFileSync('js/salary-processing.js', 'utf8');
 const instrumented = source.replace(
-  'return{init,load,isInitialized:()=>initialized};',
-  'globalThis.__salaryTest={financial,aggregate};return{init,load,isInitialized:()=>initialized};'
+  'return{init,load,isInitialized:()=>initialized,getSnapshot:()=>snapshot};',
+  'globalThis.__salaryTest={financial,aggregate};return{init,load,isInitialized:()=>initialized,getSnapshot:()=>snapshot};'
 );
 assert.notStrictEqual(instrumented, source, 'test instrumentation must expose Salary display helpers');
 
@@ -56,7 +56,7 @@ assert.strictEqual(totals.commission, 175);
 assert.strictEqual(totals.net, 2160);
 
 assert.match(source, /commitWithAudit\(batch=>batch\.set/, 'approval writes the snapshot through a batch');
-assert.match(source, /commitWithAudit\(batch=>batch\.update/, 'adjustment and payment writes use a batch');
+assert.match(source, /commitWithAudit\(batch=>[\s\S]*?batch\.update/, 'adjustment and payment writes use a batch');
 assert.match(source, /AuditService\.appendToBatch\(batch,audit\)/, 'the audit entry shares the financial write batch');
 assert.match(source, /status==='paid'\?'تم الصرف'/, 'paid snapshots have a distinct visible Arabic status');
 assert.match(source, /Permissions\.can\('salary_processing\.write'\)/, 'Snapshot adjustment controls use the existing write capability');

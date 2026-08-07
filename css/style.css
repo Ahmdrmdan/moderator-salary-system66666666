@@ -2379,6 +2379,14 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   font-size:10px;
   box-shadow:none;
 }
+#view-report .report-workflow li.is-complete { color:var(--ink-muted); }
+#view-report .report-workflow li.is-complete span { color:#cfe5ff; border-color:rgba(115,167,255,.42); background:rgba(115,167,255,.16); }
+#view-report .report-workflow li.is-current { color:var(--ink); }
+#view-report .report-workflow li.is-current span { color:var(--ink); border-color:var(--brand); background:var(--brand); box-shadow:0 0 0 3px rgba(115,167,255,.13); }
+#view-report .report-workflow li.is-pending { color:var(--ink-faint); }
+#view-report .report-workflow li.is-locked { opacity:.55; }
+#view-report #reportWorkflowCurrent { color:var(--ink); font-weight:800; }
+#view-report #reportWorkflowNext { margin-top:3px; color:var(--ink-muted); }
 #view-report .report-context-bar {
   gap:12px;
   padding:10px 12px;
@@ -2600,6 +2608,12 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   color:#cfe5ff;
   border-color:rgba(115,167,255,.25);
   background:rgba(115,167,255,.105);
+}
+#view-report .salary-snapshot-dashboard .salary-workflow span.current {
+  color:var(--ink);
+  border-color:var(--brand);
+  background:var(--brand-soft);
+  box-shadow:0 0 0 2px rgba(115,167,255,.10);
 }
 #view-report .salary-snapshot-dashboard #salaryExecutiveSummary {
   gap:8px;

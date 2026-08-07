@@ -1083,6 +1083,9 @@ const App = (() => {
     }
 
     renderReportContextMeta(month);
+    if (typeof PayrollWorkflowUI !== 'undefined') {
+      PayrollWorkflowUI.render({ month, report: state.currentReport });
+    }
   }
 
   /**
@@ -1354,6 +1357,7 @@ const App = (() => {
 
     tbody.innerHTML = rows.map(m => {
       const t = m.totals || {};
+      const canReopen = PayrollWorkflowUI.canAction(PayrollWorkflow.ACTION.REOPEN, { month: m, report: [] });
       return `
       <tr>
         <td>${Utils.escapeHtml(m.label)}</td>
@@ -1368,7 +1372,7 @@ const App = (() => {
         <td>${Utils.formatDateTime(m.closedAt)}</td>
         <td class="actions-cell">
           <button class="btn-icon" data-action="details" data-id="${m.id}" title="عرض التفاصيل">👁️</button>
-          ${state.userRole === 'admin' ? `<button class="btn btn-danger-outline" data-action="reopen" data-id="${m.id}">إلغاء اعتماد التقرير</button>` : ''}
+          ${canReopen ? `<button class="btn btn-danger-outline" data-action="reopen" data-id="${m.id}">إلغاء اعتماد التقرير</button>` : ''}
         </td>
       </tr>`;
     }).join('');
@@ -1383,7 +1387,8 @@ const App = (() => {
 
   function confirmReopenApprovedMonth(monthId) {
     const month = Months.byId(monthId);
-    if (!month || month.status !== Months.STATUS.LOCKED || state.userRole !== 'admin') return;
+    if (!month || month.status !== Months.STATUS.LOCKED ||
+        !PayrollWorkflowUI.canAction(PayrollWorkflow.ACTION.REOPEN, { month, report: [] })) return;
 
     Confirm.show(
       `هل أنت متأكد من إلغاء اعتماد تقرير ${month.label}؟ سيصبح الشهر قابلاً للتعديل مرة أخرى، ولن يتم حذف أي Snapshot أو Backup أو Monthly Summary.`,
@@ -1392,7 +1397,7 @@ const App = (() => {
   }
 
   async function reopenApprovedMonth(monthId) {
-    if (state.userRole !== 'admin') {
+    if (!PayrollWorkflowUI.canAction(PayrollWorkflow.ACTION.REOPEN, { month: Months.byId(monthId), report: [] })) {
       Toast.show('غير مصرح لك بإلغاء اعتماد التقرير', 'error');
       return;
     }
