@@ -1,6 +1,35 @@
 # PROGRESS.md — Final Reset-Month Production Fix
 
-## Dashboard Stabilization (awaiting user review)
+## Users & Security Audit (awaiting user review)
+
+### Root cause and minimal fix
+
+- Firestore trusted a stored `permissions` list for every authenticated profile even when it was `pending` or `disabled`. A self-created pending document could therefore carry `['*']` and bypass the intended review flow. Active-state enforcement now applies to every ordinary and Super Admin authorization path, with a missing legacy status treated safely as active.
+- The old first-account exception did not require the user profile and `adminBootstrap` marker to be in the same write, and the marker itself could be created alone. Both sides now verify the same atomic first-admin transaction.
+- Only Super Admins could update `users/{uid}`, which rejected the existing `lastLoginAt` and `lastActivityAt` writes for active limited users. Rules now permit only those two fields for the authenticated owner; Authentication continues to keep all role normalization in memory.
+- Login/Logout Audit entries were not included in the role capabilities of every active account. Rules now allow exactly self-attributed `auth.login` and `auth.logout` create records, while Audit update/delete and every other ordinary create remain denied.
+- User Management omitted existing stored permission keys from its editor. The existing keys are now displayed without adding a role, permission, Schema field, or behavior.
+
+### Files changed
+
+- `firebase/firestore.rules` — active-profile gate, safe pending registration, atomic bootstrap pairing, self-only activity write, and narrow self session-Audit rule.
+- `js/auth.js` — in-memory legacy normalization and activity write only after the active Dashboard authorization check.
+- `js/user-management.js` — presentation entries for existing permission keys only.
+- `dashboard.html` and `login.html` — versioned Authentication/User Management assets for cache-safe deployment.
+- `tests/users-security-contract.test.js` — security and role-matrix contract coverage.
+
+### Verification completed
+
+- Passed: `node --check js/auth.js`, `node --check js/user-management.js`, `node tests/users-security-contract.test.js`, every `tests/*-contract.test.js` suite, and `git diff --check`.
+- Security role matrix passed for Super Admin, Admin, the existing Supervisor role as the system's Moderator-compatible operational role, Viewer (Read Only), Pending, and Disabled. No new `Moderator` authentication role was created.
+- Firebase deployed both Hosting and Firestore Rules to project `ahmed123-95a0e`; rules compilation completed successfully and the published app loads `js/auth.js?v=7.0.18-users-security` and `js/user-management.js?v=7.0.18-users-security`.
+- Production UAT as `admin.login.20260807@ahmed123-95a0e.local` reloaded the Firebase-hosted Dashboard through the Authentication guard and confirmed the active session, current month, and versioned assets without changing any account, role, user document, or business data. Browser Console contained zero errors; the sole existing Chart.js CDN warning remains unrelated technical debt.
+
+### Scope confirmation
+
+- No account, role assignment, production user document, Firestore schema, migration, report, salary calculation, or business data changed in this stage.
+
+## Dashboard Stabilization (closed and approved)
 
 ### Root cause and minimal fix
 

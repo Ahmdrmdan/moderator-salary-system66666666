@@ -1,12 +1,23 @@
 # Changelog
 
-## Unreleased — Dashboard stabilization (awaiting review)
+## Unreleased — Users & Security audit (awaiting review)
+
+- Hardened Firestore authorization so explicit `pending`, `suspended`, and `disabled` profiles cannot use any stored permission, while legacy profiles without a status retain active-safe compatibility.
+- Closed the self-registration escalation path: a new account may create only a `pending` profile with an empty stored permission list. The one-time bootstrap profile and marker now require the same atomic write.
+- Restricted self profile updates to `lastLoginAt` and `lastActivityAt`; role, status, overrides, and permissions remain under the Super Admin boundary.
+- Allowed only self-attributed `auth.login` and `auth.logout` Audit entries for active users, retaining the append-only Audit model and denying all other ordinary Audit writes.
+- Changed legacy Authentication normalization to in-memory safe defaults, avoiding client-side role migrations during sign-in.
+- Exposed the already-existing Dashboard, Department, Shipping, Salary Processing, and role-management permission keys in User Management; no key, role definition, or schema changed.
+- Added Users & Security contract coverage for active/inactive access, safe registration, bootstrap atomicity, self-only activity/Audit writes, and the Super Admin/Admin/Supervisor/Viewer/Pending/Disabled role matrix.
+
+## Unreleased — Dashboard stabilization (closed)
 
 - Stopped Dashboard bootstrap from requesting monthly data or settlements for roles that lack their existing read capability, while retaining the safe defaults already used by the Dashboard.
 - Made the backup and Audit status reads independently capability-gated. After their asynchronous read completes, the existing Dashboard widgets refresh from the same scoped cache; no Dashboard statistic or calculation changed.
 - Added caught internal capability guards for every existing Dashboard quick action. Stale or programmatic events now show the normal permission message instead of creating an unhandled browser rejection.
 - Kept the report Calculate control disabled after a month-status refresh whenever `reports.calculate` is absent.
 - Added Dashboard contract coverage for the capability-gated reads, widget refresh, quick-action guards, and Calculate-button regression.
+- Formally approved and closed after Firebase UAT; no production Dashboard, financial, report, or Audit data was created during testing.
 
 ## Unreleased — Transactions stabilization (closed)
 
