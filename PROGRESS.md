@@ -1,6 +1,6 @@
 # PROGRESS.md — Final Production Audit
 
-## Dashboard Analytics Filters — v7.1.0 (approved and ready for merge)
+## Dashboard Analytics Filters — v7.1.0 (closed and merged)
 
 ### Approved architecture and implementation
 
@@ -28,7 +28,7 @@
 ### Scope confirmation
 
 - No Business Logic, Firestore Schema, Rule, role, permission, query used by payroll/report processing, or salary formula changed. The only new read is the approved bounded Audit date-range read for the existing widget.
-- The feature remains unmerged and untagged pending review.
+- The feature is merged to `main` and ready for the official `v7.1.0` tag and final Hosting release.
 
 ## System UI / UX Consistency Audit — Phase 2 (closed and merged as v7.0.11)
 
