@@ -42,10 +42,35 @@ assert.strictEqual(WorkflowUI.canAction(Workflow.ACTION.ARCHIVE, {
   month: { status: 'locked' }, snapshot: { status: 'paid', workflowState: Workflow.STATE.PAID, report: rows }
 }), false, 'archive control is hidden/disabled without its existing permission');
 
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.DRAFT), 'calculation',
+  'draft reports expose the calculation workspace');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.REOPENED), 'calculation',
+  'reopened reports return to calculation without a new lifecycle state');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.IN_REVIEW), 'review',
+  'review states expose the existing employee review workspace');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.APPROVED), 'approval',
+  'approved reports expose the Salary Snapshot approval workspace');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.SALARY_SNAPSHOT_CREATED), 'payroll',
+  'the created Snapshot state exposes the existing payroll workspace');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.READY_FOR_PAYMENT), 'payment',
+  'ready payroll exposes only the existing payment workspace');
+assert.strictEqual(WorkflowUI.workspaceFor(Workflow.STATE.PAID), 'archive',
+  'paid payroll exposes the existing archive action workspace');
+
 const dashboard = fs.readFileSync('dashboard.html', 'utf8');
 for (const state of Object.values(Workflow.STATE)) {
   assert.match(dashboard, new RegExp(`data-workflow-state="${state}"`), `header includes ${state}`);
 }
+assert.match(dashboard, /id="reportStateWorkspace"/,
+  'the state-driven action workspace preserves the existing action identifiers');
+assert.match(dashboard, /id="reportReviewWorkspace" data-workflow-workspace="review"/,
+  'employee review is declaratively bound to the review phase');
+assert.match(dashboard, /id="salarySnapshotDashboard" data-workflow-workspace="payroll payment archive"/,
+  'existing Salary Snapshot remains the payroll, payment, and archive surface');
+['calculateBtn', 'approveReportBtn', 'salarySnapshotApproveBtn', 'salaryMarkAllPaidBtn', 'workflowArchiveBtn'].forEach(id => {
+  assert.strictEqual((dashboard.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1,
+    `${id} retains its one existing binding`);
+});
 assert.match(uiSource, /Months\.archiveMonth\(context\.monthId\)/,
   'archive UI delegates to the existing month lifecycle service');
 assert.doesNotMatch(uiSource, /collection\(|\.firestore\(/,
