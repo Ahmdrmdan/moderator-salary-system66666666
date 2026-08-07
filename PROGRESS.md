@@ -1,5 +1,30 @@
 # PROGRESS.md — Final Production Audit
 
+## Users Lifecycle and Management Layout Hotfix (awaiting user review)
+
+### Root causes and limited fixes
+
+- Firebase Authentication Console creates an Authentication identity only. It cannot safely create or enumerate a Firestore user profile from this browser-only application. The existing secure flow deliberately creates `users/{uid}` only when that identity first signs in, using a self-only `pending` profile with no permissions. Therefore a Console-created account is intentionally absent from User Management until that first sign-in and cannot enter the Dashboard until a Super Admin activates it.
+- The login handler created the safe pending profile correctly, but then threw a plain custom error which the generic mapper reduced to an unhelpful login failure. Authentication now retains explicit `auth/account-pending` and `auth/account-inactive` codes and shows the correct user-facing outcome. This is a feedback fix only; it does not alter Firestore Rules, role definitions, or the approval boundary.
+- An unclosed Settings form and mismatched closing containers caused the browser parser to place `#view-users` directly under `body` rather than inside Dashboard `main`. The resulting independent layout flow created the reported blank area and low table. A structural wrapper balances the existing markup without changing Settings behavior.
+- The existing sidebar used `height: 100vh` with no overflow rule. At common viewport heights, its lower navigation items could not be reached. `overflow-y: auto` restores its intended scrolling behavior while retaining all existing styling.
+
+### Firebase UAT completed
+
+- Created the disposable UAT identity `uat.users.lifecycle.20260807@ahmed123-95a0e.local` through the Firebase Authentication service, then exercised the same secure self-profile write used by first application sign-in. Firebase returned the Authentication UID and Firestore confirmed `role: pending`, `status: pending`, and an empty permission set.
+- Refreshed User Management on the published site: the pending account appeared immediately. It was activated through the existing Super Admin editor as the built-in `viewer` role, with no custom permission overrides.
+- Re-authentication with the new email/password succeeded. The active account could read its own Firestore profile; its `viewer` role resolves from the application's immutable built-in role template, as designed, so no public `roles` document read is required.
+- Published UI UAT confirmed `#view-users` is inside `main`, with the Users panel, toolbar, and table starting at the normal top-of-content position. Sidebar scrolling reached and opened User Management in a 1270x720 viewport. No browser Console errors were observed during the page refresh, navigation, or user-editor operation.
+
+### Verification completed
+
+- Passed: `node --check js/auth.js`, `node --check js/user-management.js`, `node tests/users-security-contract.test.js`, `node tests/dashboard-contract.test.js`, `git diff --check`, and structural HTML validation for unclosed/misordered tags.
+- Firebase Hosting deployed successfully to project `ahmed123-95a0e` from `hotfix/users-lifecycle-layout`. This hotfix remains unmerged and untagged pending user review.
+
+### Scope confirmation
+
+- No Firestore Rules, schema, role definition, business logic, production business record, report, salary amount, or existing user permission was changed. The UAT account is a separately created active Viewer account used solely to verify the supported lifecycle.
+
 ## Dashboard Chart-Height Hotfix (awaiting user review)
 
 ### Root cause and limited fix

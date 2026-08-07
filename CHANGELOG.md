@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Users lifecycle and management-layout hotfix (awaiting review)
+
+- Clarified the safe Firebase Authentication lifecycle: an account created in Firebase Authentication receives its `users/{uid}` document at its first application sign-in as a pending, zero-permission profile; an existing Super Admin then activates it through User Management. This preserves the current secure no-self-escalation boundary.
+- Preserved the pending account state in Authentication errors and mapped it to an actionable approval message instead of losing it to the generic login-error handler.
+- Repaired a malformed Settings markup boundary that caused the Users view to be parsed outside the Dashboard `<main>` element, leaving a large blank region and pushing the table below the normal layout flow.
+- Made the existing fixed-height sidebar scrollable, so User Management remains reachable at normal laptop-height viewports without changing its design or permissions.
+- Added lifecycle and layout contract coverage for pending feedback, Users view containment, valid Settings structure, and sidebar overflow behavior.
+
 ## Unreleased — Dashboard chart-height hotfix (awaiting review)
 
 - Bounded responsive Dashboard chart canvases to their existing fixed-height cards, eliminating the ResizeObserver/flex overflow loop that could grow a chart vertically without limit.
