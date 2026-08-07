@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.0] - 2026-08-07 (Payroll Workflow release)
+
+- Released the validated two-phase Payroll Workflow: a backward-compatible lifecycle engine and its view-only Monthly Report integration. Existing calculation, Smart Approval, Salary Snapshot, payment, archive, printing, export, permissions, and audit operations retain their established behavior.
+- Added state-aware workflow guidance and action availability across Draft, Calculated, In Review, Approved, Salary Snapshot Created, Ready for Payment, Paid, Archived, and Reopened states. Legacy monthly data derives a safe state from existing fields; no migration or historical rewrite is required.
+- Preserved financial safety by writing only workflow metadata alongside the existing atomic payment/audit batch, and by publishing its narrowly scoped Firestore authorization with the release.
+
 ## Unreleased — Payroll Workflow UI Integration (phase 2)
 
 - Connected the approved Monthly Report workflow header, decision-summary state, review guidance, Salary Snapshot timeline, and existing action controls to the Payroll Workflow Engine state rather than static report/snapshot labels.

@@ -1,5 +1,11 @@
 # PROGRESS.md — Final Production Audit
 
+## Release candidate v1.0.0 - final audit passed
+
+- Final regression passed across Dashboard, Monthly Report, Payroll Workflow, Salary Processing, Imports, Shipping, Orders, Departments, Employees, Reports, Transactions, and Users & Security.
+- The release candidate contains no uncommitted tracked changes. Local static review confirmed print and responsive coverage; Firebase CLI targets `ahmed123-95a0e`.
+- The local browser policy blocked a localhost page review, so final visual/runtime UAT will be performed against the released Firebase Hosting artifact after deployment. No production financial write is part of that verification.
+
 ## Payroll Workflow UI Integration — phase 2 complete, awaiting review
 
 ### UI binding scope
