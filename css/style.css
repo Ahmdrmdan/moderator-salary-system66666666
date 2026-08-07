@@ -2565,3 +2565,189 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   #view-report .report-review-rail .report-secondary-actions { grid-template-columns:1fr; }
   #view-report .report-table-heading .search-input { min-width:0; width:100%; }
 }
+
+/* Payroll Workflow Engine — Final UI: visual treatment for the existing
+   salary snapshot, supporting analysis, and report review dialogs only. */
+#view-report .salary-snapshot-dashboard {
+  gap:16px;
+  padding:20px;
+  border-color:rgba(115,167,255,.22);
+  background:linear-gradient(145deg,rgba(115,167,255,.055),rgba(25,29,34,.82) 36%);
+}
+#view-report .salary-snapshot-heading {
+  padding-bottom:14px;
+  border-bottom:1px solid rgba(255,255,255,.075);
+}
+#view-report .salary-snapshot-heading h3 { font-size:18px; }
+#view-report .salary-snapshot-dashboard .salary-workflow {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:10px 0 2px;
+  overflow-x:auto;
+}
+#view-report .salary-snapshot-dashboard .salary-workflow span {
+  min-width:max-content;
+  padding:6px 9px;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:8px;
+  color:var(--ink-faint);
+  font-size:10px;
+  font-weight:700;
+  background:rgba(6,12,18,.16);
+}
+#view-report .salary-snapshot-dashboard .salary-workflow span.done {
+  color:#cfe5ff;
+  border-color:rgba(115,167,255,.25);
+  background:rgba(115,167,255,.105);
+}
+#view-report .salary-snapshot-dashboard #salaryExecutiveSummary {
+  gap:8px;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:11px;
+  background:rgba(6,12,18,.16);
+}
+#view-report .salary-snapshot-dashboard #salaryExecutiveSummary .stat-card {
+  min-height:78px;
+  padding:11px 12px;
+  border:0;
+  border-radius:8px;
+  background:rgba(255,255,255,.025);
+  box-shadow:none;
+}
+#view-report .salary-snapshot-dashboard #salaryExecutiveSummary .stat-card:last-child {
+  background:linear-gradient(135deg,rgba(115,167,255,.16),rgba(52,211,153,.065));
+  box-shadow:inset 0 0 0 1px rgba(115,167,255,.20);
+}
+#view-report .salary-review-insights { gap:12px; }
+#view-report .salary-review-insights .panel,
+#view-report .salary-snapshot-review,
+#view-report .salary-payment-panel,
+#view-report #salaryRankingPanel {
+  border-color:rgba(255,255,255,.085);
+  box-shadow:none;
+}
+#view-report .salary-review-insights .panel-header,
+#view-report .salary-snapshot-review .panel-header,
+#view-report .salary-payment-panel .panel-header,
+#view-report #salaryRankingPanel .panel-header {
+  min-height:auto;
+  padding:14px 16px;
+  border-color:rgba(255,255,255,.07);
+}
+#view-report .salary-review-insights .panel-header h3,
+#view-report .salary-snapshot-review .panel-header h3,
+#view-report .salary-payment-panel .panel-header h3,
+#view-report #salaryRankingPanel .panel-header h3 { font-size:14px; }
+#view-report #salaryDepartmentSummary {
+  display:grid;
+  gap:6px;
+  padding:8px 12px 12px;
+}
+#view-report #salaryDepartmentSummary .dashboard-insight {
+  min-height:46px;
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:8px;
+  background:rgba(6,12,18,.16);
+  transition:background-color .16s ease,border-color .16s ease;
+}
+#view-report #salaryDepartmentSummary .dashboard-insight:hover {
+  border-color:rgba(115,167,255,.22);
+  background:rgba(115,167,255,.065);
+}
+#view-report .report-supporting-insights { gap:14px; }
+#view-report .report-supporting-insights .report-section-heading {
+  margin:0;
+  padding-top:4px;
+}
+#view-report .salary-snapshot-charts {
+  gap:12px;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;
+  background:rgba(6,12,18,.12);
+}
+#view-report .salary-snapshot-charts .chart-card {
+  height:268px;
+  min-height:268px;
+  padding:14px;
+  border-color:rgba(255,255,255,.07);
+  border-radius:9px;
+  background:rgba(255,255,255,.024);
+  box-shadow:none;
+}
+#view-report .salary-snapshot-charts .chart-card h3 {
+  margin-bottom:10px;
+  padding-bottom:9px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  color:var(--ink-muted);
+  font-size:12px;
+}
+#view-report .salary-snapshot-charts .chart-card canvas { max-height:206px !important; }
+#view-report .salary-snapshot-charts .chart-card:hover { border-color:rgba(115,167,255,.18); }
+
+/* Report-owned review dialogs retain their existing contents and controls. */
+#detailsModal .modal,
+#salaryEmployeeDrawer .modal,
+#smartApprovalModal .modal,
+#closeMonthModal .modal {
+  border-color:rgba(115,167,255,.22);
+  background:var(--layer-1);
+  box-shadow:var(--shadow-float);
+}
+#detailsModal .modal-header,
+#salaryEmployeeDrawer .modal-header,
+#smartApprovalModal .modal-header,
+#closeMonthModal .modal-header {
+  padding:16px 20px;
+  border-color:rgba(255,255,255,.08);
+  background:rgba(115,167,255,.035);
+}
+#detailsModal .modal-body,
+#salaryEmployeeDrawer .modal-body,
+#smartApprovalModal .modal-body,
+#closeMonthModal .modal-body { padding:20px; }
+#detailsModal .details-grid {
+  gap:8px;
+  margin-bottom:16px;
+}
+#detailsModal .details-stat {
+  min-height:66px;
+  padding:10px;
+  border-color:rgba(255,255,255,.075);
+  border-radius:9px;
+  background:rgba(6,12,18,.16);
+}
+#detailsModal .details-stat:has(#detailsFinalSalary) {
+  border-color:rgba(115,167,255,.28);
+  background:rgba(115,167,255,.085);
+}
+#detailsModal #detailsFinalSalary { color:#dce9ff; font-size:18px; }
+#detailsModal .dist-row {
+  padding:9px 11px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:8px;
+  background:rgba(6,12,18,.14);
+}
+#salaryEmployeeDrawer .config-tabs { margin-bottom:16px; box-shadow:none; }
+
+@media (max-width:900px) {
+  #view-report .salary-snapshot-dashboard { padding:18px; }
+  #view-report .salary-review-insights { grid-template-columns:1fr; }
+  #view-report .salary-snapshot-charts { grid-template-columns:1fr; }
+  #view-report .salary-snapshot-charts .chart-card:first-child { grid-column:auto; }
+  #view-report .salary-snapshot-charts .chart-card { height:250px; min-height:250px; }
+  #view-report .salary-snapshot-charts .chart-card canvas { max-height:188px !important; }
+}
+@media (max-width:600px) {
+  #view-report .salary-snapshot-dashboard { padding:16px; }
+  #view-report .salary-snapshot-heading { padding-bottom:12px; }
+  #view-report .salary-snapshot-dashboard #salaryExecutiveSummary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #detailsModal .modal-body,
+  #salaryEmployeeDrawer .modal-body,
+  #smartApprovalModal .modal-body,
+  #closeMonthModal .modal-body { padding:16px; }
+  #detailsModal .details-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
