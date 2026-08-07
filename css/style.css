@@ -2564,12 +2564,26 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
   #view-report .report-review-table-area { padding:18px; }
 }
 @media (max-width:900px) {
+  #view-report .report-approval-executive,
+  #view-report .report-payment-summary,
+  #view-report .report-archive-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #view-report .report-approval-checklist { grid-template-columns:1fr; }
   #view-report .report-review-workspace { grid-template-columns:1fr; }
   #view-report .report-review-rail { border:0; border-bottom:1px solid rgba(255,255,255,.08); }
   #view-report .report-review-rail .report-primary-actions { grid-template-columns:repeat(3,minmax(0,1fr)); }
   #view-report .report-review-rail .report-secondary-actions { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media (max-width:600px) {
+  #view-report .report-workspace { gap:12px; }
+  #view-report .report-workspace-stage-heading,
+  #view-report .report-approval-workspace,
+  #view-report .report-payment-workspace,
+  #view-report .report-archive-workspace,
+  #view-report .report-workspace-stage-note { padding:14px; }
+  #view-report .report-workspace-stage-note,
+  #view-report .report-approval-executive,
+  #view-report .report-payment-summary,
+  #view-report .report-archive-summary { grid-template-columns:1fr; }
   #view-report .report-review-rail,
   #view-report .report-review-table-area { padding:16px; }
   #view-report .report-review-rail .report-primary-actions,
@@ -2579,7 +2593,88 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
 
 /* Payroll Workflow Engine — Final UI: visual treatment for the existing
    salary snapshot, supporting analysis, and report review dialogs only. */
-#view-report [data-workflow-workspace][hidden] { display:none !important; }
+#view-report .report-workspace-manager {
+  display:grid;
+  position:relative;
+}
+#view-report .report-workspace {
+  display:grid;
+  gap:16px;
+  max-height:0;
+  margin:0;
+  overflow:clip;
+  opacity:0;
+  transform:translateY(10px);
+  pointer-events:none;
+  visibility:hidden;
+  transition:max-height .26s ease, margin .2s ease, opacity .18s ease, transform .22s ease, visibility 0s linear .26s;
+}
+#view-report .report-workspace.is-active {
+  max-height:16000px;
+  margin-bottom:18px;
+  overflow:visible;
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+  visibility:visible;
+  transition:max-height .3s ease, margin .2s ease, opacity .2s ease, transform .22s ease;
+}
+#view-report .report-workspace-slot:empty { display:none; }
+#view-report .report-workspace-stage-heading,
+#view-report .report-approval-workspace,
+#view-report .report-payment-workspace,
+#view-report .report-archive-workspace,
+#view-report .report-workspace-stage-note {
+  padding:16px 20px;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:var(--radius-card);
+  background:rgba(6,12,18,.2);
+}
+#view-report .report-workspace-stage-heading h3,
+#view-report .report-approval-workspace h3,
+#view-report .report-payment-workspace h3,
+#view-report .report-archive-workspace h3 { margin:3px 0 0; color:var(--ink); font-size:17px; }
+#view-report .report-workspace-stage-heading p,
+#view-report .report-approval-workspace .report-section-heading p,
+#view-report .report-payment-workspace .report-section-heading p,
+#view-report .report-archive-workspace .report-section-heading p { margin:5px 0 0; color:var(--ink-muted); font-size:12px; }
+#view-report .report-workspace-stage-note { display:flex; justify-content:space-between; gap:16px; border-style:dashed; }
+#view-report .report-workspace-stage-note div { display:grid; gap:3px; }
+#view-report .report-workspace-stage-note strong { color:var(--ink); font-size:13px; }
+#view-report .report-workspace-stage-note span { color:var(--ink-muted); font-size:12px; }
+#view-report .report-approval-executive,
+#view-report .report-payment-summary,
+#view-report .report-archive-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+#view-report .workspace-executive-card,
+#view-report .report-payment-summary > div,
+#view-report .report-archive-summary > div {
+  display:grid;
+  align-content:start;
+  gap:5px;
+  min-height:96px;
+  padding:13px 14px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;
+  background:rgba(255,255,255,.025);
+}
+#view-report .workspace-executive-card.is-primary { background:linear-gradient(135deg,rgba(115,167,255,.17),rgba(52,211,153,.07)); border-color:rgba(115,167,255,.26); }
+#view-report .workspace-executive-card span,
+#view-report .report-payment-summary span,
+#view-report .report-archive-summary span { color:var(--ink-muted); font-size:11px; }
+#view-report .workspace-executive-card strong,
+#view-report .report-payment-summary strong,
+#view-report .report-archive-summary strong { color:var(--ink); font-size:20px; }
+#view-report .workspace-executive-card small { color:var(--ink-faint); font-size:10px; }
+#view-report .report-approval-checklist { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+#view-report .workspace-checklist-group { padding:13px 14px; border:1px solid rgba(255,255,255,.07); border-radius:10px; background:rgba(255,255,255,.02); }
+#view-report .workspace-checklist-group h4 { margin:0 0 8px; color:var(--ink); font-size:12px; }
+#view-report .workspace-checklist-group p,
+#view-report .workspace-checklist-group ul { margin:0; color:var(--ink-muted); font-size:11px; line-height:1.75; }
+#view-report .workspace-checklist-group ul { padding:0 18px 0 0; }
+#view-report .workspace-checklist-group.is-failed { border-color:rgba(248,113,113,.28); background:rgba(248,113,113,.055); }
+#view-report .workspace-checklist-group.is-warning { border-color:rgba(245,158,11,.25); background:rgba(245,158,11,.045); }
+#view-report .workspace-checklist-group.is-passed { border-color:rgba(52,211,153,.18); }
+#view-report .report-review-readiness { display:block; margin-top:8px; color:var(--ink-muted); font-size:11px; }
 #view-report .report-state-workspace {
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
@@ -2603,6 +2698,25 @@ body:has(#view-dashboard.active) .topbar .subtitle { white-space: nowrap; }
 #view-report[data-workflow-workspace="payroll"] .report-state-workspace,
 #view-report[data-workflow-workspace="payment"] .report-state-workspace,
 #view-report[data-workflow-workspace="archive"] .report-state-workspace { grid-template-columns:1fr; }
+
+#view-report .salary-snapshot-dashboard [data-snapshot-stage] {
+  max-height:0;
+  margin:0;
+  overflow:clip;
+  opacity:0;
+  pointer-events:none;
+  visibility:hidden;
+  transform:translateY(6px);
+  transition:max-height .22s ease, margin .18s ease, opacity .16s ease, transform .18s ease, visibility 0s linear .22s;
+}
+#view-report .salary-snapshot-dashboard [data-snapshot-stage].is-workspace-visible {
+  max-height:10000px;
+  opacity:1;
+  pointer-events:auto;
+  visibility:visible;
+  transform:translateY(0);
+  transition:max-height .25s ease, margin .18s ease, opacity .18s ease, transform .2s ease;
+}
 
 #view-report .salary-snapshot-dashboard {
   gap:16px;

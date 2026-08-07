@@ -63,10 +63,22 @@ for (const state of Object.values(Workflow.STATE)) {
 }
 assert.match(dashboard, /id="reportStateWorkspace"/,
   'the state-driven action workspace preserves the existing action identifiers');
-assert.match(dashboard, /id="reportReviewWorkspace" data-workflow-workspace="review"/,
-  'employee review is declaratively bound to the review phase');
-assert.match(dashboard, /id="salarySnapshotDashboard" data-workflow-workspace="payroll payment archive"/,
-  'existing Salary Snapshot remains the payroll, payment, and archive surface');
+assert.match(dashboard, /id="reportWorkspaceManager"/,
+  'the report owns a Workspace Manager rather than a single shared content surface');
+['reportCalculationWorkspace', 'reportReviewWorkspace', 'reportApprovalWorkspace', 'reportPayrollWorkspace', 'reportPaymentWorkspace', 'reportArchiveWorkspace'].forEach(id => {
+  assert.match(dashboard, new RegExp(`id="${id}"[^>]*data-workspace=`),
+    `${id} is an independently declared workflow workspace`);
+});
+assert.match(dashboard, /id="reportReviewWorkspace"[^>]*data-workspace="review"/,
+  'employee review remains an explicit review workspace');
+assert.match(dashboard, /id="salarySnapshotDashboard"/,
+  'the existing Salary Snapshot is retained as the payroll, payment, and archive surface');
+assert.match(dashboard, /data-workspace-slot="approval-decision"/,
+  'the Decision Summary can move into the approval workspace without duplicating its data');
+assert.match(uiSource, /function mountWorkspaceSurfaces\(workspace\)/,
+  'Workspace Manager mounts existing surfaces into the active workspace');
+assert.doesNotMatch(uiSource, /element\.hidden\s*=/,
+  'Workspace visibility is not implemented as a simple hidden flag toggle');
 ['calculateBtn', 'approveReportBtn', 'salarySnapshotApproveBtn', 'salaryMarkAllPaidBtn', 'workflowArchiveBtn'].forEach(id => {
   assert.strictEqual((dashboard.match(new RegExp(`id="${id}"`, 'g')) || []).length, 1,
     `${id} retains its one existing binding`);

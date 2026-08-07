@@ -59,16 +59,139 @@ const PayrollWorkflowUI = (() => {
     return copy[workspace] || copy[WORKSPACE.CALCULATION];
   }
 
-  function renderWorkspace(state) {
-    const workspace = workspaceFor(state);
+  function decisionCopy(workspace) {
+    const copy = {
+      [WORKSPACE.CALCULATION]: ['جاهزية الحساب', 'ملخص الحساب', 'يعرض هذا الملخص بيانات التقرير التي ستُستخدم عند تشغيل الحساب.'],
+      [WORKSPACE.REVIEW]: ['منطقة القرار', 'ملخص المراجعة', 'استخدم القيم والاستثناءات لتأكيد جاهزية التقرير قبل الاعتماد.'],
+      [WORKSPACE.APPROVAL]: ['قرار الاعتماد', 'الملخص التنفيذي', 'هذه هي القيم المرجعية لاتخاذ قرار اعتماد التقرير الشهري.'],
+      [WORKSPACE.PAYROLL]: ['كشف الرواتب', 'ملخص الكشف', 'يعرض الملخص النسخة المستقلة التي تنتقل منها دورة الصرف.'],
+      [WORKSPACE.PAYMENT]: ['قرار الصرف', 'ملخص الصرف', 'تبقى قيم التقرير مرجعية أثناء تسجيل عمليات الصرف.'],
+      [WORKSPACE.ARCHIVE]: ['إغلاق الدورة', 'ملخص الأرشفة', 'هذه القيم محفوظة للعرض والتدقيق بعد اكتمال دورة الرواتب.']
+    };
+    return copy[workspace] || copy[WORKSPACE.CALCULATION];
+  }
+
+  function query(selector) {
+    return document.querySelector ? document.querySelector(selector) : null;
+  }
+
+  function slot(name) {
+    return query(`[data-workspace-slot="${name}"]`);
+  }
+
+  function mount(id, target) {
+    const element = $(id);
+    if (element && target && element.parentElement !== target) target.appendChild(element);
+  }
+
+  function setWorkspaceVisibility(workspace) {
+    const manager = $('reportWorkspaceManager');
     const reportView = $('view-report');
-    if (reportView) {
-      reportView.dataset.workflowWorkspace = workspace;
-      reportView.querySelectorAll('[data-workflow-workspace]').forEach(element => {
-        const supported = (element.dataset.workflowWorkspace || '').split(/\s+/);
-        element.hidden = !supported.includes(workspace);
+    if (reportView) reportView.dataset.workflowWorkspace = workspace;
+    if (!manager) return;
+
+    manager.dataset.activeWorkspace = workspace;
+    manager.querySelectorAll('[data-workspace]').forEach(root => {
+      const active = root.dataset.workspace === workspace;
+      root.classList.toggle('is-active', active);
+      root.setAttribute('aria-hidden', String(!active));
+      root.toggleAttribute('inert', !active);
+    });
+  }
+
+  function mountWorkspaceSurfaces(workspace) {
+    const calculation = $('reportCalculationWorkspace');
+    const calculationStatus = $('reportCalculationStatus');
+    if (workspace === WORKSPACE.CALCULATION && calculation) {
+      const summary = $('reportDecisionSummary');
+      const actions = $('reportStateWorkspace');
+      if (summary && calculationStatus && summary.parentElement !== calculation) calculation.insertBefore(summary, calculationStatus);
+      if (actions && calculationStatus && actions.parentElement !== calculation) calculation.insertBefore(actions, calculationStatus);
+    } else {
+      mount('reportDecisionSummary', slot(`${workspace}-decision`));
+      mount('reportStateWorkspace', slot(`${workspace}-actions`));
+    }
+
+    const snapshot = $('salarySnapshotDashboard');
+    if (snapshot && [WORKSPACE.PAYROLL, WORKSPACE.PAYMENT, WORKSPACE.ARCHIVE].includes(workspace)) {
+      mount('salarySnapshotDashboard', slot(`${workspace}-snapshot`));
+      snapshot.dataset.workspace = workspace;
+      snapshot.querySelectorAll('[data-snapshot-stage]').forEach(element => {
+        const supported = (element.dataset.snapshotStage || '').split(/\s+/);
+        const active = supported.includes(workspace);
+        element.classList.toggle('is-workspace-visible', active);
+        element.setAttribute('aria-hidden', String(!active));
       });
     }
+  }
+
+  function formatMoney(value) {
+    return typeof Utils !== 'undefined' && Utils.formatCurrency
+      ? Utils.formatCurrency(Number(value) || 0) : String(Number(value) || 0);
+  }
+
+  function formatDateTime(value) {
+    if (!value) return '—';
+    return typeof Utils !== 'undefined' && Utils.formatDateTime ? Utils.formatDateTime(value) : String(value);
+  }
+
+  function assessmentContext(context) {
+    const appContext = typeof App !== 'undefined' && App.getSalaryProcessingContext
+      ? App.getSalaryProcessingContext() : {};
+    return {
+      monthId: context.monthId,
+      month: context.month,
+      report: context.report,
+      totals: appContext.totals || context.month.totals || {},
+      departments: typeof Departments !== 'undefined' && Departments.all ? Departments.all() : []
+    };
+  }
+
+  function assessmentMarkup(entries, kind) {
+    if (!entries.length) return '';
+    return `<section class="workspace-checklist-group is-${kind}"><h4>${kind === 'failed' ? 'موانع الاعتماد' : (kind === 'warning' ? 'تنبيهات المراجعة' : 'فحوصات مكتملة')}</h4><ul>${entries.map(entry => `<li>${typeof Utils !== 'undefined' && Utils.escapeHtml ? Utils.escapeHtml(entry.text) : entry.text}</li>`).join('')}</ul></section>`;
+  }
+
+  function renderApprovalWorkspace(context) {
+    const executive = $('reportApprovalExecutive');
+    const checklist = $('reportApprovalChecklist');
+    if (!executive || !checklist) return;
+    const data = assessmentContext(context);
+    const assessment = typeof SmartApproval !== 'undefined' && SmartApproval.assess
+      ? SmartApproval.assess(data) : { score: 0, critical: [], warnings: [], recommendations: [] };
+    const departmentCount = new Set((context.report || []).map(row => row.departmentId).filter(Boolean)).size;
+    executive.innerHTML = `<div class="workspace-executive-card is-primary"><span>صافي المستحق للصرف</span><strong>${formatMoney(data.totals.finalSalary)}</strong><small>القيمة المحفوظة في التقرير الحالي</small></div><div class="workspace-executive-card"><span>الموظفون</span><strong>${context.report.length}</strong><small>سجل محسوب</small></div><div class="workspace-executive-card"><span>الأقسام</span><strong>${departmentCount}</strong><small>ضمن التقرير</small></div><div class="workspace-executive-card"><span>جاهزية الاعتماد</span><strong>${assessment.score}%</strong><small>${assessment.critical.length ? 'توجد موانع يجب معالجتها' : 'لا توجد أخطاء مانعة'}</small></div>`;
+    checklist.innerHTML = assessmentMarkup(assessment.critical, 'failed') || '<section class="workspace-checklist-group is-passed"><h4>فحوصات الاعتماد</h4><p>لا توجد أخطاء مانعة وفق فحوصات الجاهزية الحالية.</p></section>';
+    checklist.insertAdjacentHTML('beforeend', assessmentMarkup(assessment.warnings, 'warning') + assessmentMarkup(assessment.recommendations, 'passed'));
+  }
+
+  function renderCalculationWorkspace(context) {
+    const status = $('reportCalculationStatus');
+    if (!status) return;
+    const calculatedAt = context.month && context.month.calculatedAt;
+    status.innerHTML = `<div><strong>${calculatedAt ? 'يوجد تقرير محسوب لهذا الشهر' : 'لا توجد نسخة محسوبة بعد'}</strong><span>${calculatedAt ? `آخر حساب: ${formatDateTime(calculatedAt)}` : 'استخدم إجراء الحساب لإعداد بيانات التقرير قبل المراجعة.'}</span></div><div><strong>${context.report.length}</strong><span>سجل ضمن التقرير الحالي</span></div>`;
+  }
+
+  function renderPaymentWorkspace(context) {
+    const root = $('reportPaymentSummary');
+    if (!root) return;
+    const payments = (context.snapshot && context.snapshot.employeePayments) || {};
+    const rows = (context.snapshot && context.snapshot.report) || [];
+    const paid = rows.filter(row => payments[row.moderatorId] && payments[row.moderatorId].status === 'paid').length;
+    const remaining = Math.max(rows.length - paid, 0);
+    root.innerHTML = `<div><span>تم صرفهم</span><strong>${paid}</strong></div><div><span>المتبقي</span><strong>${remaining}</strong></div><div><span>حالة الكشف</span><strong>${context.snapshot && context.snapshot.status === 'paid' ? 'مكتمل الصرف' : 'جاهز للصرف'}</strong></div>`;
+  }
+
+  function renderArchiveWorkspace(context) {
+    const root = $('reportArchiveSummary');
+    if (!root) return;
+    root.innerHTML = `<div><span>حالة الشهر</span><strong>${label(PayrollWorkflow.derive(context.month, context.snapshot))}</strong></div><div><span>تاريخ الإغلاق</span><strong>${formatDateTime(context.month && (context.month.archivedAt || context.month.closedAt))}</strong></div><div><span>Snapshot النهائية</span><strong>${context.snapshot ? 'متاحة للعرض والتدقيق' : 'غير متاحة'}</strong></div>`;
+  }
+
+  function renderWorkspace(state, context) {
+    const workspace = workspaceFor(state);
+    setWorkspaceVisibility(workspace);
+    mountWorkspaceSurfaces(workspace);
 
     const [eyebrow, title, description] = workspaceCopy(workspace);
     const workspaceRoot = $('reportStateWorkspace');
@@ -82,6 +205,17 @@ const PayrollWorkflowUI = (() => {
 
     const summary = $('reportDecisionSummary');
     if (summary) summary.dataset.workflowWorkspace = workspace;
+    const [summaryEyebrow, summaryTitle, summaryDescription] = decisionCopy(workspace);
+    const summaryEyebrowNode = $('reportSummaryEyebrow');
+    const summaryTitleNode = $('reportSummaryTitle');
+    const summaryDescriptionNode = $('reportDecisionState');
+    if (summaryEyebrowNode) summaryEyebrowNode.textContent = summaryEyebrow;
+    if (summaryTitleNode) summaryTitleNode.textContent = summaryTitle;
+    if (summaryDescriptionNode) summaryDescriptionNode.textContent = summaryDescription;
+    renderCalculationWorkspace(context);
+    renderApprovalWorkspace(context);
+    renderPaymentWorkspace(context);
+    renderArchiveWorkspace(context);
     return workspace;
   }
 
@@ -95,7 +229,9 @@ const PayrollWorkflowUI = (() => {
         ? SalaryProcessing.getSnapshot() : null);
     const report = input.report || (typeof App !== 'undefined' && App.getSalaryProcessingContext
       ? App.getSalaryProcessingContext().rows : []) || [];
-    return { monthId, month, snapshot, report };
+    const appContext = typeof App !== 'undefined' && App.getSalaryProcessingContext
+      ? App.getSalaryProcessingContext() : {};
+    return { monthId, month, snapshot, report, totals: appContext.totals || month.totals || {} };
   }
 
   function canAction(action, input = {}) {
@@ -161,7 +297,7 @@ const PayrollWorkflowUI = (() => {
     }).join('');
   }
 
-  function renderMessages(state) {
+  function renderMessages(state, context) {
     const current = $('reportWorkflowCurrent');
     const next = $('reportWorkflowNext');
     const nextState = (PayrollWorkflow.TRANSITIONS[state] || [])[0] || null;
@@ -169,19 +305,6 @@ const PayrollWorkflowUI = (() => {
     if (next) next.textContent = nextState
       ? `الخطوة التالية: ${label(nextState)}`
       : 'هذه الدورة مكتملة ومحفوظة في الأرشيف.';
-
-    const decision = $('reportDecisionState');
-    if (decision) {
-      const decisionMessages = {
-        [WORKSPACE.CALCULATION]: 'تظهر قيم القرار بعد إكمال حساب التقرير الشهري.',
-        [WORKSPACE.REVIEW]: 'تدعم هذه القيم قرار المراجعة والاعتماد قبل إنشاء كشف الرواتب.',
-        [WORKSPACE.APPROVAL]: 'هذه هي القيم المعتمدة لاتخاذ قرار إغلاق التقرير الشهري.',
-        [WORKSPACE.PAYROLL]: 'هذه القيم هي مرجع مراجعة كشف الرواتب المستقل.',
-        [WORKSPACE.PAYMENT]: 'هذه القيم مرجع الصرف ولا يعاد حسابها أثناء الدفع.',
-        [WORKSPACE.ARCHIVE]: 'هذه القيم محفوظة للدورة الحالية وللعرض والتدقيق فقط.'
-      };
-      decision.textContent = decisionMessages[workspaceFor(state)];
-    }
 
     const notice = $('reportApprovalNotice');
     if (notice) {
@@ -196,7 +319,12 @@ const PayrollWorkflowUI = (() => {
         [PayrollWorkflow.STATE.ARCHIVED]: '<strong>الدورة مؤرشفة.</strong> تبقى للعرض والتدقيق فقط.',
         [PayrollWorkflow.STATE.REOPENED]: '<strong>أُعيد فتح التقرير.</strong> أعد الحساب والمراجعة قبل الاعتماد التالي.'
       };
-      notice.innerHTML = messages[state] || '';
+      const reviewState = [PayrollWorkflow.STATE.CALCULATED, PayrollWorkflow.STATE.IN_REVIEW].includes(state);
+      const assessment = reviewState && typeof SmartApproval !== 'undefined' && SmartApproval.assess
+        ? SmartApproval.assess(assessmentContext(context)) : null;
+      const readiness = assessment
+        ? `<span class="report-review-readiness">${assessment.critical.length} موانع · ${assessment.warnings.length} تنبيهات</span>` : '';
+      notice.innerHTML = `${messages[state] || ''}${readiness}`;
     }
   }
 
@@ -242,9 +370,9 @@ const PayrollWorkflowUI = (() => {
     }
 
     renderHeaderSteps(state);
-    renderWorkspace(state);
+    renderWorkspace(state, context);
     renderTimeline(state);
-    renderMessages(state);
+    renderMessages(state, context);
     renderActions(state, context);
     ['smartApprovalModal', 'closeMonthModal'].forEach(id => {
       const dialog = $(id);

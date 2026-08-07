@@ -492,8 +492,10 @@ Haba&#9;7&#9;750"></textarea>
           </section>
         </section>
 
+        <div class="report-workspace-manager" id="reportWorkspaceManager" aria-live="polite">
+        <section class="report-workspace is-active" id="reportCalculationWorkspace" data-workspace="calculation" aria-labelledby="reportWorkspaceTitle">
         <section class="report-summary-section" id="reportDecisionSummary" aria-labelledby="reportSummaryTitle">
-          <div class="report-section-heading"><div><span class="report-eyebrow">نظرة مالية</span><h3 id="reportSummaryTitle">ملخص المراجعة</h3></div><p id="reportDecisionState">المبالغ المعروضة هي نفس القيم المحسوبة والمحفوظه للتقرير الحالي.</p></div>
+          <div class="report-section-heading"><div><span class="report-eyebrow" id="reportSummaryEyebrow">نظرة مالية</span><h3 id="reportSummaryTitle">ملخص المراجعة</h3></div><p id="reportDecisionState">المبالغ المعروضة هي نفس القيم المحسوبة والمحفوظه للتقرير الحالي.</p></div>
           <div class="close-summary" id="reportFinancialSummary" aria-live="polite"></div>
         </section>
 
@@ -516,7 +518,14 @@ Haba&#9;7&#9;750"></textarea>
           </div>
         </section>
 
-        <section class="report-employee-section" id="reportReviewWorkspace" data-workflow-workspace="review" aria-labelledby="reportEmployeeTitle">
+        <section class="report-workspace-stage-note" id="reportCalculationStatus" aria-live="polite"></section>
+        </section>
+
+        <section class="report-workspace" id="reportReviewWorkspace" data-workspace="review" aria-labelledby="reportEmployeeTitle" aria-hidden="true" inert>
+          <div class="report-workspace-slot" data-workspace-slot="review-decision"></div>
+          <div class="report-workspace-slot" data-workspace-slot="review-actions"></div>
+
+        <section class="report-employee-section" aria-labelledby="reportEmployeeTitle">
           <div class="report-review-workspace">
             <aside class="report-review-rail" aria-label="مراجعة التقرير وإجراءاته">
               <div class="report-review-rail-heading"><span class="report-eyebrow">مساحة المراجعة</span><h4>حالة التقرير وإجراءاته</h4><p>راجع الحالة أولًا ثم نفّذ الإجراء المناسب.</p></div>
@@ -554,21 +563,54 @@ Haba&#9;7&#9;750"></textarea>
             </div>
           </div>
         </section>
+        </section>
 
-        <section class="salary-snapshot-dashboard hidden" id="salarySnapshotDashboard" data-workflow-workspace="payroll payment archive" aria-labelledby="salarySnapshotTitle">
-          <div class="report-section-heading salary-snapshot-heading" data-workflow-workspace="payroll"><div><span class="report-eyebrow">مسار مستقل</span><h3 id="salarySnapshotTitle">كشف الرواتب والصرف</h3><p>تظهر هذه النسخة بعد اعتمادها، وتبقى مستقلة عن اعتماد التقرير الشهري.</p></div></div>
-          <div class="salary-workflow" id="salaryWorkflow" data-workflow-workspace="payroll"></div>
-          <div class="cards-grid cards-grid-compact" id="salaryExecutiveSummary" data-workflow-workspace="payroll"></div>
+        <section class="report-workspace" id="reportApprovalWorkspace" data-workspace="approval" aria-labelledby="reportApprovalWorkspaceTitle" aria-hidden="true" inert>
+          <div class="report-workspace-slot" data-workspace-slot="approval-decision"></div>
+          <section class="report-approval-workspace">
+            <div class="report-section-heading"><div><span class="report-eyebrow">مرحلة الاعتماد</span><h3 id="reportApprovalWorkspaceTitle">مساحة اعتماد التقرير</h3><p>راجع الملخص التنفيذي وفحوصات الجاهزية قبل إنشاء كشف الرواتب.</p></div></div>
+            <div class="report-approval-executive" id="reportApprovalExecutive" aria-live="polite"></div>
+            <div class="report-approval-checklist" id="reportApprovalChecklist" aria-live="polite"></div>
+          </section>
+          <div class="report-workspace-slot" data-workspace-slot="approval-actions"></div>
+        </section>
 
-          <div class="dashboard-insights-grid salary-review-insights" data-workflow-workspace="payroll">
+        <section class="report-workspace" id="reportPayrollWorkspace" data-workspace="payroll" aria-labelledby="reportPayrollWorkspaceTitle" aria-hidden="true" inert>
+          <div class="report-workspace-slot" data-workspace-slot="payroll-decision"></div>
+          <div class="report-workspace-stage-heading"><span class="report-eyebrow">مرحلة كشف الرواتب</span><h3 id="reportPayrollWorkspaceTitle">مراجعة كشف الرواتب</h3><p>تعمل هذه المرحلة على النسخة المستقلة المعتمدة دون إعادة حساب التقرير الشهري.</p></div>
+          <div class="report-workspace-slot" data-workspace-slot="payroll-snapshot"></div>
+          <div class="report-workspace-slot" data-workspace-slot="payroll-actions"></div>
+        </section>
+
+        <section class="report-workspace" id="reportPaymentWorkspace" data-workspace="payment" aria-labelledby="reportPaymentWorkspaceTitle" aria-hidden="true" inert>
+          <div class="report-workspace-slot" data-workspace-slot="payment-decision"></div>
+          <section class="report-payment-workspace"><div class="report-section-heading"><div><span class="report-eyebrow">مرحلة الصرف</span><h3 id="reportPaymentWorkspaceTitle">متابعة صرف الرواتب</h3><p>سجل الصرف من كشف الرواتب الحالي حتى تكتمل الدورة.</p></div></div><div id="reportPaymentSummary" class="report-payment-summary" aria-live="polite"></div></section>
+          <div class="report-workspace-slot" data-workspace-slot="payment-snapshot"></div>
+          <div class="report-workspace-slot" data-workspace-slot="payment-actions"></div>
+        </section>
+
+        <section class="report-workspace" id="reportArchiveWorkspace" data-workspace="archive" aria-labelledby="reportArchiveWorkspaceTitle" aria-hidden="true" inert>
+          <div class="report-workspace-slot" data-workspace-slot="archive-decision"></div>
+          <section class="report-archive-workspace"><div class="report-section-heading"><div><span class="report-eyebrow">مرحلة الأرشفة</span><h3 id="reportArchiveWorkspaceTitle">سجل إغلاق دورة الرواتب</h3><p>هذه الدورة مكتملة ومتاحة للعرض والتدقيق فقط.</p></div></div><div id="reportArchiveSummary" class="report-archive-summary" aria-live="polite"></div></section>
+          <div class="report-workspace-slot" data-workspace-slot="archive-snapshot"></div>
+          <div class="report-workspace-slot" data-workspace-slot="archive-actions"></div>
+        </section>
+        </div>
+
+        <section class="salary-snapshot-dashboard hidden" id="salarySnapshotDashboard" aria-labelledby="salarySnapshotTitle">
+          <div class="report-section-heading salary-snapshot-heading" data-snapshot-stage="payroll"><div><span class="report-eyebrow">مسار مستقل</span><h3 id="salarySnapshotTitle">كشف الرواتب والصرف</h3><p>تظهر هذه النسخة بعد اعتمادها، وتبقى مستقلة عن اعتماد التقرير الشهري.</p></div></div>
+          <div class="salary-workflow" id="salaryWorkflow" data-snapshot-stage="payroll payment archive"></div>
+          <div class="cards-grid cards-grid-compact" id="salaryExecutiveSummary" data-snapshot-stage="payroll"></div>
+
+          <div class="dashboard-insights-grid salary-review-insights" data-snapshot-stage="payroll">
             <section class="panel"><div class="panel-header"><h3>مؤشرات كشف الرواتب</h3></div><div class="dashboard-insights" id="salaryKpis"></div></section>
             <section class="panel"><div class="panel-header"><h3>ملخص الأقسام</h3></div><div class="dashboard-insights" id="salaryDepartmentSummary"></div></section>
           </div>
 
-          <section class="panel salary-snapshot-review" data-workflow-workspace="payroll"><div class="panel-header"><h3>مراجعة كشف الرواتب</h3><div><button class="btn btn-sm" id="salarySnapshotExcelBtn" type="button">تصدير Excel</button><button class="btn btn-sm" id="salarySnapshotPrintBtn" type="button">طباعة</button></div></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>الأساسي</th><th>البونص</th><th>العمولة</th><th>الإضافات</th><th>الخصومات</th><th>الصافي</th><th>إجراءات</th></tr></thead><tbody id="salarySnapshotRows"></tbody></table></div></section>
-          <section class="panel salary-payment-panel" data-workflow-workspace="payment archive"><div class="panel-header"><h3>صرف الرواتب</h3><div class="report-primary-actions"><button class="btn btn-accent" id="salaryMarkAllPaidBtn" type="button">تسجيل صرف الجميع</button><button class="btn" id="workflowArchiveBtn" data-permission="months.write" type="button" hidden>أرشفة دورة الرواتب</button></div></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>صافي المستحق</th><th>حالة الدفع</th><th>تاريخ الدفع</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead><tbody id="salaryPaymentBody"></tbody></table></div></section>
+          <section class="panel salary-snapshot-review" data-snapshot-stage="payroll"><div class="panel-header"><h3>مراجعة كشف الرواتب</h3><div><button class="btn btn-sm" id="salarySnapshotExcelBtn" type="button">تصدير Excel</button><button class="btn btn-sm" id="salarySnapshotPrintBtn" type="button">طباعة</button></div></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>الأساسي</th><th>البونص</th><th>العمولة</th><th>الإضافات</th><th>الخصومات</th><th>الصافي</th><th>إجراءات</th></tr></thead><tbody id="salarySnapshotRows"></tbody></table></div></section>
+          <section class="panel salary-payment-panel" data-snapshot-stage="payment archive"><div class="panel-header"><h3>صرف الرواتب</h3><div class="report-primary-actions"><button class="btn btn-accent" id="salaryMarkAllPaidBtn" type="button">تسجيل صرف الجميع</button><button class="btn" id="workflowArchiveBtn" data-permission="months.write" type="button" hidden>أرشفة دورة الرواتب</button></div></div><div class="table-wrap"><table><thead><tr><th>الموظف</th><th>القسم</th><th>صافي المستحق</th><th>حالة الدفع</th><th>تاريخ الدفع</th><th>سجل بواسطة</th><th>إجراء</th></tr></thead><tbody id="salaryPaymentBody"></tbody></table></div></section>
 
-          <section class="report-supporting-insights" data-workflow-workspace="payroll" aria-labelledby="reportInsightsTitle">
+          <section class="report-supporting-insights" data-snapshot-stage="payroll" aria-labelledby="reportInsightsTitle">
             <div class="report-section-heading"><div><span class="report-eyebrow">قراءة مساندة</span><h3 id="reportInsightsTitle">المؤشرات والتحليلات</h3></div><p>تساعد على المراجعة ولا تغيّر أي قيمة في كشف الرواتب.</p></div>
             <div class="charts-grid salary-snapshot-charts" id="salarySnapshotCharts"><div class="chart-card"><h3>توزيع الرواتب حسب الأقسام</h3><canvas id="salaryChartDepartments"></canvas><div class="widget-empty hidden" id="salaryChartDepartmentsEmpty">لا توجد بيانات متاحة بعد</div></div><div class="chart-card"><h3>توزيع البونص</h3><canvas id="salaryChartBonus"></canvas><div class="widget-empty hidden" id="salaryChartBonusEmpty">لا توجد بيانات متاحة بعد</div></div><div class="chart-card"><h3>توزيع العمولات</h3><canvas id="salaryChartCommission"></canvas><div class="widget-empty hidden" id="salaryChartCommissionEmpty">لا توجد بيانات متاحة بعد</div></div><div class="chart-card"><h3>الموظفون حسب نوع الراتب</h3><canvas id="salaryChartTypes"></canvas><div class="widget-empty hidden" id="salaryChartTypesEmpty">لا توجد بيانات متاحة بعد</div></div><div class="chart-card"><h3>الموظفون حسب الأقسام</h3><canvas id="salaryChartHeadcount"></canvas><div class="widget-empty hidden" id="salaryChartHeadcountEmpty">لا توجد بيانات متاحة بعد</div></div></div>
             <section class="panel" id="salaryRankingPanel"><div class="panel-header"><div><h3>ترتيب الموظفين</h3><p class="panel-subtitle">ترتيب مستقل مبني على نسخة كشف الرواتب.</p></div><div class="wizard-actions"><select id="salaryRankingMetric" aria-label="معيار ترتيب الموظفين"><option value="net">صافي المستحق</option><option value="sales">إجمالي المبيعات</option><option value="orders">عدد الطلبات</option><option value="packages">عدد العبوات</option><option value="bonus">قيمة البونص</option><option value="commission">قيمة العمولة</option></select><select id="salaryRankingDirection" aria-label="اتجاه الترتيب"><option value="desc">الأعلى أولاً</option><option value="asc">الأقل أولاً</option></select></div></div><div class="table-wrap"><table><thead><tr><th>#</th><th>الاسم</th><th>القسم</th><th>نوع الراتب</th><th id="salaryRankingValueHeader">صافي المستحق</th></tr></thead><tbody id="salaryRankingBody"></tbody></table></div></section>
